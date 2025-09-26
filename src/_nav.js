@@ -29,6 +29,24 @@ const _nav = [
   },
   {
     component: CNavTitle,
+    name: 'Role Panels',
+  },
+  {
+    component: CNavItem,
+    name: 'Students',
+    to: '/admin/students',
+    // only for admin role
+    roles: ['admin'],
+  },
+  {
+    component: CNavItem,
+    name: 'My Profile',
+    to: '/student/profile',
+    // only for student role
+    roles: ['student'],
+  },
+  {
+    component: CNavTitle,
     name: 'Theme',
   },
   {

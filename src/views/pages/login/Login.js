@@ -1,5 +1,5 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   CButton,
   CCard,
@@ -15,8 +15,23 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser } from '@coreui/icons'
+import { loginAs } from '../../../utils/auth'
 
 const Login = () => {
+  const [role, setRole] = useState('admin')
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const onLogin = (e) => {
+    e.preventDefault()
+    loginAs(role)
+    const from = location.state?.from?.pathname
+    if (from) {
+      navigate(from, { replace: true })
+      return
+    }
+    navigate(role === 'admin' ? '/admin/students' : '/student/profile', { replace: true })
+  }
   return (
     <div className="bg-body-tertiary min-vh-100 d-flex flex-row align-items-center">
       <CContainer>
@@ -25,7 +40,7 @@ const Login = () => {
             <CCardGroup>
               <CCard className="p-4">
                 <CCardBody>
-                  <CForm>
+                  <CForm onSubmit={onLogin}>
                     <h1>Login</h1>
                     <p className="text-body-secondary">Sign In to your account</p>
                     <CInputGroup className="mb-3">
@@ -44,9 +59,16 @@ const Login = () => {
                         autoComplete="current-password"
                       />
                     </CInputGroup>
+                    <CInputGroup className="mb-4">
+                      <CInputGroupText>Role</CInputGroupText>
+                      <select className="form-select" value={role} onChange={(e) => setRole(e.target.value)}>
+                        <option value="admin">Admin</option>
+                        <option value="student">Student</option>
+                      </select>
+                    </CInputGroup>
                     <CRow>
                       <CCol xs={6}>
-                        <CButton color="primary" className="px-4">
+                        <CButton type="submit" color="primary" className="px-4">
                           Login
                         </CButton>
                       </CCol>

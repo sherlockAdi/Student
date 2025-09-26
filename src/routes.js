@@ -51,9 +51,21 @@ const Toasts = React.lazy(() => import('./views/notifications/toasts/Toasts'))
 
 const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 
+// Custom pages
+const AdminStudentList = React.lazy(() => import('./views/admin/StudentList'))
+const StudentProfile = React.lazy(() => import('./views/student/Profile'))
+const AdminStudentView = React.lazy(() => import('./views/admin/StudentView'))
+const AdminStudentEdit = React.lazy(() => import('./views/admin/StudentEdit'))
+
 const routes = [
   { path: '/', exact: true, name: 'Home' },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
+  // Admin
+  { path: '/admin/students', name: 'Students', element: AdminStudentList, roles: ['admin'] },
+  { path: '/admin/students/:id/view', name: 'Student View', element: AdminStudentView, roles: ['admin'] },
+  { path: '/admin/students/:id/edit', name: 'Student Edit', element: AdminStudentEdit, roles: ['admin'] },
+  // Student
+  { path: '/student/profile', name: 'My Profile', element: StudentProfile, roles: ['student'] },
   { path: '/theme', name: 'Theme', element: Colors, exact: true },
   { path: '/theme/colors', name: 'Colors', element: Colors },
   { path: '/theme/typography', name: 'Typography', element: Typography },
