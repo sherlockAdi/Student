@@ -7,6 +7,8 @@ import {
   CCol,
   CRow,
   CButton,
+  CFormLabel,
+  CFormSelect,
   CTable,
   CTableHead,
   CTableRow,
@@ -15,6 +17,17 @@ import {
   CTableDataCell,
 } from '@coreui/react'
 import { students as DATA } from '../../data/students'
+import {
+  organizations,
+  colleges,
+  branches,
+  sectors,
+  courseTypes,
+  universities as UNIS,
+  courses,
+  batches,
+  sessions,
+} from '../../data/masters'
 
 const Row = ({ label, value }) => (
   <div className="d-flex py-1 border-bottom">
@@ -46,6 +59,19 @@ const StudentView = () => {
   const name = [student.firstname, student.middlename, student.lastname].filter(Boolean).join(' ')
   const addr = student.address || {}
 
+  const program = useMemo(() => {
+    const college = colleges.find((c) => String(c.id) === String(student.N_CollegeId)) || null
+    const organization = college ? organizations.find((o) => o.id === college.organizationId) : null
+    const branch = branches.find((b) => String(b.id) === String(student.N_BranchId)) || null
+    const sector = sectors.find((s) => String(s.id) === String(student.N_SectorId)) || null
+    const courseType = courseTypes.find((t) => t.id === student.N_CourseType) || { id: student.N_CourseType, name: student.N_CourseType }
+    const university = UNIS.find((u) => u.name === student.N_University) || { id: student.N_University, name: student.N_University }
+    const course = courses.find((c) => String(c.id) === String(student.N_CourseId)) || null
+    const batch = batches.find((b) => String(b.id) === String(student.N_BatchId)) || null
+    const session = sessions[0]
+    return { organization, college, branch, sector, courseType, university, course, batch, session }
+  }, [student])
+
   return (
     <CRow>
       <CCol md={9}>
@@ -54,6 +80,75 @@ const StudentView = () => {
             <strong>Admin</strong> <small>Student View</small>
           </CCardHeader>
           <CCardBody>
+            <div className="mb-4">
+              <CFormLabel>Program Details</CFormLabel>
+              <CRow className="g-3">
+                <CCol md={3}>
+                  <CFormSelect label="Organization" value={program.organization?.id || ''} disabled className="bg-body-tertiary">
+                    {organizations.map((o) => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+                <CCol md={3}>
+                  <CFormSelect label="College" value={program.college?.id || ''} disabled className="bg-body-tertiary">
+                    {colleges.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+                <CCol md={3}>
+                  <CFormSelect label="Branch" value={program.branch?.id || ''} disabled className="bg-body-tertiary">
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+                <CCol md={3}>
+                  <CFormSelect label="Sector" value={program.sector?.id || ''} disabled className="bg-body-tertiary">
+                    {sectors.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+                <CCol md={3}>
+                  <CFormSelect label="Course Type" value={program.courseType?.id || ''} disabled className="bg-body-tertiary">
+                    {courseTypes.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+                <CCol md={3}>
+                  <CFormSelect label="University" value={program.university?.id || ''} disabled className="bg-body-tertiary">
+                    {UNIS.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+                <CCol md={3}>
+                  <CFormSelect label="Course" value={program.course?.id || ''} disabled className="bg-body-tertiary">
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+                <CCol md={3}>
+                  <CFormSelect label="Batch" value={program.batch?.id || ''} disabled className="bg-body-tertiary">
+                    {batches.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+                <CCol md={3}>
+                  <CFormSelect label="Session" value={program.session?.id || ''} disabled className="bg-body-tertiary">
+                    {sessions.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+              </CRow>
+            </div>
+
             <div className="mb-4">
               <Row label="Student ID" value={student.studentid} />
               <Row label="Admission No" value={student.admissionno} />

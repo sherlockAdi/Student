@@ -27,6 +27,7 @@ import {
 
 import { AppBreadcrumb } from './index'
 import { AppHeaderDropdown } from './header/index'
+import atmLogo from '../assets/images/atm_global_business_logo4.png'
 
 const AppHeader = () => {
   const headerRef = useRef()
@@ -64,6 +65,21 @@ const AppHeader = () => {
             <CNavLink href="#">Settings</CNavLink>
           </CNavItem>
         </CHeaderNav>
+        {/* Centered brand logo */}
+        <div className="flex-grow-1 d-none d-md-flex justify-content-center">
+          <img
+            src={atmLogo}
+            alt="ATM Group of Colleges"
+            style={{
+              height: 48,
+              width: 'auto',
+              backgroundColor: '#fff',
+              borderRadius: 6,
+              padding: '4px 8px',
+              objectFit: 'contain',
+            }}
+          />
+        </div>
         <CHeaderNav className="ms-auto">
           <CNavItem>
             <CNavLink href="#">

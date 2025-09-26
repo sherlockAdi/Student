@@ -13,8 +13,7 @@ import CIcon from '@coreui/icons-react'
 
 import { AppSidebarNav } from './AppSidebarNav'
 
-import { logo } from 'src/assets/brand/logo'
-import { sygnet } from 'src/assets/brand/sygnet'
+import atmLogo from '../assets/images/atm_global_business_logo4.png'
 
 // sidebar nav config
 import navigation from '../_nav'
@@ -59,8 +58,33 @@ const AppSidebar = () => {
     >
       <CSidebarHeader className="border-bottom">
         <CSidebarBrand to="/">
-          <CIcon customClassName="sidebar-brand-full" icon={logo} height={32} />
-          <CIcon customClassName="sidebar-brand-narrow" icon={sygnet} height={32} />
+          <img
+            src={atmLogo}
+            alt="ATM Group of Colleges"
+            className="sidebar-brand-full"
+            style={{
+              height: 64,
+              width: 'auto',
+              maxWidth: '100%',
+              backgroundColor: '#fff',
+              borderRadius: 6,
+              padding: '6px 10px',
+              objectFit: 'contain',
+            }}
+          />
+          <img
+            src={atmLogo}
+            alt="ATM"
+            className="sidebar-brand-narrow"
+            style={{
+              height: 40,
+              width: 'auto',
+              backgroundColor: '#fff',
+              borderRadius: 6,
+              padding: 4,
+              objectFit: 'contain',
+            }}
+          />
         </CSidebarBrand>
         <CCloseButton
           className="d-lg-none"
