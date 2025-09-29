@@ -6,6 +6,7 @@ import {
   CRow,
   CCol,
   CFormInput,
+  CFormCheck,
   CButton,
   CTable,
   CTableHead,
@@ -28,11 +29,13 @@ const SRNSearch = () => {
   const [searchResult, setSearchResult] = useState(null);
   const [studentDetails, setStudentDetails] = useState(null); 
   const [installmentDetails, setInstallmentDetails] = useState(null);
-  const [receiptDate, setReceiptDate] = useState(new Date().toISOString().split("T")[0]);
+  const today = new Date().toISOString().split("T")[0]
+  const [receiptDate, setReceiptDate] = useState(today);
   const [BookNoReceiptNoDetails,setBookNoReceiptNoDetails]=useState(null);
   
-  const [clearingDate, setClearingDate] = useState("");
-const [feeDeposited, setFeeDeposited] = useState(null);
+  const [depositDate, setDepositDate] = useState(today)
+  const [clearingDate, setClearingDate] = useState(today)
+  const [feeDeposited, setFeeDeposited] = useState(null) // null | true | false
 
   const handleSearch = async () => {
     if (!srnInput.trim()) {
@@ -77,16 +80,17 @@ const [feeDeposited, setFeeDeposited] = useState(null);
   };
 
   return (
-    <CCard className="mb-4">
-      <CCardHeader>Search Student by SRN</CCardHeader>
+    <CCard className="mb-4 shadow-sm">
+      <CCardHeader className="fw-semibold">Fees • SRN Search</CCardHeader>
       <CCardBody>
-        <CRow className="align-items-end g-3">
+        <CRow className="align-items-end g-3 mb-2">
           <CCol md={6}>
             <CFormInput
               label="Enter SRN Number"
               value={srnInput}
               onChange={(e) => setSrnInput(e.target.value)}
               placeholder="e.g. SRN123456"
+              size="lg"
             />
           </CCol>
           {/* ✅ Receipt Date Picker */}
@@ -96,17 +100,20 @@ const [feeDeposited, setFeeDeposited] = useState(null);
               label="Receipt Date"
               value={receiptDate}
               onChange={(e) => setReceiptDate(e.target.value)}
+              size="lg"
             />
           </CCol>
           <CCol md={2}>
-            <CButton color="primary" onClick={handleSearch}>
+            <CButton color="primary" onClick={handleSearch} size="lg">
               Search
             </CButton>
           </CCol>
         </CRow>
 
         {searchResult && (
-          <CTable striped hover responsive className="mt-4">
+          <>
+            <div className="mt-3 mb-2 fw-semibold">Student Overview</div>
+            <CTable striped bordered small hover responsive className="align-middle mb-4">
             <CTableHead>
               <CTableRow>
                 <CTableHeaderCell>Admission No</CTableHeaderCell>
@@ -129,13 +136,14 @@ const [feeDeposited, setFeeDeposited] = useState(null);
                 <CTableDataCell>{searchResult.Branchname}</CTableDataCell>
               </CTableRow>
             </CTableBody>
-          </CTable>
+            </CTable>
+          </>
         )}
       
  {studentDetails && (
           <>
-            <h5 className="mt-4">Student Fee Submit Details</h5>
-            <CTable striped hover responsive>
+            <h5 className="mt-4">Fee Selection Details</h5>
+            <CTable striped bordered small hover responsive className="align-middle">
               <CTableHead>
                 <CTableRow>
                     <CTableHeaderCell>College</CTableHeaderCell>
@@ -171,7 +179,7 @@ const [feeDeposited, setFeeDeposited] = useState(null);
         {installmentDetails && BookNoReceiptNoDetails && (
           <>
             <h5 className="mt-4">Installment Details</h5>
-            <CTable striped hover responsive>
+            <CTable striped bordered small hover responsive className="align-middle">
               <CTableHead>
                 <CTableRow>
                   <CTableHeaderCell>Financial Year</CTableHeaderCell>
@@ -190,13 +198,61 @@ const [feeDeposited, setFeeDeposited] = useState(null);
                   <CTableDataCell>{installmentDetails.ereceiptno}</CTableDataCell>
                   {/* <CTableDataCell>{receiptDate || "-"}</CTableDataCell> */}
             <CTableDataCell>
-              <input
+              <CFormInput
                 type="date"
                 value={receiptDate}
                 onChange={(e) => setReceiptDate(e.target.value)}
+                size="sm"
               />
             </CTableDataCell>
-            
+            <CTableDataCell>
+              <div className="d-flex gap-4">
+                <CFormCheck
+                  type="radio"
+                  name="feeDeposited"
+                  id="feeDepositedYes"
+                  label="Yes"
+                  checked={feeDeposited === true}
+                  onChange={() => {
+                    setFeeDeposited(true)
+                    setDepositDate(today)
+                    setClearingDate(today)
+                  }}
+                />
+                <CFormCheck
+                  type="radio"
+                  name="feeDeposited"
+                  id="feeDepositedNo"
+                  label="No"
+                  checked={feeDeposited === false}
+                  onChange={() => setFeeDeposited(false)}
+                />
+              </div>
+            </CTableDataCell>
+            <CTableDataCell>
+              {feeDeposited ? (
+                <CFormInput
+                  type="date"
+                  value={depositDate}
+                  onChange={(e) => setDepositDate(e.target.value)}
+                  size="sm"
+                />
+              ) : (
+                <span className="text-muted">-</span>
+              )}
+            </CTableDataCell>
+            <CTableDataCell>
+              {feeDeposited ? (
+                <CFormInput
+                  type="date"
+                  value={clearingDate}
+                  onChange={(e) => setClearingDate(e.target.value)}
+                  size="sm"
+                />
+              ) : (
+                <span className="text-muted">-</span>
+              )}
+            </CTableDataCell>
                 </CTableRow>
               </CTableBody>
             </CTable>
