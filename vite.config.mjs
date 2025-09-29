@@ -44,7 +44,7 @@ export default defineConfig(() => {
       proxy: {
         // https://vitejs.dev/config/server-options.html
         '/login': {
-          target: 'http://61.246.33.108:8069',
+          target: 'http://localhost:62623/',
           changeOrigin: true,
           secure: false,
         },
