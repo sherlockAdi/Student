@@ -42,21 +42,24 @@ const [feeDeposited, setFeeDeposited] = useState(null);
 
     try {
       const data = await searchStudentBySRN(srnInput);
+      console.log(data , data[0])
 
-      if (data.status && data.data?.length > 0) {
-        setSearchResult(data.data[0]); // Adjust if multiple results
+      if ( data?.length > 0) {
+        setSearchResult(data[0]); // Adjust if multiple results
         //const studentId = student.id;         // ✅ Correct ID
       const collegeId = 1;  // ✅ Use this dynamically
       //const admissionNo = student.admissionno;
-        const id = data.data[0].id[0]
+        const id = data[0].id
+        console.log(data[0])
       const data2 = await getFeeSelectStudent(id);
-       setStudentDetails(data2.data[0])
+       setStudentDetails(data2[0])
       const data3 = await getFeeInstallmentDetails({ collegeid: collegeId, SrnNo: srnInput });
-      setInstallmentDetails(data3.data)
-      const data4 = await getFeeBookNoReceiptNo({ collegeid: collegeId, uid: 1, utype: 1, message: '' });
-      if (data4.status ) {
+      setInstallmentDetails(data3[0])
+      const data4 = await getFeeBookNoReceiptNo({ collegeid: collegeId, uid: 1, utype: 1, message: 'hh' });
+      if (data4 ) {
         //console.log(data3.data[0])
-          setBookNoReceiptNoDetails(data4.data);
+        console.log(data4)
+          setBookNoReceiptNoDetails(data4[0]);
         } else {
           setBookNoReceiptNoDetails(null);
         }

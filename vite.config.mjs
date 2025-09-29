@@ -43,11 +43,16 @@ export default defineConfig(() => {
       port: 3000,
       proxy: {
         // https://vitejs.dev/config/server-options.html
-        '/login': {
+         '/studentapi': {
           target: 'http://localhost:62623/',
           changeOrigin: true,
           secure: false,
         },
+        // '/api': {
+        //   target: 'http://localhost:62623/',
+        //   changeOrigin: true,
+        //   secure: false,
+        // },
       },
     },
   }

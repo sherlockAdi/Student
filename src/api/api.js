@@ -1,14 +1,15 @@
 import axios from 'axios'
 
 const api = axios.create({
-  // Use relative base URL so Vite proxy (vite.config.mjs) can forward to backend in dev
+  // Leave baseURL blank to allow Vite proxy in development
   baseURL: '',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  // You may add timeouts/interceptors here if needed
 })
+
+// 🔐 LOGIN
 export async function login({ email, password, rememberMe = false, isRemoteLogin = true }) {
   const payload = {
     User_Email_Id: email,
@@ -16,31 +17,59 @@ export async function login({ email, password, rememberMe = false, isRemoteLogin
     RememberMe: rememberMe,
     IsRemoteLogin: isRemoteLogin,
   }
-  const { data } = await api.post('/login', payload)
+  const { data } = await api.post('/studentapi/login', payload)
   return data
 }
 
+// 🔍 SEARCH STUDENT BY SRN (with all params set to '%', except enrolmentno)
 export async function searchStudentBySRN(enrolmentno) {
-  const { data } = await api.post('/api/fees/search-student', { enrolmentno })
+  const { data } = await api.get('/studentapi/student/get-by-EnrollmentNo', {
+    params: {
+      collegeId: '%',
+      branchid: '%',
+      courseid: '%',
+      universityid: '%',
+      coursetypeid: '%',
+      batchid: '%',
+      firstname: '%',
+      categoryid: '%',
+      enrolmentno: enrolmentno,
+    },
+  })
   return data
 }
 
+// 💰 GET FEE SELECT STUDENT (POST with studentid in body)
 export async function getFeeSelectStudent(studentid) {
-  const { data } = await api.post('/api/feeselectstudent/search-student', { studentid })
+  console.log(studentid)
+  const { data } = await api.get('/studentapi/student/get-by-feeselectStudentId', {
+     params: {
+      studentid
+     }
+  })
   return data
 }
 
+// 💵 GET FEE INSTALLMENT DETAILS (GET with required query params)
 export async function getFeeInstallmentDetails({ collegeid, SrnNo }) {
-  const { data } = await api.post('/api/feeIntallmentDetails/search-student', { collegeid, SrnNo })
+  const { data } = await api.get('/studentapi/student/get-by-SrnNo', {
+    params: {
+      collegeid,
+      SrnNo,
+    },
+  })
   return data
 }
 
+// 📄 GET FEE BOOK NO RECEIPT NO (GET with all required query params)
 export async function getFeeBookNoReceiptNo({ collegeid, uid, utype, message = '' }) {
-  const { data } = await api.post('/api/feeBookNoReceiptNo/search-student', {
-    collegeid,
-    uid,
-    utype,
-    message,
+  const { data } = await api.get('/studentapi/student/get-by-feeBookNoReceiptNo', {
+    params: {
+      collegeid,
+      uid,
+      utype,
+      message,
+    },
   })
   return data
 }
