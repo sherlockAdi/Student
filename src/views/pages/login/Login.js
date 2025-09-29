@@ -12,25 +12,57 @@ import {
   CInputGroup,
   CInputGroupText,
   CRow,
+  CAlert,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser } from '@coreui/icons'
 import { loginAs } from '../../../utils/auth'
+import { login as apiLogin } from '../../../api/api'
 
 const Login = () => {
   const [role, setRole] = useState('admin')
+  const [email, setEmail] = useState('dg@atm.edu.in')
+  const [password, setPassword] = useState('ashok@123')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
   const location = useLocation()
 
-  const onLogin = (e) => {
+
+  const onLogin = async (e) => {
     e.preventDefault()
-    loginAs(role)
-    const from = location.state?.from?.pathname
-    if (from) {
-      navigate(from, { replace: true })
-      return
+    setError('')
+    setLoading(true)
+    try {
+      const data = await apiLogin({ email, password, rememberMe: false, isRemoteLogin: true })
+      // Optional: persist token if provided
+      if (data?.Token) {
+        try { localStorage.setItem('authToken', data.Token) } catch {}
+      }
+      // If backend indicates failure, surface error
+      // if (data?.status === false) {
+      //   setError('Login failed. Please check your credentials or access rights.')
+      //   return
+      // }
+      // Keep existing role-based navigation using mock auth for now
+      loginAs(role)
+      const from = location.state?.from?.pathname
+      if (from) {
+        navigate(from, { replace: true })
+        return
+      }
+      navigate(role === 'admin' ? '/admin/students' : '/student/profile', { replace: true })
+    } catch (err) {
+      if (err.response) {
+        setError(`Request failed: ${err.response.status} ${err.response.statusText}`)
+      } else if (err.request) {
+        setError('No response received (possible CORS issue).')
+      } else {
+        setError(err.message)
+      }
+    } finally {
+      setLoading(false)
     }
-    navigate(role === 'admin' ? '/admin/students' : '/student/profile', { replace: true })
   }
   return (
     <div className="bg-body-tertiary min-vh-100 d-flex flex-row align-items-center">
@@ -47,7 +79,14 @@ const Login = () => {
                       <CInputGroupText>
                         <CIcon icon={cilUser} />
                       </CInputGroupText>
-                      <CFormInput placeholder="Username" autoComplete="username" />
+                      <CFormInput
+                        placeholder="Email"
+                        autoComplete="username"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
                     </CInputGroup>
                     <CInputGroup className="mb-4">
                       <CInputGroupText>
@@ -57,6 +96,9 @@ const Login = () => {
                         type="password"
                         placeholder="Password"
                         autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
                       />
                     </CInputGroup>
                     <CInputGroup className="mb-4">
@@ -66,10 +108,13 @@ const Login = () => {
                         <option value="student">Student</option>
                       </select>
                     </CInputGroup>
+                    {error && (
+                      <CAlert color="danger" className="mb-3">{error}</CAlert>
+                    )}
                     <CRow>
                       <CCol xs={6}>
-                        <CButton type="submit" color="primary" className="px-4">
-                          Login
+                        <CButton type="submit" color="primary" className="px-4" disabled={loading}>
+                          {loading ? 'Logging in...' : 'Login'}
                         </CButton>
                       </CCol>
                       <CCol xs={6} className="text-right">
