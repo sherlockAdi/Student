@@ -15,6 +15,12 @@ import {
   CTableDataCell,
 } from "@coreui/react";
 import { uid } from "chart.js/helpers";
+import {
+  searchStudentBySRN,
+  getFeeSelectStudent,
+  getFeeInstallmentDetails,
+  getFeeBookNoReceiptNo,
+} from "../../api/api";
 
 
 const SRNSearch = () => {
@@ -35,15 +41,7 @@ const [feeDeposited, setFeeDeposited] = useState(null);
     }
 
     try {
-      const res = await fetch("http://localhost:3001/api/fees/search-student", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ enrolmentno: srnInput }),
-      });
-
-      const data = await res.json();
+      const data = await searchStudentBySRN(srnInput);
 
       if (data.status && data.data?.length > 0) {
         setSearchResult(data.data[0]); // Adjust if multiple results
@@ -51,44 +49,11 @@ const [feeDeposited, setFeeDeposited] = useState(null);
       const collegeId = 1;  // ✅ Use this dynamically
       //const admissionNo = student.admissionno;
         const id = data.data[0].id[0]
-         const res2 = await fetch("http://localhost:3001/api/feeselectstudent/search-student", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ studentid: id }),
-      });
-
-      const data2 = await res2.json();
+      const data2 = await getFeeSelectStudent(id);
        setStudentDetails(data2.data[0])
-
-      const res3 = await fetch("http://localhost:3001/api/feeIntallmentDetails/search-student", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          collegeid: collegeId,
-          SrnNo: srnInput,
-        }),
-      });
-
-      const data3 = await res3.json();
+      const data3 = await getFeeInstallmentDetails({ collegeid: collegeId, SrnNo: srnInput });
       setInstallmentDetails(data3.data)
-
-      const res4 = await fetch("http://localhost:3001/api/feeBookNoReceiptNo/search-student", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          collegeid: collegeId,
-          uid: 1,
-          utype:1,
-          message:'',
-        }),
-      });
-      const data4 = await res4.json();
+      const data4 = await getFeeBookNoReceiptNo({ collegeid: collegeId, uid: 1, utype: 1, message: '' });
       if (data4.status ) {
         //console.log(data3.data[0])
           setBookNoReceiptNoDetails(data4.data);

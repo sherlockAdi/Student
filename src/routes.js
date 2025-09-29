@@ -57,13 +57,14 @@ const StudentProfile = React.lazy(() => import('./views/student/Profile'))
 const AdminStudentView = React.lazy(() => import('./views/admin/StudentView'))
 const AdminStudentEdit = React.lazy(() => import('./views/admin/StudentEdit'))
 const SRNSearch = React.lazy(() => import('./views/admin/SRNsearch'))
+const AdminDashboard = React.lazy(() => import('./views/admin/AdminDashboard'))
 
 const routes = [
   { path: '/', exact: true, name: 'Home' },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
   // Admin
   { path: '/admin/dashboard', name: 'Admin Dashboard', element: AdminDashboard, roles: ['admin'] },
-  { path: '/admin/fees', name: 'Fess Module', element: SRNSearch, roles: ['admin'] },
+  { path: '/admin/fees', name: 'Fees Module', element: SRNSearch, roles: ['admin'] },
   { path: '/admin/students', name: 'Students', element: AdminStudentList, roles: ['admin'] },
   { path: '/admin/students/:id/view', name: 'Student View', element: AdminStudentView, roles: ['admin'] },
   { path: '/admin/students/:id/edit', name: 'Student Edit', element: AdminStudentEdit, roles: ['admin'] },

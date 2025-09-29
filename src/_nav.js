@@ -14,6 +14,12 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Fees',
+    to: '/admin/fees',
+    roles: ['admin'],
+  },
+  {
+    component: CNavItem,
     name: 'My Profile',
     to: '/student/profile',
     roles: ['student'],
