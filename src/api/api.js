@@ -74,4 +74,18 @@ export async function getFeeBookNoReceiptNo({ collegeid, uid, utype, message = '
   return data
 }
 
+
+export async function getAmiFeeDetails({ FeeCategoryId, InstalmentId, sid, installmenttype }) {
+  const { data } = await api.get('/studentapi/student/get-by-InstallmentId', {
+    params: {
+      FeeCategoryId,
+      InstalmentId,
+      sid,
+      installmenttype,
+    },
+  });
+  return data;
+}
+
+
 export default api
