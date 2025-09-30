@@ -44,7 +44,8 @@ const SRNSearch = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
-
+  const [paymentMode, setPaymentMode] = useState(null);
+  
   // Select All state for fee rows
   const [selectAll, setSelectAll] = useState(false);
 
@@ -251,8 +252,8 @@ const SRNSearch = () => {
         key: RAZORPAY_KEY_ID,
         amount: Math.round(payableAmount * 100),
         currency: "INR",
-        name: "SRN Fee Management",
-        description: "Student fee payment",
+        name: "ATM GLOBAL BUSSINESS SCHOOL",
+        description: "College Fee Payment",
         image: "https://razorpay.com/favicon.png",
         handler: function (response) {
           setPaymentStatus({ type: "success", response });
@@ -296,6 +297,10 @@ const SRNSearch = () => {
     } finally {
       setIsPaying(false);
     }
+  };
+
+  const handlePaymentmode = (mode) => {
+    setPaymentMode(mode);
   };
 
   if (isLoading) {
@@ -516,16 +521,7 @@ const SRNSearch = () => {
       )}
 
       {/* Payment Summary */}
-      {feeRows.length > 0 && (
-        <PaymentSummaryCard
-          amount={payableAmount}
-          onPay={handlePayment}
-          isPaying={isPaying}
-          selectedCount={selectedFeeRows.length}
-          totalCount={feeRows.length}
-          paymentStatus={paymentStatus}
-        />
-      )}
+      
 
       {/* Fee Details */}
       {feeRows.length > 0 && (
@@ -617,6 +613,25 @@ const SRNSearch = () => {
           </CCardBody>
         </CCard>
       )}
+
+      {feeRows.length > 0 && paymentMode === 'online' && (
+              <PaymentSummaryCard
+                amount={payableAmount}
+                onPay={handlePayment}
+                isPaying={isPaying}
+                selectedCount={selectedFeeRows.length}
+                totalCount={feeRows.length}
+                paymentStatus={paymentStatus}
+              />
+            )}
+
+      {feeRows.length > 0 && paymentMode === 'offline' && (
+          <CButton color="success">Make Offline Payment</CButton>
+      )}
+
+        {/* make the two button online payment and offline payment */}
+        <CButton color="success" onClick={() => handlePaymentmode('online')} >Online Payment</CButton>
+        <CButton color="danger" onClick={() => handlePaymentmode('offline')} >Offline Payment</CButton>
     </CCardBody>
   </CCard>
 );
