@@ -19,6 +19,12 @@ import {
   getFeeBookNoReceiptNo,
   getAmiFeeDetails,
 } from "../../api/api";
+import PaymentSummaryCard from "../../components/payments/PaymentSummaryCard";
+import {
+  initializeRazorpayCheckout,
+  loadRazorpayScript,
+} from "../../utils/razorpay";
+import { RAZORPAY_KEY_ID } from "../../config/razorpayConfig";
 
 const SRNSearch = () => {
   const [srnInput, setSrnInput] = useState("");
@@ -36,6 +42,8 @@ const SRNSearch = () => {
   const [amiDetails, setAmiDetails] = useState([]);
   const [feeRows, setFeeRows] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null);
 
   // Select All state for fee rows
   const [selectAll, setSelectAll] = useState(false);
@@ -217,6 +225,78 @@ const SRNSearch = () => {
       amountRemaining: 0,
     }
   );
+
+  const selectedFeeRows = feeRows.filter((row) => row.selectAll);
+  const totalCurrentFees = feeRows.reduce(
+    (sum, row) => sum + (Number(row.currentFees) || 0),
+    0
+  );
+  const selectedRowsAmount = selectedFeeRows.reduce(
+    (sum, row) => sum + (Number(row.currentFees) || 0),
+    0
+  );
+  const payableAmount = selectedFeeRows.length ? selectedRowsAmount : totalCurrentFees;
+
+  const handlePayment = async () => {
+    if (!payableAmount || payableAmount <= 0) {
+      alert("Please select at least one fee row or ensure payable amount is valid.");
+      return;
+    }
+
+    setIsPaying(true);
+    setPaymentStatus(null);
+
+    try {
+      const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: Math.round(payableAmount * 100),
+        currency: "INR",
+        name: "SRN Fee Management",
+        description: "Student fee payment",
+        image: "https://razorpay.com/favicon.png",
+        handler: function (response) {
+          setPaymentStatus({ type: "success", response });
+        },
+        prefill: {
+          name: searchResult
+            ? `${searchResult.firstname || ""} ${searchResult.lastname || ""}`.trim()
+            : "",
+          email: searchResult?.personalemail || "",
+          contact: searchResult?.mobileno1 || "",
+        },
+        notes: {
+          srn: studentDetails?.admissionno || "",
+          selectedFeeHeads: selectedFeeRows
+            .map((row) => `${row.feeHead} (${row.feeInstallment})`)
+            .join(", "),
+        },
+        theme: {
+          color: "#1d976c",
+        },
+        modal: {
+          ondismiss: () => {
+            setPaymentStatus((prev) =>
+              prev && prev.type === "success"
+                ? prev
+                : { type: "error", message: "Payment popup closed." }
+            );
+            setIsPaying(false);
+          },
+        },
+      };
+
+      const razorpay = await initializeRazorpayCheckout(options);
+      razorpay.open();
+    } catch (error) {
+      console.error("Razorpay Error", error);
+      setPaymentStatus({
+        type: "error",
+        message: error?.message || "Failed to initiate payment. Please try again.",
+      });
+    } finally {
+      setIsPaying(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -433,6 +513,18 @@ const SRNSearch = () => {
             </CRow>
           </CCardBody>
         </CCard>
+      )}
+
+      {/* Payment Summary */}
+      {feeRows.length > 0 && (
+        <PaymentSummaryCard
+          amount={payableAmount}
+          onPay={handlePayment}
+          isPaying={isPaying}
+          selectedCount={selectedFeeRows.length}
+          totalCount={feeRows.length}
+          paymentStatus={paymentStatus}
+        />
       )}
 
       {/* Fee Details */}
