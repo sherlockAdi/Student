@@ -21,6 +21,7 @@ import {
   getAmiFeeDetails,
 } from "../../api/api";
 import PaymentSummaryCard from "../../components/payments/PaymentSummaryCard";
+import OfflinePaymentForm from "../../components/payments/OfflinePaymentForm";
 import {
   initializeRazorpayCheckout,
   loadRazorpayScript,
@@ -302,6 +303,15 @@ const SRNSearch = () => {
 
   const handlePaymentmode = (mode) => {
     setPaymentMode(mode);
+  };
+
+  const handleOfflinePaymentSubmit = async (paymentData) => {
+    console.log('Offline Payment Data:', paymentData);
+    // TODO: Implement offline payment submission API
+    alert(`Offline payment submitted successfully!\n\nDetails:\nMode: ${paymentData.paymentModeName}\nBank: ${paymentData.bank}\nAccount: ${paymentData.account}\nAmount: ₹${paymentData.amount.toFixed(2)}`);
+    
+    // Reset payment mode after successful submission
+    setPaymentMode(null);
   };
 
   if (isLoading) {
@@ -615,26 +625,71 @@ const SRNSearch = () => {
           </CCard>
         )}
 
-        {feeRows.length > 0 && paymentMode === 'online' && (
-          <PaymentSummaryCard
-            amount={payableAmount}
-            onPay={handlePayment}
-            isPaying={isPaying}
-            selectedCount={selectedFeeRows.length}
-            totalCount={feeRows.length}
-            paymentStatus={paymentStatus}
-          />
+        {/* Payment Mode Selection Buttons */}
+        {feeRows.length > 0 && !paymentMode && (
+          <CRow className="g-3 mb-4">
+            <CCol xs={12} md={6}>
+              <CButton
+                color="success"
+                size="lg"
+                className="w-100 rounded-pill shadow"
+                onClick={() => handlePaymentmode('online')}
+              >
+                💳 Online Payment
+              </CButton>
+            </CCol>
+            <CCol xs={12} md={6}>
+              <CButton
+                color="warning"
+                size="lg"
+                className="w-100 rounded-pill shadow"
+                onClick={() => handlePaymentmode('offline')}
+              >
+                🏦 Offline Payment
+              </CButton>
+            </CCol>
+          </CRow>
         )}
 
-        {/* {feeRows.length > 0 && paymentMode === 'offline' && (
-           <CDropdown >
+        {/* Online Payment Summary */}
+        {feeRows.length > 0 && paymentMode === 'online' && (
+          <>
+            <PaymentSummaryCard
+              amount={payableAmount}
+              onPay={handlePayment}
+              isPaying={isPaying}
+              selectedCount={selectedFeeRows.length}
+              totalCount={feeRows.length}
+              paymentStatus={paymentStatus}
+            />
+            <CButton
+              color="secondary"
+              className="mt-3"
+              onClick={() => setPaymentMode(null)}
+            >
+              ← Back to Payment Options
+            </CButton>
+          </>
+        )}
 
-           </CDropdown>
-        )} */}
-
-        {/* make the two button online payment and offline payment */}
-        <CButton color="success" onClick={() => handlePaymentmode('online')} >Online Payment</CButton>
-        <CButton color="danger" onClick={() => handlePaymentmode('offline')} >Offline Payment</CButton>
+        {/* Offline Payment Form */}
+        {feeRows.length > 0 && paymentMode === 'offline' && (
+          <>
+            <OfflinePaymentForm
+              amount={payableAmount}
+              studentDetails={studentDetails}
+              onSubmit={handleOfflinePaymentSubmit}
+              isSubmitting={isPaying}
+            />
+            <CButton
+              color="secondary"
+              className="mt-3"
+              onClick={() => setPaymentMode(null)}
+            >
+              ← Back to Payment Options
+            </CButton>
+          </>
+        )}
       </CCardBody>
     </CCard>
   );

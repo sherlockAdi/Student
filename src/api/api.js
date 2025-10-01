@@ -87,5 +87,61 @@ export async function getAmiFeeDetails({ FeeCategoryId, InstalmentId, sid, insta
   return data;
 }
 
+// 🏦 OFFLINE PAYMENT APIs
+
+// Get Payment Mode List
+export async function getPaymentModeList() {
+  const { data } = await api.get('/studentapi/student/PaymentMode/list');
+  return data;
+}
+
+// Get Favour Of List (using static data as API is not working)
+export function getFavourOfList() {
+  // Static data since API endpoint is broken
+  return Promise.resolve([
+    { Id: 0, Name: "--Select Favour Of--" },
+    { Id: 1, Name: "University" },
+    { Id: 2, Name: "College" },
+  ]);
+}
+
+// Get Bank List
+export async function getBankList({ universityId, inFavourOf, paymentMode }) {
+  const { data } = await api.get('/studentapi/student/bank/list', {
+    params: {
+      universityId,
+      inFavourOf,
+      paymentMode,
+    },
+  });
+  return data;
+}
+
+// Get Account List
+export async function getAccountList({ universityId, inFavourOf, paymentMode, bankName, collegeId }) {
+  const { data } = await api.get('/studentapi/student/account/list', {
+    params: {
+      universityId,
+      inFavourOf,
+      paymentMode,
+      bankName,
+      collegeId,
+    },
+  });
+  return data;
+}
+
+// Get Waiver List
+export async function getWaiverList() {
+  const { data } = await api.get('/studentapi/student/waiver/list');
+  return data;
+}
+
+// Get Signatory List
+export async function getSignatoryList() {
+  const { data } = await api.get('/studentapi/student/signatory/list');
+  return data;
+}
+
 
 export default api
