@@ -604,15 +604,13 @@ const SRNSearch = () => {
                       <th>Select</th>
                       <th>Fee Installment</th>
                       <th>Fee Head</th>
-                      
                       <th className="text-end">Fee Amount</th>
-                      {/* <th className="text-end">Concession</th> */}
-                      
-                      <th className="text-end">Fees Due Date</th>
                       <th className="text-end">Fees Submitted</th>
-                      <th className="text-end">Waived Amount</th>
+                      <th className="text-end">Amount Due</th>
                       <th className="text-end">Current Fees</th>
+                      <th className="text-end">Due Date</th>
                       <th className="text-end">Fine Amount</th>
+                      <th className="text-end">Waived Amount</th>
                       <th className="text-end">Net Amount</th>
                       <th className="text-end">Amount Remaining</th>
                     </tr>
@@ -630,24 +628,9 @@ const SRNSearch = () => {
                         </td>
                         <td>{row.feeInstallment}</td>
                         <td>{row.feeHead}</td>
-                        
                         <td className="text-end">{row.feeAmount.toFixed(2)}</td>
-                        {/* <td className="text-end">{row.concession.toFixed(2)}</td> */}
-                        
-                        <td className="text-end">{row.dueDate}</td>
                         <td className="text-end">{row.feesSubmitted.toFixed(2)}</td>
-                        <td>
-                          <CFormInput
-                            type="number"
-                            size="sm"
-                            value={row.waivedAmount}
-                            onChange={(e) =>
-                              handleWaivedAmountChange(idx, e.target.value)
-                            }
-                            className="shadow-sm"
-                            style={{ maxWidth: "90px" }}
-                          />
-                        </td>
+                        <td className="text-end">{(row.feeAmount - row.feesSubmitted).toFixed(2)}</td>
                         <td>
                           <CFormInput
                             type="number"
@@ -660,10 +643,23 @@ const SRNSearch = () => {
                             style={{ maxWidth: "90px" }}
                           />
                         </td>
+                        <td className="text-end">{row.dueDate}</td>
                         <td className="text-end">{row.fineAmount.toFixed(2)}</td>
-                        <td className="text-end">{(row.feeAmount  - row.waivedAmount +  row.fineAmount -row.feesSubmitted).toFixed(2)}</td>
+                        <td>
+                          <CFormInput
+                            type="number"
+                            size="sm"
+                            value={row.waivedAmount}
+                            onChange={(e) =>
+                              handleWaivedAmountChange(idx, e.target.value)
+                            }
+                            className="shadow-sm"
+                            style={{ maxWidth: "90px" }}
+                          />
+                        </td>
+                        <td className="text-end">{(row.feeAmount - row.waivedAmount + row.fineAmount - row.feesSubmitted).toFixed(2)}</td>
                         <td className="text-end">
-                          {(row.feeAmount - row.currentFees - row.waivedAmount +  row.fineAmount -row.feesSubmitted).toFixed(2)}
+                          {(row.feeAmount - row.currentFees - row.waivedAmount + row.fineAmount - row.feesSubmitted).toFixed(2)}
                         </td>
                       </tr>
                     ))}
@@ -674,14 +670,15 @@ const SRNSearch = () => {
                         Totals
                       </td>
                       <td className="text-end">{totals.feeAmount.toFixed(2)}</td>
-                      <td className="text-end">N/A</td>
                       <td className="text-end">{totals.feesSubmitted.toFixed(2)}</td>
-                      <td className="text-end">{totals.waivedAmount.toFixed(2)}</td>
+                      <td className="text-end">{(totals.feeAmount - totals.feesSubmitted).toFixed(2)}</td>
                       <td className="text-end">{payableAmount.toFixed(2)}</td>
+                      <td className="text-end">N/A</td>
                       <td className="text-end">{totals.fineAmount.toFixed(2)}</td>
-                      <td className="text-end">{(totals.feeAmount  - totals.waivedAmount +  totals.fineAmount -totals.feesSubmitted).toFixed(2)}</td>
+                      <td className="text-end">{totals.waivedAmount.toFixed(2)}</td>
+                      <td className="text-end">{(totals.feeAmount - totals.waivedAmount + totals.fineAmount - totals.feesSubmitted).toFixed(2)}</td>
                       <td className="text-end">
-                        {(totals.feeAmount - payableAmount -  totals.feesSubmitted).toFixed(2)}
+                        {(totals.feeAmount - payableAmount - totals.waivedAmount + totals.fineAmount - totals.feesSubmitted).toFixed(2)}
                       </td>
                     </tr>
                   </tfoot>
