@@ -105,14 +105,14 @@ export async function getPaymentModeList() {
   return data;
 }
 
-// Get Favour Of List (using static data as API is not working)
-export function getFavourOfList() {
-  // Static data since API endpoint is broken
-  return Promise.resolve([
-    { Id: 0, Name: "--Select Favour Of--" },
-    { Id: 1, Name: "University" },
-    { Id: 2, Name: "College" },
-  ]);
+// Get Favour Of List (now working with studentId)
+export async function getFavourOfList(studentId) {
+  const { data } = await api.get('/studentapi/student/Favourof/list', {
+    params: {
+      studentId,
+    },
+  });
+  return data;
 }
 
 // Get Bank List

@@ -55,14 +55,24 @@ const OfflinePaymentForm = ({
 
   // Load initial dropdown data
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    if (studentDetails?.id) {
+      loadInitialData();
+    }
+  }, [studentDetails]);
 
   const loadInitialData = async () => {
     try {
+      // Get studentId from studentDetails
+      const studentId = studentDetails?.id;
+      
+      if (!studentId) {
+        console.error('Student ID not available');
+        return;
+      }
+
       const [modes, favour, waivers, signatories] = await Promise.all([
         getPaymentModeList(),
-        getFavourOfList(),
+        getFavourOfList(studentId),
         getWaiverList(),
         getSignatoryList(),
       ]);
@@ -140,7 +150,7 @@ const OfflinePaymentForm = ({
       alert('Please select a payment mode');
       return;
     }
-    if (!selectedFavourOf || selectedFavourOf === '0') {
+    if (!selectedFavourOf || selectedFavourOf === '') {
       alert('Please select Favour Of');
       return;
     }
@@ -165,7 +175,7 @@ const OfflinePaymentForm = ({
       paymentMode: selectedPaymentMode,
       paymentModeName: paymentModes.find(m => m.Id === parseInt(selectedPaymentMode))?.PaymentMode || '',
       favourOf: selectedFavourOf,
-      favourOfName: favourOfList.find(f => f.Id === parseInt(selectedFavourOf))?.Name || '',
+      favourOfName: favourOfList.find(f => f.Ids === parseInt(selectedFavourOf))?.FavourOfName || '',
       bank: selectedBank,
       account: selectedAccount,
       accountId: accountList.find(a => a.AccountNumber === selectedAccount)?.Id || '',
@@ -221,9 +231,10 @@ const OfflinePaymentForm = ({
               onChange={(e) => setSelectedFavourOf(e.target.value)}
               className="shadow-sm"
             >
+              <option value="">--Select Favour Of--</option>
               {favourOfList.map((favour) => (
-                <option key={favour.Id} value={favour.Id}>
-                  {favour.Name}
+                <option key={favour.Ids} value={favour.Ids}>
+                  {favour.FavourOfName}
                 </option>
               ))}
             </CFormSelect>

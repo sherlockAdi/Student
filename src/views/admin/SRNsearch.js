@@ -709,7 +709,7 @@ const SRNSearch = () => {
                 color="warning"
                 size="lg"
                 className="w-100 rounded-pill shadow"
-                // onClick={() => handlePaymentmode('offline')}
+                onClick={() => handlePaymentmode('offline')}
               >
                 🏦 Offline Payment
               </CButton>
@@ -743,7 +743,7 @@ const SRNSearch = () => {
           <>
             <OfflinePaymentForm
               amount={payableAmount}
-              studentDetails={studentDetails}
+              studentDetails={{ ...studentDetails, id: searchResult?.id }}
               onSubmit={handleOfflinePaymentSubmit}
               isSubmitting={isPaying}
             />
