@@ -203,7 +203,25 @@ const OfflinePaymentForm = ({
       <CCardBody>
         <CRow className="g-3">
           {/* Payment Mode */}
+         
+
+          {/* Favour Of */}
           <CCol xs={12} md={6}>
+            <label className="form-label fw-semibold">In Favour Of *</label>
+            <CFormSelect
+              value={selectedFavourOf}
+              onChange={(e) => setSelectedFavourOf(e.target.value)}
+              className="shadow-sm"
+            >
+              <option value="">--Select Favour Of--</option>
+              {favourOfList.map((favour) => (
+                <option key={favour.Ids} value={favour.Ids}>
+                  {favour.FavourOfName}
+                </option>
+              ))}
+            </CFormSelect>
+          </CCol>
+           <CCol xs={12} md={6}>
             <label className="form-label fw-semibold">Payment Mode *</label>
             <CFormSelect
               value={selectedPaymentMode}
@@ -218,23 +236,6 @@ const OfflinePaymentForm = ({
               {paymentModes.map((mode) => (
                 <option key={mode.Id} value={mode.Id}>
                   {mode.PaymentMode}
-                </option>
-              ))}
-            </CFormSelect>
-          </CCol>
-
-          {/* Favour Of */}
-          <CCol xs={12} md={6}>
-            <label className="form-label fw-semibold">In Favour Of *</label>
-            <CFormSelect
-              value={selectedFavourOf}
-              onChange={(e) => setSelectedFavourOf(e.target.value)}
-              className="shadow-sm"
-            >
-              <option value="">--Select Favour Of--</option>
-              {favourOfList.map((favour) => (
-                <option key={favour.Ids} value={favour.Ids}>
-                  {favour.FavourOfName}
                 </option>
               ))}
             </CFormSelect>
