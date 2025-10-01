@@ -15,6 +15,7 @@ import { cilSearch } from "@coreui/icons";
 
 import {
   searchStudentBySRN,
+  searchStudentByMobile,
   getFeeSelectStudent,
   getFeeInstallmentDetails,
   getFeeBookNoReceiptNo,
@@ -82,14 +83,25 @@ const SRNSearch = () => {
 
   const handleSearch = async () => {
     if (!srnInput.trim()) {
-      alert("Please enter an SRN number.");
+      alert("Please enter an SRN number or mobile number.");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const data = await searchStudentBySRN(srnInput);
+      // Check if input is a 10-digit mobile number
+      const isMobileNumber = /^\d{10}$/.test(srnInput.trim());
+      
+      let data;
+      if (isMobileNumber) {
+        // Search by mobile number
+        data = await searchStudentByMobile(srnInput.trim());
+      } else {
+        // Search by SRN
+        data = await searchStudentBySRN(srnInput);
+      }
+      
       if (data?.length > 0) {
         setSearchResult(data[0]);
         const collegeId = 1;
@@ -340,10 +352,10 @@ const SRNSearch = () => {
         <CRow className="align-items-end g-3 mb-4">
           <CCol xs={12} md={4} lg={3}>
             <CFormInput
-              label="Enter SRN Number"
+              label="Enter SRN or Mobile Number"
               value={srnInput}
               onChange={(e) => setSrnInput(e.target.value)}
-              placeholder="🔎 e.g., SRN123456"
+              placeholder="🔎 SRN or 10-digit mobile"
               size="lg"
               className="rounded-pill shadow-sm"
             />

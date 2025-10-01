@@ -39,6 +39,16 @@ export async function searchStudentBySRN(enrolmentno) {
   return data
 }
 
+// 📱 SEARCH STUDENT BY MOBILE NUMBER
+export async function searchStudentByMobile(mobileNumber) {
+  const { data } = await api.get('/api/student/get-by-mobile', {
+    params: {
+      mobileNumber,
+    },
+  })
+  return data
+}
+
 // 💰 GET FEE SELECT STUDENT (POST with studentid in body)
 export async function getFeeSelectStudent(studentid) {
   console.log(studentid)
