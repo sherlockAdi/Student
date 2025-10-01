@@ -8,6 +8,7 @@ import {
   CFormInput,
   CFormCheck,
   CButton,
+  CDropdown,
 } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
 import { cilSearch } from "@coreui/icons";
@@ -45,7 +46,7 @@ const SRNSearch = () => {
   const [isPaying, setIsPaying] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentMode, setPaymentMode] = useState(null);
-  
+
   // Select All state for fee rows
   const [selectAll, setSelectAll] = useState(false);
 
@@ -316,325 +317,327 @@ const SRNSearch = () => {
   }
 
   return (
-  <CCard className="border-0 shadow-lg rounded-4 mb-5">
-    <CCardHeader
-      className="text-white fw-bold fs-5 rounded-top-4"
-      style={{ background: "linear-gradient(135deg, #4e73df, #224abe)" }}
-    >
-      🎓 SRN-Based Fee Search
-    </CCardHeader>
+    <CCard className="border-0 shadow-lg rounded-4 mb-5">
+      <CCardHeader
+        className="text-white fw-bold fs-5 rounded-top-4"
+        style={{ background: "linear-gradient(135deg, #4e73df, #224abe)" }}
+      >
+        🎓 SRN-Based Fee Search
+      </CCardHeader>
 
-    <CCardBody>
-      {/* Search Box */}
-      <CRow className="align-items-end g-3 mb-4">
-        <CCol xs={12} md={4} lg={3}>
-          <CFormInput
-            label="Enter SRN Number"
-            value={srnInput}
-            onChange={(e) => setSrnInput(e.target.value)}
-            placeholder="🔎 e.g., SRN123456"
-            size="lg"
-            className="rounded-pill shadow-sm"
-          />
-        </CCol>
-        <CCol xs={12} md={4} lg={3}>
-          <CButton
-            color="primary"
-            size="lg"
-            className="w-100 rounded-pill shadow"
-            onClick={handleSearch}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                />
-                Searching...
-              </>
-            ) : (
-              <>
-                <CIcon icon={cilSearch} className="me-2" />
-                Search
-              </>
-            )}
-          </CButton>
-        </CCol>
-      </CRow>
-
-      {/* Student Profile */}
-      {searchResult && studentDetails && (
-        <CCard className="mb-4 border-0 shadow-sm rounded-4">
-          <CCardBody>
-            <CRow>
-              <CCol
-                xs={12}
-                md={4}
-                className="d-flex flex-column align-items-center justify-content-center text-center border-end mb-3 mb-md-0"
-              >
-                <h5 className="fw-bold text-primary mb-1">
-                  {searchResult.firstname} {searchResult.lastname}
-                </h5>
-                <div className="text-muted mb-2">
-                  {searchResult.personalemail}
-                </div>
-                <div>
-                  <strong>📞</strong> {searchResult.mobileno1}
-                </div>
-                <div className="badge bg-info mt-2 px-3 py-2">
-                  🆔 {studentDetails.admissionno}
-                </div>
-              </CCol>
-
-              <CCol xs={12} md={8}>
-                <CRow className="gy-2 gx-4">
-                  <CCol xs={6} md={4}>
-                    <strong>College</strong>
-                    <div className="text-muted">{studentDetails.collegename}</div>
-                  </CCol>
-                  <CCol xs={6} md={2}>
-                    <strong>Branch</strong>
-                    <div className="text-muted">{studentDetails.Branchname}</div>
-                  </CCol>
-                  <CCol xs={6} md={3}>
-                    <strong>Course</strong>
-                    <div className="text-muted">{studentDetails.corsename}</div>
-                  </CCol>
-                  <CCol xs={6} md={3}>
-                    <strong>Type</strong>
-                    <div className="text-muted">{studentDetails.coursename}</div>
-                  </CCol>
-                  <CCol xs={6} md={4}>
-                    <strong>Fee Category</strong>
-                    <div className="text-muted">
-                      {studentDetails.feecategoryname}
-                    </div>
-                  </CCol>
-                  <CCol xs={6} md={2}>
-                    <strong>Semester</strong>
-                    <div className="text-muted">{studentDetails.semesterno}</div>
-                  </CCol>
-                  <CCol xs={6} md={3}>
-                    <strong>Batch</strong>
-                    <div className="text-muted">{studentDetails.Batchno}</div>
-                  </CCol>
-                  <CCol xs={6} md={3}>
-                    <strong>University</strong>
-                    <div className="text-muted">{studentDetails.name}</div>
-                  </CCol>
-                </CRow>
-              </CCol>
-            </CRow>
-          </CCardBody>
-        </CCard>
-      )}
-
-      {/* Installment Details */}
-      {installmentDetails && BookNoReceiptNoDetails && (
-        <CCard className="mb-4 border-0 shadow-sm rounded-4">
-          <CCardHeader className="fw-semibold bg-light">
-            📑 Installment Details
-          </CCardHeader>
-          <CCardBody>
-            <CRow className="gy-3 gx-4">
-              <CCol xs={12} sm={6} md={3}>
-                <strong>Financial Year:</strong>
-                <div className="text-muted">
-                  {BookNoReceiptNoDetails.financialyear}
-                </div>
-              </CCol>
-              <CCol xs={12} sm={6} md={3}>
-                <strong>M Receipt No.:</strong>
-                <div className="text-muted">
-                  {BookNoReceiptNoDetails.receiptno}/
-                  {BookNoReceiptNoDetails.bookno}
-                </div>
-              </CCol>
-              <CCol xs={12} sm={6} md={3}>
-                <strong>E-Receipt No.:</strong>
-                <div className="text-muted">
-                  {installmentDetails.ShortName} /{" "}
-                  {installmentDetails.ereceiptno + 1}
-                </div>
-              </CCol>
-              <CCol xs={12} sm={6} md={3}>
-                <strong>E-Receipt Date:</strong>
-                <CFormInput
-                  type="date"
-                  value={receiptDate}
-                  onChange={(e) => setReceiptDate(e.target.value)}
-                  size="sm"
-                  className="shadow-sm"
-                />
-              </CCol>
-              <CCol xs={12} sm={6} md={4} className="mt-3">
-                <strong>Fee Deposited:</strong>
-                <div className="d-flex gap-3 mt-2">
-                  <CFormCheck
-                    type="radio"
-                    label="Yes"
-                    name="feeDeposited"
-                    checked={feeDeposited === true}
-                    onChange={() => {
-                      setFeeDeposited(true);
-                      setDepositDate(today);
-                      setClearingDate(today);
-                    }}
-                  />
-                  <CFormCheck
-                    type="radio"
-                    label="No"
-                    name="feeDeposited"
-                    checked={feeDeposited === false}
-                    onChange={() => setFeeDeposited(false)}
-                  />
-                </div>
-              </CCol>
-              {feeDeposited && (
+      <CCardBody>
+        {/* Search Box */}
+        <CRow className="align-items-end g-3 mb-4">
+          <CCol xs={12} md={4} lg={3}>
+            <CFormInput
+              label="Enter SRN Number"
+              value={srnInput}
+              onChange={(e) => setSrnInput(e.target.value)}
+              placeholder="🔎 e.g., SRN123456"
+              size="lg"
+              className="rounded-pill shadow-sm"
+            />
+          </CCol>
+          <CCol xs={12} md={4} lg={3}>
+            <CButton
+              color="primary"
+              size="lg"
+              className="w-100 rounded-pill shadow"
+              onClick={handleSearch}
+              disabled={isLoading}
+            >
+              {isLoading ? (
                 <>
-                  <CCol xs={12} sm={6} md={4} className="mt-3">
-                    <strong>Deposit Date:</strong>
-                    <CFormInput
-                      type="date"
-                      value={depositDate}
-                      onChange={(e) => setDepositDate(e.target.value)}
-                      size="sm"
-                      className="shadow-sm"
-                    />
-                  </CCol>
-                  <CCol xs={12} sm={6} md={4} className="mt-3">
-                    <strong>Clearing Date:</strong>
-                    <CFormInput
-                      type="date"
-                      value={clearingDate}
-                      onChange={(e) => setClearingDate(e.target.value)}
-                      size="sm"
-                      className="shadow-sm"
-                    />
-                  </CCol>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                  />
+                  Searching...
+                </>
+              ) : (
+                <>
+                  <CIcon icon={cilSearch} className="me-2" />
+                  Search
                 </>
               )}
-            </CRow>
-          </CCardBody>
-        </CCard>
-      )}
+            </CButton>
+          </CCol>
+        </CRow>
 
-      {/* Payment Summary */}
-      
+        {/* Student Profile */}
+        {searchResult && studentDetails && (
+          <CCard className="mb-4 border-0 shadow-sm rounded-4">
+            <CCardBody>
+              <CRow>
+                <CCol
+                  xs={12}
+                  md={4}
+                  className="d-flex flex-column align-items-center justify-content-center text-center border-end mb-3 mb-md-0"
+                >
+                  <h5 className="fw-bold text-primary mb-1">
+                    {searchResult.firstname} {searchResult.lastname}
+                  </h5>
+                  <div className="text-muted mb-2">
+                    {searchResult.personalemail}
+                  </div>
+                  <div>
+                    <strong>📞</strong> {searchResult.mobileno1}
+                  </div>
+                  <div className="badge bg-info mt-2 px-3 py-2">
+                    🆔 {studentDetails.admissionno}
+                  </div>
+                </CCol>
 
-      {/* Fee Details */}
-      {feeRows.length > 0 && (
-        <CCard className="mb-5 border-0 shadow-sm rounded-4">
-          <CCardHeader className="fw-semibold bg-light d-flex justify-content-between align-items-center">
-            💰 Fee Details
-            <CFormCheck
-              type="checkbox"
-              label="Select All"
-              checked={selectAll}
-              onChange={handleSelectAllToggle}
-            />
-          </CCardHeader>
-          <CCardBody className="p-0">
-            <div className="table-responsive">
-              <table className="table table-hover table-striped align-middle mb-0">
-                <thead className="table-dark sticky-top">
-                  <tr>
-                    <th>#</th>
-                    <th>Select</th>
-                    <th>Fee Installment</th>
-                    <th>Fee Head</th>
-                    <th className="text-end">Fee Amount</th>
-                    <th className="text-end">Concession</th>
-                    <th className="text-end">Due Amount</th>
-                    <th className="text-end">Fees Submitted</th>
-                    <th className="text-end">Waived Amount</th>
-                    <th className="text-end">Current Fees</th>
-                    <th className="text-end">Waive Amount</th>
-                    <th className="text-end">Amount Remaining</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {feeRows.map((row, idx) => (
-                    <tr key={idx}>
-                      <td>{row.slNo}</td>
-                      <td>
-                        <CFormCheck
-                          type="checkbox"
-                          checked={row.selectAll || false}
-                          onChange={() => handleRowSelectToggle(idx)}
-                        />
+                <CCol xs={12} md={8}>
+                  <CRow className="gy-2 gx-4">
+                    <CCol xs={6} md={4}>
+                      <strong>College</strong>
+                      <div className="text-muted">{studentDetails.collegename}</div>
+                    </CCol>
+                    <CCol xs={6} md={2}>
+                      <strong>Branch</strong>
+                      <div className="text-muted">{studentDetails.Branchname}</div>
+                    </CCol>
+                    <CCol xs={6} md={3}>
+                      <strong>Course</strong>
+                      <div className="text-muted">{studentDetails.corsename}</div>
+                    </CCol>
+                    <CCol xs={6} md={3}>
+                      <strong>Type</strong>
+                      <div className="text-muted">{studentDetails.coursename}</div>
+                    </CCol>
+                    <CCol xs={6} md={4}>
+                      <strong>Fee Category</strong>
+                      <div className="text-muted">
+                        {studentDetails.feecategoryname}
+                      </div>
+                    </CCol>
+                    <CCol xs={6} md={2}>
+                      <strong>Semester</strong>
+                      <div className="text-muted">{studentDetails.semesterno}</div>
+                    </CCol>
+                    <CCol xs={6} md={3}>
+                      <strong>Batch</strong>
+                      <div className="text-muted">{studentDetails.Batchno}</div>
+                    </CCol>
+                    <CCol xs={6} md={3}>
+                      <strong>University</strong>
+                      <div className="text-muted">{studentDetails.name}</div>
+                    </CCol>
+                  </CRow>
+                </CCol>
+              </CRow>
+            </CCardBody>
+          </CCard>
+        )}
+
+        {/* Installment Details */}
+        {installmentDetails && BookNoReceiptNoDetails && (
+          <CCard className="mb-4 border-0 shadow-sm rounded-4">
+            <CCardHeader className="fw-semibold bg-light">
+              📑 Installment Details
+            </CCardHeader>
+            <CCardBody>
+              <CRow className="gy-3 gx-4">
+                <CCol xs={12} sm={6} md={3}>
+                  <strong>Financial Year:</strong>
+                  <div className="text-muted">
+                    {BookNoReceiptNoDetails.financialyear}
+                  </div>
+                </CCol>
+                <CCol xs={12} sm={6} md={3}>
+                  <strong>M Receipt No.:</strong>
+                  <div className="text-muted">
+                    {BookNoReceiptNoDetails.receiptno}/
+                    {BookNoReceiptNoDetails.bookno}
+                  </div>
+                </CCol>
+                <CCol xs={12} sm={6} md={3}>
+                  <strong>E-Receipt No.:</strong>
+                  <div className="text-muted">
+                    {installmentDetails.ShortName} /{" "}
+                    {installmentDetails.ereceiptno + 1}
+                  </div>
+                </CCol>
+                <CCol xs={12} sm={6} md={3}>
+                  <strong>E-Receipt Date:</strong>
+                  <CFormInput
+                    type="date"
+                    value={receiptDate}
+                    onChange={(e) => setReceiptDate(e.target.value)}
+                    size="sm"
+                    className="shadow-sm"
+                  />
+                </CCol>
+                <CCol xs={12} sm={6} md={4} className="mt-3">
+                  <strong>Fee Deposited:</strong>
+                  <div className="d-flex gap-3 mt-2">
+                    <CFormCheck
+                      type="radio"
+                      label="Yes"
+                      name="feeDeposited"
+                      checked={feeDeposited === true}
+                      onChange={() => {
+                        setFeeDeposited(true);
+                        setDepositDate(today);
+                        setClearingDate(today);
+                      }}
+                    />
+                    <CFormCheck
+                      type="radio"
+                      label="No"
+                      name="feeDeposited"
+                      checked={feeDeposited === false}
+                      onChange={() => setFeeDeposited(false)}
+                    />
+                  </div>
+                </CCol>
+                {feeDeposited && (
+                  <>
+                    <CCol xs={12} sm={6} md={4} className="mt-3">
+                      <strong>Deposit Date:</strong>
+                      <CFormInput
+                        type="date"
+                        value={depositDate}
+                        onChange={(e) => setDepositDate(e.target.value)}
+                        size="sm"
+                        className="shadow-sm"
+                      />
+                    </CCol>
+                    <CCol xs={12} sm={6} md={4} className="mt-3">
+                      <strong>Clearing Date:</strong>
+                      <CFormInput
+                        type="date"
+                        value={clearingDate}
+                        onChange={(e) => setClearingDate(e.target.value)}
+                        size="sm"
+                        className="shadow-sm"
+                      />
+                    </CCol>
+                  </>
+                )}
+              </CRow>
+            </CCardBody>
+          </CCard>
+        )}
+
+        {/* Payment Summary */}
+
+
+        {/* Fee Details */}
+        {feeRows.length > 0 && (
+          <CCard className="mb-5 border-0 shadow-sm rounded-4">
+            <CCardHeader className="fw-semibold bg-light d-flex justify-content-between align-items-center">
+              💰 Fee Details
+              <CFormCheck
+                type="checkbox"
+                label="Select All"
+                checked={selectAll}
+                onChange={handleSelectAllToggle}
+              />
+            </CCardHeader>
+            <CCardBody className="p-0">
+              <div className="table-responsive">
+                <table className="table table-hover table-striped align-middle mb-0">
+                  <thead className="table-dark sticky-top">
+                    <tr>
+                      <th>#</th>
+                      <th>Select</th>
+                      <th>Fee Installment</th>
+                      <th>Fee Head</th>
+                      <th className="text-end">Fee Amount</th>
+                      <th className="text-end">Concession</th>
+                      <th className="text-end">Due Amount</th>
+                      <th className="text-end">Fees Submitted</th>
+                      <th className="text-end">Waived Amount</th>
+                      <th className="text-end">Current Fees</th>
+                      <th className="text-end">Waive Amount</th>
+                      <th className="text-end">Amount Remaining</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {feeRows.map((row, idx) => (
+                      <tr key={idx}>
+                        <td>{row.slNo}</td>
+                        <td>
+                          <CFormCheck
+                            type="checkbox"
+                            checked={row.selectAll || false}
+                            onChange={() => handleRowSelectToggle(idx)}
+                          />
+                        </td>
+                        <td>{row.feeInstallment}</td>
+                        <td>{row.feeHead}</td>
+                        <td className="text-end">{row.feeAmount.toFixed(2)}</td>
+                        <td className="text-end">{row.concession.toFixed(2)}</td>
+                        <td className="text-end">{row.dueAmount.toFixed(2)}</td>
+                        <td className="text-end">{row.feesSubmitted.toFixed(2)}</td>
+                        <td className="text-end">{row.waivedAmount.toFixed(2)}</td>
+                        <td>
+                          <CFormInput
+                            type="number"
+                            size="sm"
+                            value={row.currentFees}
+                            onChange={(e) =>
+                              handleCurrentFeesChange(idx, e.target.value)
+                            }
+                            className="shadow-sm"
+                            style={{ maxWidth: "90px" }}
+                          />
+                        </td>
+                        <td className="text-end">{row.waiveAmount.toFixed(2)}</td>
+                        <td className="text-end">
+                          {row.amountRemaining.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="table-secondary fw-semibold">
+                    <tr>
+                      <td colSpan={4} className="text-end">
+                        Totals
                       </td>
-                      <td>{row.feeInstallment}</td>
-                      <td>{row.feeHead}</td>
-                      <td className="text-end">{row.feeAmount.toFixed(2)}</td>
-                      <td className="text-end">{row.concession.toFixed(2)}</td>
-                      <td className="text-end">{row.dueAmount.toFixed(2)}</td>
-                      <td className="text-end">{row.feesSubmitted.toFixed(2)}</td>
-                      <td className="text-end">{row.waivedAmount.toFixed(2)}</td>
-                      <td>
-                        <CFormInput
-                          type="number"
-                          size="sm"
-                          value={row.currentFees}
-                          onChange={(e) =>
-                            handleCurrentFeesChange(idx, e.target.value)
-                          }
-                          className="shadow-sm"
-                          style={{ maxWidth: "90px" }}
-                        />
-                      </td>
-                      <td className="text-end">{row.waiveAmount.toFixed(2)}</td>
+                      <td className="text-end">{totals.feeAmount.toFixed(2)}</td>
+                      <td className="text-end">{totals.concession.toFixed(2)}</td>
+                      <td className="text-end">{totals.dueAmount.toFixed(2)}</td>
+                      <td className="text-end">{totals.feesSubmitted.toFixed(2)}</td>
+                      <td className="text-end">{totals.waivedAmount.toFixed(2)}</td>
+                      <td className="text-end">{payableAmount.toFixed(2)}</td>
+                      <td className="text-end">{totals.waiveAmount.toFixed(2)}</td>
                       <td className="text-end">
-                        {row.amountRemaining.toFixed(2)}
+                        {(totals.feeAmount - payableAmount -  totals.feesSubmitted).toFixed(2)}
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot className="table-secondary fw-semibold">
-                  <tr>
-                    <td colSpan={4} className="text-end">
-                      Totals
-                    </td>
-                    <td className="text-end">{totals.feeAmount.toFixed(2)}</td>
-                    <td className="text-end">{totals.concession.toFixed(2)}</td>
-                    <td className="text-end">{totals.dueAmount.toFixed(2)}</td>
-                    <td className="text-end">{totals.feesSubmitted.toFixed(2)}</td>
-                    <td className="text-end">{totals.waivedAmount.toFixed(2)}</td>
-                    <td className="text-end">{totals.currentFees.toFixed(2)}</td>
-                    <td className="text-end">{totals.waiveAmount.toFixed(2)}</td>
-                    <td className="text-end">
-                      {totals.amountRemaining.toFixed(2)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </CCardBody>
-        </CCard>
-      )}
+                  </tfoot>
+                </table>
+              </div>
+            </CCardBody>
+          </CCard>
+        )}
 
-      {feeRows.length > 0 && paymentMode === 'online' && (
-              <PaymentSummaryCard
-                amount={payableAmount}
-                onPay={handlePayment}
-                isPaying={isPaying}
-                selectedCount={selectedFeeRows.length}
-                totalCount={feeRows.length}
-                paymentStatus={paymentStatus}
-              />
-            )}
+        {feeRows.length > 0 && paymentMode === 'online' && (
+          <PaymentSummaryCard
+            amount={payableAmount}
+            onPay={handlePayment}
+            isPaying={isPaying}
+            selectedCount={selectedFeeRows.length}
+            totalCount={feeRows.length}
+            paymentStatus={paymentStatus}
+          />
+        )}
 
-      {feeRows.length > 0 && paymentMode === 'offline' && (
-          <CButton color="success">Make Offline Payment</CButton>
-      )}
+        {/* {feeRows.length > 0 && paymentMode === 'offline' && (
+           <CDropdown >
+
+           </CDropdown>
+        )} */}
 
         {/* make the two button online payment and offline payment */}
         <CButton color="success" onClick={() => handlePaymentmode('online')} >Online Payment</CButton>
         <CButton color="danger" onClick={() => handlePaymentmode('offline')} >Offline Payment</CButton>
-    </CCardBody>
-  </CCard>
-);
+      </CCardBody>
+    </CCard>
+  );
 };
 
 export default SRNSearch;
