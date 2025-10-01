@@ -61,6 +61,7 @@ const SRNSearch = () => {
       const feesSubmitted = Number(item.DepositeFee) || 0;
       const waivedAmount = Number(item.WaivedAmount) || 0;
       const waiveAmount = 0; // Add if you have data
+      const fineAmount = 0; // Initialize fine amount
       const currentFees = feeAmount - feesSubmitted - waivedAmount - concession;
       const amountRemaining = dueAmount - feesSubmitted - waivedAmount;
 
@@ -69,12 +70,14 @@ const SRNSearch = () => {
         selectAll: false,
         feeInstallment: item.intalmentname || "N/A",
         feeHead: item.feeheadname || "N/A",
+        dueDate: today, // Set due date to today
         feeAmount,
         concession,
         dueAmount,
         feesSubmitted,
         waivedAmount,
         currentFees: currentFees > 0 ? currentFees : 0,
+        fineAmount,
         waiveAmount,
         amountRemaining: amountRemaining > 0 ? amountRemaining : 0,
       };
@@ -216,6 +219,33 @@ const SRNSearch = () => {
     setFeeRows(newFeeRows);
   };
 
+  // Handler to update fine amount
+  const handleFineAmountChange = (index, value) => {
+    const newFeeRows = [...feeRows];
+    let val = Number(value);
+    if (isNaN(val) || val < 0) val = 0;
+
+    newFeeRows[index].fineAmount = val;
+    setFeeRows(newFeeRows);
+  };
+
+  // Handler to update waive amount
+  const handleWaiveAmountChange = (index, value) => {
+    const newFeeRows = [...feeRows];
+    let val = Number(value);
+    if (isNaN(val) || val < 0) val = 0;
+
+    newFeeRows[index].waiveAmount = val;
+    setFeeRows(newFeeRows);
+  };
+
+  // Handler to update due date
+  const handleDueDateChange = (index, value) => {
+    const newFeeRows = [...feeRows];
+    newFeeRows[index].dueDate = value;
+    setFeeRows(newFeeRows);
+  };
+
   // Totals for footer
   const totals = feeRows.reduce(
     (acc, row) => {
@@ -225,6 +255,7 @@ const SRNSearch = () => {
       acc.feesSubmitted += row.feesSubmitted;
       acc.waivedAmount += row.waivedAmount;
       acc.currentFees += row.currentFees;
+      acc.fineAmount += row.fineAmount;
       acc.waiveAmount += row.waiveAmount;
       acc.amountRemaining += row.amountRemaining;
       return acc;
@@ -236,6 +267,7 @@ const SRNSearch = () => {
       feesSubmitted: 0,
       waivedAmount: 0,
       currentFees: 0,
+      fineAmount: 0,
       waiveAmount: 0,
       amountRemaining: 0,
     }
@@ -567,12 +599,14 @@ const SRNSearch = () => {
                       <th>Select</th>
                       <th>Fee Installment</th>
                       <th>Fee Head</th>
+                      <th>Due Date</th>
                       <th className="text-end">Fee Amount</th>
                       <th className="text-end">Concession</th>
                       <th className="text-end">Due Amount</th>
                       <th className="text-end">Fees Submitted</th>
                       <th className="text-end">Waived Amount</th>
                       <th className="text-end">Current Fees</th>
+                      <th className="text-end">Fine Amount</th>
                       <th className="text-end">Waive Amount</th>
                       <th className="text-end">Amount Remaining</th>
                     </tr>
@@ -590,6 +624,18 @@ const SRNSearch = () => {
                         </td>
                         <td>{row.feeInstallment}</td>
                         <td>{row.feeHead}</td>
+                        <td>
+                          <CFormInput
+                            type="date"
+                            size="sm"
+                            value={row.dueDate}
+                            onChange={(e) =>
+                              handleDueDateChange(idx, e.target.value)
+                            }
+                            className="shadow-sm"
+                            style={{ minWidth: "130px" }}
+                          />
+                        </td>
                         <td className="text-end">{row.feeAmount.toFixed(2)}</td>
                         <td className="text-end">{row.concession.toFixed(2)}</td>
                         <td className="text-end">{row.dueAmount.toFixed(2)}</td>
@@ -607,7 +653,30 @@ const SRNSearch = () => {
                             style={{ maxWidth: "90px" }}
                           />
                         </td>
-                        <td className="text-end">{row.waiveAmount.toFixed(2)}</td>
+                        <td>
+                          <CFormInput
+                            type="number"
+                            size="sm"
+                            value={row.fineAmount}
+                            onChange={(e) =>
+                              handleFineAmountChange(idx, e.target.value)
+                            }
+                            className="shadow-sm"
+                            style={{ maxWidth: "90px" }}
+                          />
+                        </td>
+                        <td>
+                          <CFormInput
+                            type="number"
+                            size="sm"
+                            value={row.waiveAmount}
+                            onChange={(e) =>
+                              handleWaiveAmountChange(idx, e.target.value)
+                            }
+                            className="shadow-sm"
+                            style={{ maxWidth: "90px" }}
+                          />
+                        </td>
                         <td className="text-end">
                           {row.amountRemaining.toFixed(2)}
                         </td>
@@ -616,7 +685,7 @@ const SRNSearch = () => {
                   </tbody>
                   <tfoot className="table-secondary fw-semibold">
                     <tr>
-                      <td colSpan={4} className="text-end">
+                      <td colSpan={5} className="text-end">
                         Totals
                       </td>
                       <td className="text-end">{totals.feeAmount.toFixed(2)}</td>
@@ -625,6 +694,7 @@ const SRNSearch = () => {
                       <td className="text-end">{totals.feesSubmitted.toFixed(2)}</td>
                       <td className="text-end">{totals.waivedAmount.toFixed(2)}</td>
                       <td className="text-end">{payableAmount.toFixed(2)}</td>
+                      <td className="text-end">{totals.fineAmount.toFixed(2)}</td>
                       <td className="text-end">{totals.waiveAmount.toFixed(2)}</td>
                       <td className="text-end">
                         {(totals.feeAmount - payableAmount -  totals.feesSubmitted).toFixed(2)}
@@ -655,7 +725,7 @@ const SRNSearch = () => {
                 color="warning"
                 size="lg"
                 className="w-100 rounded-pill shadow"
-                onClick={() => handlePaymentmode('offline')}
+                // onClick={() => handlePaymentmode('offline')}
               >
                 🏦 Offline Payment
               </CButton>
