@@ -41,7 +41,7 @@ export async function searchStudentBySRN(enrolmentno) {
 
 // 📱 SEARCH STUDENT BY MOBILE NUMBER
 export async function searchStudentByMobile(mobileNumber) {
-  const { data } = await api.get('/api/student/get-by-mobile', {
+  const { data } = await api.get('/studentapi/student/get-by-mobile', {
     params: {
       mobileNumber,
     },

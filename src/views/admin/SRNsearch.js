@@ -97,12 +97,15 @@ const SRNSearch = () => {
       const isMobileNumber = /^\d{10}$/.test(srnInput.trim());
       
       let data;
+      let AdminNo;
       if (isMobileNumber) {
         // Search by mobile number
         data = await searchStudentByMobile(srnInput.trim());
+        AdminNo = data[0].admissionno;
       } else {
         // Search by SRN
         data = await searchStudentBySRN(srnInput);
+        AdminNo = srnInput;
       }
       
       if (data?.length > 0) {
@@ -115,7 +118,7 @@ const SRNSearch = () => {
 
         const data3 = await getFeeInstallmentDetails({
           collegeid: collegeId,
-          SrnNo: srnInput,
+          SrnNo: AdminNo,
         });
         setInstallmentDetails(data3[0]);
 
@@ -601,14 +604,16 @@ const SRNSearch = () => {
                       <th>Select</th>
                       <th>Fee Installment</th>
                       <th>Fee Head</th>
-                      <th>Due Date</th>
+                      
                       <th className="text-end">Fee Amount</th>
-                      <th className="text-end">Concession</th>
-                      <th className="text-end">Due Amount</th>
+                      {/* <th className="text-end">Concession</th> */}
+                      
+                      <th className="text-end">Fees Due Date</th>
                       <th className="text-end">Fees Submitted</th>
                       <th className="text-end">Waived Amount</th>
                       <th className="text-end">Current Fees</th>
                       <th className="text-end">Fine Amount</th>
+                      <th className="text-end">Net Amount</th>
                       <th className="text-end">Amount Remaining</th>
                     </tr>
                   </thead>
@@ -625,10 +630,11 @@ const SRNSearch = () => {
                         </td>
                         <td>{row.feeInstallment}</td>
                         <td>{row.feeHead}</td>
-                        <td className="text-center">{row.dueDate}</td>
+                        
                         <td className="text-end">{row.feeAmount.toFixed(2)}</td>
-                        <td className="text-end">{row.concession.toFixed(2)}</td>
-                        <td className="text-end">{row.dueAmount.toFixed(2)}</td>
+                        {/* <td className="text-end">{row.concession.toFixed(2)}</td> */}
+                        
+                        <td className="text-end">{row.dueDate}</td>
                         <td className="text-end">{row.feesSubmitted.toFixed(2)}</td>
                         <td>
                           <CFormInput
@@ -655,24 +661,25 @@ const SRNSearch = () => {
                           />
                         </td>
                         <td className="text-end">{row.fineAmount.toFixed(2)}</td>
+                        <td className="text-end">{(row.feeAmount  - row.waivedAmount +  row.fineAmount -row.feesSubmitted).toFixed(2)}</td>
                         <td className="text-end">
-                          {row.amountRemaining.toFixed(2)}
+                          {(row.feeAmount - row.currentFees - row.waivedAmount +  row.fineAmount -row.feesSubmitted).toFixed(2)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot className="table-secondary fw-semibold">
                     <tr>
-                      <td colSpan={5} className="text-end">
+                      <td colSpan={4} className="text-end">
                         Totals
                       </td>
                       <td className="text-end">{totals.feeAmount.toFixed(2)}</td>
-                      <td className="text-end">{totals.concession.toFixed(2)}</td>
-                      <td className="text-end">{totals.dueAmount.toFixed(2)}</td>
+                      <td className="text-end">N/A</td>
                       <td className="text-end">{totals.feesSubmitted.toFixed(2)}</td>
                       <td className="text-end">{totals.waivedAmount.toFixed(2)}</td>
                       <td className="text-end">{payableAmount.toFixed(2)}</td>
                       <td className="text-end">{totals.fineAmount.toFixed(2)}</td>
+                      <td className="text-end">{(totals.feeAmount  - totals.waivedAmount +  totals.fineAmount -totals.feesSubmitted).toFixed(2)}</td>
                       <td className="text-end">
                         {(totals.feeAmount - payableAmount -  totals.feesSubmitted).toFixed(2)}
                       </td>
