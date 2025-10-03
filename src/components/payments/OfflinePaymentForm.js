@@ -46,6 +46,12 @@ const OfflinePaymentForm = ({
   // Additional fields
   const [chequeNo, setChequeNo] = useState('');
   const [chequeDate, setChequeDate] = useState(today);
+  const [draftNo, setDraftNo] = useState('');
+  const [draftDate, setDraftDate] = useState(today);
+  const [branchName, setBranchName] = useState('');
+  const [bankNameField, setBankNameField] = useState(''); // For Draft/Cheque Bank Name field
+  const [cardNo, setCardNo] = useState('');
+  const [cardAmount, setCardAmount] = useState('');
   const [transactionNo, setTransactionNo] = useState('');
   const [remarks, setRemarks] = useState('');
 
@@ -154,20 +160,58 @@ const OfflinePaymentForm = ({
       alert('Please select Favour Of');
       return;
     }
-    if (!selectedBank) {
-      alert('Please select a bank');
-      return;
-    }
-    if (!selectedAccount) {
-      alert('Please select an account');
-      return;
+    
+    const paymentModeId = parseInt(selectedPaymentMode);
+    const paymentModeName = paymentModes.find(m => m.Id === paymentModeId)?.PaymentMode || '';
+    
+    // For Swap Machine, bank and account are optional
+    if (paymentModeName.toLowerCase() !== 'swap machine' && paymentModeName.toLowerCase() !== 'swipe machine') {
+      if (!selectedBank) {
+        alert('Please select a bank');
+        return;
+      }
+      if (!selectedAccount) {
+        alert('Please select an account');
+        return;
+      }
     }
 
-    // For Cheque/Draft, validate cheque number
-    const paymentModeId = parseInt(selectedPaymentMode);
-    if ((paymentModeId === 2 || paymentModeId === 3) && !chequeNo.trim()) {
-      alert('Please enter cheque/draft number');
-      return;
+    // Validate based on payment mode
+    if (paymentModeName.toLowerCase() === 'cheque') {
+      if (!chequeNo.trim()) {
+        alert('Please enter cheque number');
+        return;
+      }
+      if (!bankNameField.trim()) {
+        alert('Please enter bank name');
+        return;
+      }
+      if (!branchName.trim()) {
+        alert('Please enter branch name');
+        return;
+      }
+    } else if (paymentModeName.toLowerCase() === 'draft') {
+      if (!draftNo.trim()) {
+        alert('Please enter draft number');
+        return;
+      }
+      if (!bankNameField.trim()) {
+        alert('Please enter bank name');
+        return;
+      }
+      if (!branchName.trim()) {
+        alert('Please enter branch name');
+        return;
+      }
+    } else if (paymentModeName.toLowerCase() === 'swap machine' || paymentModeName.toLowerCase() === 'swipe machine') {
+      if (!cardNo.trim()) {
+        alert('Please enter credit/debit card number');
+        return;
+      }
+      if (!cardAmount || parseFloat(cardAmount) <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
     }
 
     // Prepare payment data
@@ -185,6 +229,12 @@ const OfflinePaymentForm = ({
       signatoryName: signatoryList.find(s => s.Id === parseInt(selectedSignatory))?.Name || '',
       chequeNo,
       chequeDate,
+      draftNo,
+      draftDate,
+      branchName,
+      bankNameField,
+      cardNo,
+      cardAmount,
       transactionNo,
       remarks,
       amount,
@@ -193,7 +243,16 @@ const OfflinePaymentForm = ({
     onSubmit(paymentData);
   };
 
-  const showChequeFields = selectedPaymentMode && (parseInt(selectedPaymentMode) === 2 || parseInt(selectedPaymentMode) === 3);
+  // Determine which fields to show based on payment mode
+  const paymentModeName = selectedPaymentMode 
+    ? paymentModes.find(m => m.Id === parseInt(selectedPaymentMode))?.PaymentMode || ''
+    : '';
+  const paymentModeNameLower = paymentModeName.toLowerCase();
+  
+  const showChequeFields = paymentModeNameLower === 'cheque';
+  const showDraftFields = paymentModeNameLower === 'draft';
+  const showSwapFields = paymentModeNameLower === 'swap machine' || paymentModeNameLower === 'swipe machine';
+  const showBankFields = !showSwapFields; // Show bank/account for all except Swap Machine
 
   return (
     <CCard className="border-0 shadow-sm rounded-4 mb-4">
@@ -227,7 +286,13 @@ const OfflinePaymentForm = ({
               value={selectedPaymentMode}
               onChange={(e) => {
                 setSelectedPaymentMode(e.target.value);
+                // Reset all payment mode specific fields
                 setChequeNo('');
+                setDraftNo('');
+                setBranchName('');
+                setBankNameField('');
+                setCardNo('');
+                setCardAmount('');
                 setTransactionNo('');
               }}
               className="shadow-sm"
@@ -241,71 +306,204 @@ const OfflinePaymentForm = ({
             </CFormSelect>
           </CCol>
 
-          {/* Bank Name */}
-          <CCol xs={12} md={6}>
-            <label className="form-label fw-semibold">Bank Name *</label>
-            <CFormSelect
-              value={selectedBank}
-              onChange={(e) => setSelectedBank(e.target.value)}
-              disabled={!selectedPaymentMode || !selectedFavourOf || selectedFavourOf === '0' || isLoadingBanks}
-              className="shadow-sm"
-            >
-              <option value="">
-                {isLoadingBanks ? 'Loading banks...' : '--Select Bank--'}
-              </option>
-              {bankList.map((bank, idx) => (
-                <option key={idx} value={bank.BankName}>
-                  {bank.BankName}
+          {/* Bank Name - Show for all except Swap Machine */}
+          {showBankFields && (
+            <CCol xs={12} md={6}>
+              <label className="form-label fw-semibold">Deposit Bank *</label>
+              <CFormSelect
+                value={selectedBank}
+                onChange={(e) => setSelectedBank(e.target.value)}
+                disabled={!selectedPaymentMode || !selectedFavourOf || selectedFavourOf === '0' || isLoadingBanks}
+                className="shadow-sm"
+              >
+                <option value="">
+                  {isLoadingBanks ? 'Loading banks...' : '--Select Bank--'}
                 </option>
-              ))}
-            </CFormSelect>
-          </CCol>
+                {bankList.map((bank, idx) => (
+                  <option key={idx} value={bank.BankName}>
+                    {bank.BankName}
+                  </option>
+                ))}
+              </CFormSelect>
+            </CCol>
+          )}
 
-          {/* Account Number */}
-          <CCol xs={12} md={6}>
-            <label className="form-label fw-semibold">Account Number *</label>
-            <CFormSelect
-              value={selectedAccount}
-              onChange={(e) => setSelectedAccount(e.target.value)}
-              disabled={!selectedBank || isLoadingAccounts}
-              className="shadow-sm"
-            >
-              <option value="">
-                {isLoadingAccounts ? 'Loading accounts...' : '--Select Account--'}
-              </option>
-              {accountList.map((account) => (
-                <option key={account.Id} value={account.AccountNumber}>
-                  {account.AccountNumber}
+          {/* Account Number - Show for all except Swap Machine */}
+          {showBankFields && (
+            <CCol xs={12} md={6}>
+              <label className="form-label fw-semibold">Account No. *</label>
+              <CFormSelect
+                value={selectedAccount}
+                onChange={(e) => setSelectedAccount(e.target.value)}
+                disabled={!selectedBank || isLoadingAccounts}
+                className="shadow-sm"
+              >
+                <option value="">
+                  {isLoadingAccounts ? 'Loading accounts...' : '--Select Account--'}
                 </option>
-              ))}
-            </CFormSelect>
-          </CCol>
+                {accountList.map((account) => (
+                  <option key={account.Id} value={account.AccountNumber}>
+                    {account.AccountNumber}
+                  </option>
+                ))}
+              </CFormSelect>
+            </CCol>
+          )}
 
-          {/* Cheque/Draft Number (conditional) */}
-          {showChequeFields && (
+          {/* Draft Fields */}
+          {showDraftFields && (
             <>
               <CCol xs={12} md={6}>
-                <label className="form-label fw-semibold">
-                  {parseInt(selectedPaymentMode) === 2 ? 'Cheque' : 'Draft'} Number *
-                </label>
+                <label className="form-label fw-semibold">Bank Name *</label>
                 <CFormInput
                   type="text"
-                  value={chequeNo}
-                  onChange={(e) => setChequeNo(e.target.value)}
-                  placeholder={`Enter ${parseInt(selectedPaymentMode) === 2 ? 'cheque' : 'draft'} number`}
+                  value={bankNameField}
+                  onChange={(e) => setBankNameField(e.target.value)}
+                  placeholder="Enter bank name"
                   className="shadow-sm"
                 />
               </CCol>
 
               <CCol xs={12} md={6}>
-                <label className="form-label fw-semibold">
-                  {parseInt(selectedPaymentMode) === 2 ? 'Cheque' : 'Draft'} Date
-                </label>
+                <label className="form-label fw-semibold">Branch Name *</label>
+                <CFormInput
+                  type="text"
+                  value={branchName}
+                  onChange={(e) => setBranchName(e.target.value)}
+                  placeholder="Enter branch name"
+                  className="shadow-sm"
+                />
+              </CCol>
+
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Draft No. *</label>
+                <CFormInput
+                  type="text"
+                  value={draftNo}
+                  onChange={(e) => setDraftNo(e.target.value)}
+                  placeholder="Enter draft number"
+                  className="shadow-sm"
+                />
+              </CCol>
+
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Draft Date *</label>
+                <CFormInput
+                  type="date"
+                  value={draftDate}
+                  onChange={(e) => setDraftDate(e.target.value)}
+                  className="shadow-sm"
+                />
+              </CCol>
+            </>
+          )}
+
+          {/* Cheque Fields */}
+          {showChequeFields && (
+            <>
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Bank Name *</label>
+                <CFormInput
+                  type="text"
+                  value={bankNameField}
+                  onChange={(e) => setBankNameField(e.target.value)}
+                  placeholder="Enter bank name"
+                  className="shadow-sm"
+                />
+              </CCol>
+
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Branch Name *</label>
+                <CFormInput
+                  type="text"
+                  value={branchName}
+                  onChange={(e) => setBranchName(e.target.value)}
+                  placeholder="Enter branch name"
+                  className="shadow-sm"
+                />
+              </CCol>
+
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Cheque No. *</label>
+                <CFormInput
+                  type="text"
+                  value={chequeNo}
+                  onChange={(e) => setChequeNo(e.target.value)}
+                  placeholder="Enter cheque number"
+                  className="shadow-sm"
+                />
+              </CCol>
+
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Cheque Date *</label>
                 <CFormInput
                   type="date"
                   value={chequeDate}
                   onChange={(e) => setChequeDate(e.target.value)}
                   className="shadow-sm"
+                />
+              </CCol>
+            </>
+          )}
+
+          {/* Swap Machine Fields */}
+          {showSwapFields && (
+            <>
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Deposit Bank</label>
+                <CFormSelect
+                  value={selectedBank}
+                  onChange={(e) => setSelectedBank(e.target.value)}
+                  className="shadow-sm"
+                >
+                  <option value="">--Select Bank--</option>
+                  {bankList.map((bank, idx) => (
+                    <option key={idx} value={bank.BankName}>
+                      {bank.BankName}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </CCol>
+
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Account No.</label>
+                <CFormSelect
+                  value={selectedAccount}
+                  onChange={(e) => setSelectedAccount(e.target.value)}
+                  disabled={!selectedBank}
+                  className="shadow-sm"
+                >
+                  <option value="">--Select Account--</option>
+                  {accountList.map((account) => (
+                    <option key={account.Id} value={account.AccountNumber}>
+                      {account.AccountNumber}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </CCol>
+
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Credit/Debit Card No. *</label>
+                <CFormInput
+                  type="text"
+                  value={cardNo}
+                  onChange={(e) => setCardNo(e.target.value)}
+                  placeholder="Enter card number"
+                  className="shadow-sm"
+                  maxLength="16"
+                />
+              </CCol>
+
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Amount *</label>
+                <CFormInput
+                  type="number"
+                  value={cardAmount}
+                  onChange={(e) => setCardAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  className="shadow-sm"
+                  min="0"
+                  step="0.01"
                 />
               </CCol>
             </>
