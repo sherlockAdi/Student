@@ -376,385 +376,297 @@ const SRNSearch = () => {
   }
 
   return (
-    <CCard className="border-0 shadow-lg rounded-4 mb-5">
-      <CCardHeader
-        className="text-white fw-bold fs-5 rounded-top-4"
-        style={{ background: "linear-gradient(135deg, #4e73df, #224abe)" }}
-      >
-        🎓 SRN-Based Fee Search
-      </CCardHeader>
+    <div className="p-2">
+      {/* Compact Header with Search */}
+      <CCard className="border-0 shadow-sm mb-2">
+        <CCardBody className="p-2">
+          <CRow className="align-items-center g-2">
+            <CCol xs={12} md={3}>
+              <CFormInput
+                value={srnInput}
+                onChange={(e) => setSrnInput(e.target.value)}
+                placeholder="🔎 SRN or Mobile"
+                size="sm"
+              />
+            </CCol>
+            <CCol xs={12} md={2}>
+              <CButton
+                color="primary"
+                size="sm"
+                className="w-100"
+                onClick={handleSearch}
+                disabled={isLoading}
+              >
+                {isLoading ? "Searching..." : "Search"}
+              </CButton>
+            </CCol>
+          </CRow>
+        </CCardBody>
+      </CCard>
 
-      <CCardBody>
-        {/* Search Box */}
-        <CRow className="align-items-end g-3 mb-4">
-          <CCol xs={12} md={4} lg={3}>
-            <CFormInput
-              label="Enter SRN or Mobile Number"
-              value={srnInput}
-              onChange={(e) => setSrnInput(e.target.value)}
-              placeholder="🔎 SRN or 10-digit mobile"
-              size="lg"
-              className="rounded-pill shadow-sm"
-            />
-          </CCol>
-          <CCol xs={12} md={4} lg={3}>
-            <CButton
-              color="primary"
-              size="lg"
-              className="w-100 rounded-pill shadow"
-              onClick={handleSearch}
-              disabled={isLoading}
-            >
-              {isLoading ? (
+      {/* Installment & Receipt Details at Top - Compact */}
+      {installmentDetails && BookNoReceiptNoDetails && (
+        <CCard className="border-0 shadow-sm mb-2" style={{ backgroundColor: '#f8f9fa' }}>
+          <CCardBody className="p-2">
+            <div className="d-flex flex-wrap gap-3 align-items-center" style={{ fontSize: '0.85rem' }}>
+              <div>
+                <strong>FY:</strong> <span className="text-muted">{BookNoReceiptNoDetails.financialyear}</span>
+              </div>
+              <div className="border-start ps-3">
+                <strong>M Receipt:</strong> <span className="text-muted">{BookNoReceiptNoDetails.receiptno}/{BookNoReceiptNoDetails.bookno}</span>
+              </div>
+              <div className="border-start ps-3">
+                <strong>E-Receipt:</strong> <span className="text-muted">{installmentDetails.ShortName}/{installmentDetails.ereceiptno + 1}</span>
+              </div>
+              <div className="border-start ps-3">
+                <strong>Date:</strong> 
+                <CFormInput
+                  type="date"
+                  value={receiptDate}
+                  onChange={(e) => setReceiptDate(e.target.value)}
+                  size="sm"
+                  style={{ width: '140px', display: 'inline-block', marginLeft: '5px' }}
+                />
+              </div>
+              <div className="border-start ps-3">
+                <strong>Deposited:</strong>
+                <CFormCheck
+                  inline
+                  type="radio"
+                  label="Yes"
+                  name="feeDeposited"
+                  checked={feeDeposited === true}
+                  onChange={() => {
+                    setFeeDeposited(true);
+                    setDepositDate(today);
+                    setClearingDate(today);
+                  }}
+                  className="ms-2"
+                />
+                <CFormCheck
+                  inline
+                  type="radio"
+                  label="No"
+                  name="feeDeposited"
+                  checked={feeDeposited === false}
+                  onChange={() => setFeeDeposited(false)}
+                />
+              </div>
+              {feeDeposited && (
                 <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    role="status"
-                  />
-                  Searching...
-                </>
-              ) : (
-                <>
-                  <CIcon icon={cilSearch} className="me-2" />
-                  Search
+                  <div className="border-start ps-3">
+                    <strong>Deposit:</strong>
+                    <CFormInput
+                      type="date"
+                      value={depositDate}
+                      onChange={(e) => setDepositDate(e.target.value)}
+                      size="sm"
+                      style={{ width: '140px', display: 'inline-block', marginLeft: '5px' }}
+                    />
+                  </div>
+                  <div className="border-start ps-3">
+                    <strong>Clearing:</strong>
+                    <CFormInput
+                      type="date"
+                      value={clearingDate}
+                      onChange={(e) => setClearingDate(e.target.value)}
+                      size="sm"
+                      style={{ width: '140px', display: 'inline-block', marginLeft: '5px' }}
+                    />
+                  </div>
                 </>
               )}
-            </CButton>
-          </CCol>
-        </CRow>
+            </div>
+          </CCardBody>
+        </CCard>
+      )}
 
-        {/* Student Profile */}
-        {searchResult && studentDetails && (
-          <CCard className="mb-4 border-0 shadow-sm rounded-4">
-            <CCardBody>
-              <CRow>
-                <CCol
-                  xs={12}
-                  md={4}
-                  className="d-flex flex-column align-items-center justify-content-center text-center border-end mb-3 mb-md-0"
-                >
-                  <h5 className="fw-bold text-primary mb-1">
-                    {searchResult.firstname} {searchResult.lastname}
-                  </h5>
-                  <div className="text-muted mb-2">
-                    {searchResult.personalemail}
-                  </div>
-                  <div>
-                    <strong>📞</strong> {searchResult.mobileno1}
-                  </div>
-                  <div className="badge bg-info mt-2 px-3 py-2">
-                    🆔 {studentDetails.admissionno}
-                  </div>
-                </CCol>
+      {/* Compact Student Profile */}
+      {searchResult && studentDetails && (
+        <CCard className="border-0 shadow-sm mb-2">
+          <CCardBody className="p-2">
+            <CRow className="g-2" style={{ fontSize: '0.85rem' }}>
+              <CCol xs={12} md={3} className="border-end">
+                <div className="fw-bold text-primary">{searchResult.firstname} {searchResult.lastname}</div>
+                <div className="text-muted small">📞 {searchResult.mobileno1}</div>
+                <div className="badge bg-info mt-1" style={{ fontSize: '0.75rem' }}>🆔 {studentDetails.admissionno}</div>
+              </CCol>
+              <CCol xs={12} md={9}>
+                <CRow className="g-2">
+                  <CCol xs={6} md={3}>
+                    <strong>College:</strong> <span className="text-muted">{studentDetails.collegename}</span>
+                  </CCol>
+                  <CCol xs={6} md={2}>
+                    <strong>Branch:</strong> <span className="text-muted">{studentDetails.Branchname}</span>
+                  </CCol>
+                  <CCol xs={6} md={3}>
+                    <strong>Course:</strong> <span className="text-muted">{studentDetails.corsename}</span>
+                  </CCol>
+                  <CCol xs={6} md={2}>
+                    <strong>Sem:</strong> <span className="text-muted">{studentDetails.semesterno}</span>
+                  </CCol>
+                  <CCol xs={6} md={2}>
+                    <strong>Batch:</strong> <span className="text-muted">{studentDetails.Batchno}</span>
+                  </CCol>
+                </CRow>
+              </CCol>
+            </CRow>
+          </CCardBody>
+        </CCard>
+      )}
 
-                <CCol xs={12} md={8}>
-                  <CRow className="gy-2 gx-4">
-                    <CCol xs={6} md={4}>
-                      <strong>College</strong>
-                      <div className="text-muted">{studentDetails.collegename}</div>
-                    </CCol>
-                    <CCol xs={6} md={2}>
-                      <strong>Branch</strong>
-                      <div className="text-muted">{studentDetails.Branchname}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>Course</strong>
-                      <div className="text-muted">{studentDetails.corsename}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>Type</strong>
-                      <div className="text-muted">{studentDetails.coursename}</div>
-                    </CCol>
-                    <CCol xs={6} md={4}>
-                      <strong>Fee Category</strong>
-                      <div className="text-muted">
-                        {studentDetails.feecategoryname}
-                      </div>
-                    </CCol>
-                    <CCol xs={6} md={2}>
-                      <strong>Semester</strong>
-                      <div className="text-muted">{studentDetails.semesterno}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>Batch</strong>
-                      <div className="text-muted">{studentDetails.Batchno}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>University</strong>
-                      <div className="text-muted">{studentDetails.name}</div>
-                    </CCol>
-                  </CRow>
-                </CCol>
-              </CRow>
-            </CCardBody>
-          </CCard>
-        )}
-
-        {/* Installment Details */}
-        {installmentDetails && BookNoReceiptNoDetails && (
-          <CCard className="mb-4 border-0 shadow-sm rounded-4">
-            <CCardHeader className="fw-semibold bg-light">
-              📑 Installment Details
-            </CCardHeader>
-            <CCardBody>
-              <CRow className="gy-3 gx-4">
-                <CCol xs={12} sm={6} md={3}>
-                  <strong>Financial Year:</strong>
-                  <div className="text-muted">
-                    {BookNoReceiptNoDetails.financialyear}
-                  </div>
-                </CCol>
-                <CCol xs={12} sm={6} md={3}>
-                  <strong>M Receipt No.:</strong>
-                  <div className="text-muted">
-                    {BookNoReceiptNoDetails.receiptno}/
-                    {BookNoReceiptNoDetails.bookno}
-                  </div>
-                </CCol>
-                <CCol xs={12} sm={6} md={3}>
-                  <strong>E-Receipt No.:</strong>
-                  <div className="text-muted">
-                    {installmentDetails.ShortName} /{" "}
-                    {installmentDetails.ereceiptno + 1}
-                  </div>
-                </CCol>
-                <CCol xs={12} sm={6} md={3}>
-                  <strong>E-Receipt Date:</strong>
-                  <CFormInput
-                    type="date"
-                    value={receiptDate}
-                    onChange={(e) => setReceiptDate(e.target.value)}
-                    size="sm"
-                    className="shadow-sm"
-                  />
-                </CCol>
-                <CCol xs={12} sm={6} md={4} className="mt-3">
-                  <strong>Fee Deposited:</strong>
-                  <div className="d-flex gap-3 mt-2">
-                    <CFormCheck
-                      type="radio"
-                      label="Yes"
-                      name="feeDeposited"
-                      checked={feeDeposited === true}
-                      onChange={() => {
-                        setFeeDeposited(true);
-                        setDepositDate(today);
-                        setClearingDate(today);
-                      }}
-                    />
-                    <CFormCheck
-                      type="radio"
-                      label="No"
-                      name="feeDeposited"
-                      checked={feeDeposited === false}
-                      onChange={() => setFeeDeposited(false)}
-                    />
-                  </div>
-                </CCol>
-                {feeDeposited && (
-                  <>
-                    <CCol xs={12} sm={6} md={4} className="mt-3">
-                      <strong>Deposit Date:</strong>
-                      <CFormInput
-                        type="date"
-                        value={depositDate}
-                        onChange={(e) => setDepositDate(e.target.value)}
-                        size="sm"
-                        className="shadow-sm"
-                      />
-                    </CCol>
-                    <CCol xs={12} sm={6} md={4} className="mt-3">
-                      <strong>Clearing Date:</strong>
-                      <CFormInput
-                        type="date"
-                        value={clearingDate}
-                        onChange={(e) => setClearingDate(e.target.value)}
-                        size="sm"
-                        className="shadow-sm"
-                      />
-                    </CCol>
-                  </>
-                )}
-              </CRow>
-            </CCardBody>
-          </CCard>
-        )}
-
-        {/* Payment Summary */}
-
-
-        {/* Fee Details */}
-        {feeRows.length > 0 && (
-          <CCard className="mb-5 border-0 shadow-sm rounded-4">
-            <CCardHeader className="fw-semibold bg-light d-flex justify-content-between align-items-center">
-              💰 Fee Details
+      {/* Compact Fee Table */}
+      {feeRows.length > 0 && (
+        <CCard className="border-0 shadow-sm mb-2">
+          <CCardBody className="p-2">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <strong style={{ fontSize: '0.9rem' }}>💰 Fee Details</strong>
               <CFormCheck
                 type="checkbox"
                 label="Select All"
                 checked={selectAll}
                 onChange={handleSelectAllToggle}
+                style={{ fontSize: '0.85rem' }}
               />
-            </CCardHeader>
-            <CCardBody className="p-0">
-              <div className="table-responsive">
-                <table className="table table-hover table-striped align-middle mb-0">
-                  <thead className="table-dark sticky-top">
-                    <tr>
-                      <th>#</th>
-                      <th>Select</th>
-                      <th>Fee Installment</th>
-                      <th>Fee Head</th>
-                      <th className="text-end">Fee Amount</th>
-                      <th className="text-end">Fees Submitted</th>
-                      <th className="text-end">Amount Due</th>
-                      <th className="text-end">Current Fees</th>
-                      <th className="text-end">Due Date</th>
-                      <th className="text-end">Fine Amount</th>
-                      <th className="text-end">Waived Amount</th>
-                      <th className="text-end">Net Amount</th>
-                      <th className="text-end">Amount Remaining</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {feeRows.map((row, idx) => (
-                      <tr key={idx}>
-                        <td>{row.slNo}</td>
-                        <td>
-                          <CFormCheck
-                            type="checkbox"
-                            checked={row.selectAll || false}
-                            onChange={() => handleRowSelectToggle(idx)}
-                          />
-                        </td>
-                        <td>{row.feeInstallment}</td>
-                        <td>{row.feeHead}</td>
-                        <td className="text-end">{row.feeAmount.toFixed(2)}</td>
-                        <td className="text-end">{row.feesSubmitted.toFixed(2)}</td>
-                        <td className="text-end">{(row.feeAmount - row.feesSubmitted).toFixed(2)}</td>
-                        <td>
-                          <CFormInput
-                            type="number"
-                            size="sm"
-                            value={row.currentFees}
-                            onChange={(e) =>
-                              handleCurrentFeesChange(idx, e.target.value)
-                            }
-                            className="shadow-sm"
-                            style={{ maxWidth: "90px" }}
-                          />
-                        </td>
-                        <td className="text-end">{row.dueDate}</td>
-                        <td className="text-end">{row.fineAmount.toFixed(2)}</td>
-                        <td>
-                          <CFormInput
-                            type="number"
-                            size="sm"
-                            value={row.waivedAmount}
-                            onChange={(e) =>
-                              handleWaivedAmountChange(idx, e.target.value)
-                            }
-                            className="shadow-sm"
-                            style={{ maxWidth: "90px" }}
-                          />
-                        </td>
-                        <td className="text-end">{(row.feeAmount - row.waivedAmount + row.fineAmount - row.feesSubmitted).toFixed(2)}</td>
-                        <td className="text-end">
-                          {(row.feeAmount - row.currentFees - row.waivedAmount + row.fineAmount - row.feesSubmitted).toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="table-secondary fw-semibold">
-                    <tr>
-                      <td colSpan={4} className="text-end">
-                        Totals
+            </div>
+            <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              <table className="table table-sm table-hover mb-0" style={{ fontSize: '0.8rem' }}>
+                <thead className="table-light" style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                  <tr>
+                    <th style={{ padding: '0.3rem' }}>☑</th>
+                    <th style={{ padding: '0.3rem' }}>Installment</th>
+                    <th style={{ padding: '0.3rem' }}>Fee Head</th>
+                    <th className="text-end" style={{ padding: '0.3rem' }}>Fee Amt</th>
+                    <th className="text-end" style={{ padding: '0.3rem' }}>Submitted</th>
+                    <th className="text-end" style={{ padding: '0.3rem' }}>Current</th>
+                    <th className="text-end" style={{ padding: '0.3rem' }}>Waived</th>
+                    <th className="text-end" style={{ padding: '0.3rem' }}>Remaining</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {feeRows.map((row, idx) => (
+                    <tr key={idx}>
+                      <td style={{ padding: '0.3rem' }}>
+                        <CFormCheck
+                          type="checkbox"
+                          checked={row.selectAll || false}
+                          onChange={() => handleRowSelectToggle(idx)}
+                        />
                       </td>
-                      <td className="text-end">{totals.feeAmount.toFixed(2)}</td>
-                      <td className="text-end">{totals.feesSubmitted.toFixed(2)}</td>
-                      <td className="text-end">{(totals.feeAmount - totals.feesSubmitted).toFixed(2)}</td>
-                      <td className="text-end">{payableAmount.toFixed(2)}</td>
-                      <td className="text-end">N/A</td>
-                      <td className="text-end">{totals.fineAmount.toFixed(2)}</td>
-                      <td className="text-end">{totals.waivedAmount.toFixed(2)}</td>
-                      <td className="text-end">{(totals.feeAmount - totals.waivedAmount + totals.fineAmount - totals.feesSubmitted).toFixed(2)}</td>
-                      <td className="text-end">
-                        {(totals.feeAmount - payableAmount - totals.waivedAmount + totals.fineAmount - totals.feesSubmitted).toFixed(2)}
+                      <td style={{ padding: '0.3rem' }}>{row.feeInstallment}</td>
+                      <td style={{ padding: '0.3rem' }}>{row.feeHead}</td>
+                      <td className="text-end" style={{ padding: '0.3rem' }}>₹{row.feeAmount.toFixed(0)}</td>
+                      <td className="text-end" style={{ padding: '0.3rem' }}>₹{row.feesSubmitted.toFixed(0)}</td>
+                      <td style={{ padding: '0.3rem' }}>
+                        <CFormInput
+                          type="number"
+                          size="sm"
+                          value={row.currentFees}
+                          onChange={(e) => handleCurrentFeesChange(idx, e.target.value)}
+                          style={{ width: "70px", fontSize: '0.75rem', padding: '0.2rem' }}
+                        />
+                      </td>
+                      <td style={{ padding: '0.3rem' }}>
+                        <CFormInput
+                          type="number"
+                          size="sm"
+                          value={row.waivedAmount}
+                          onChange={(e) => handleWaivedAmountChange(idx, e.target.value)}
+                          style={{ width: "70px", fontSize: '0.75rem', padding: '0.2rem' }}
+                        />
+                      </td>
+                      <td className="text-end" style={{ padding: '0.3rem' }}>
+                        ₹{(row.feeAmount - row.currentFees - row.waivedAmount - row.feesSubmitted).toFixed(0)}
                       </td>
                     </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </CCardBody>
-          </CCard>
-        )}
+                  ))}
+                </tbody>
+                <tfoot className="table-secondary fw-semibold">
+                  <tr>
+                    <td colSpan={3} className="text-end" style={{ padding: '0.3rem' }}>Totals</td>
+                    <td className="text-end" style={{ padding: '0.3rem' }}>₹{totals.feeAmount.toFixed(0)}</td>
+                    <td className="text-end" style={{ padding: '0.3rem' }}>₹{totals.feesSubmitted.toFixed(0)}</td>
+                    <td className="text-end" style={{ padding: '0.3rem' }}>₹{payableAmount.toFixed(0)}</td>
+                    <td className="text-end" style={{ padding: '0.3rem' }}>₹{totals.waivedAmount.toFixed(0)}</td>
+                    <td className="text-end" style={{ padding: '0.3rem' }}>
+                      ₹{(totals.feeAmount - payableAmount - totals.waivedAmount - totals.feesSubmitted).toFixed(0)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </CCardBody>
+        </CCard>
+      )}
 
-        {/* Payment Mode Selection Buttons */}
-        {feeRows.length > 0 && !paymentMode && (
-          <CRow className="g-3 mb-4">
-            <CCol xs={12} md={6}>
-              <CButton
-                color="success"
-                size="lg"
-                className="w-100 rounded-pill shadow"
-                onClick={() => handlePaymentmode('online')}
-              >
-                💳 Online Payment
-              </CButton>
-            </CCol>
-            <CCol xs={12} md={6}>
-              <CButton
-                color="warning"
-                size="lg"
-                className="w-100 rounded-pill shadow"
-                onClick={() => handlePaymentmode('offline')}
-              >
-                🏦 Offline Payment
-              </CButton>
-            </CCol>
-          </CRow>
-        )}
-
-        {/* Online Payment Summary */}
-        {feeRows.length > 0 && paymentMode === 'online' && (
-          <>
-            <PaymentSummaryCard
-              amount={payableAmount}
-              onPay={handlePayment}
-              isPaying={isPaying}
-              selectedCount={selectedFeeRows.length}
-              totalCount={feeRows.length}
-              paymentStatus={paymentStatus}
-            />
+      {/* Compact Payment Buttons */}
+      {feeRows.length > 0 && !paymentMode && (
+        <CRow className="g-2 mb-2">
+          <CCol xs={6}>
             <CButton
-              color="secondary"
-              className="mt-3"
-              onClick={() => setPaymentMode(null)}
+              color="success"
+              size="sm"
+              className="w-100"
+              onClick={() => handlePaymentmode('online')}
             >
-              ← Back to Payment Options
+              💳 Online (₹{payableAmount.toFixed(0)})
             </CButton>
-          </>
-        )}
-
-        {/* Offline Payment Form */}
-        {feeRows.length > 0 && paymentMode === 'offline' && (
-          <>
-            <OfflinePaymentForm
-              amount={payableAmount}
-              studentDetails={{ ...studentDetails, id: searchResult?.id }}
-              onSubmit={handleOfflinePaymentSubmit}
-              isSubmitting={isPaying}
-            />
+          </CCol>
+          <CCol xs={6}>
             <CButton
-              color="secondary"
-              className="mt-3"
-              onClick={() => setPaymentMode(null)}
+              color="warning"
+              size="sm"
+              className="w-100"
+              onClick={() => handlePaymentmode('offline')}
             >
-              ← Back to Payment Options
+              🏦 Offline (₹{payableAmount.toFixed(0)})
             </CButton>
-          </>
-        )}
-      </CCardBody>
-    </CCard>
+          </CCol>
+        </CRow>
+      )}
+
+      {/* Online Payment Summary */}
+      {feeRows.length > 0 && paymentMode === 'online' && (
+        <div className="mb-2">
+          <PaymentSummaryCard
+            amount={payableAmount}
+            onPay={handlePayment}
+            isPaying={isPaying}
+            selectedCount={selectedFeeRows.length}
+            totalCount={feeRows.length}
+            paymentStatus={paymentStatus}
+          />
+          <CButton
+            color="secondary"
+            size="sm"
+            className="mt-2"
+            onClick={() => setPaymentMode(null)}
+          >
+            ← Back
+          </CButton>
+        </div>
+      )}
+
+      {/* Offline Payment Form */}
+      {feeRows.length > 0 && paymentMode === 'offline' && (
+        <div className="mb-2">
+          <OfflinePaymentForm
+            amount={payableAmount}
+            studentDetails={{ ...studentDetails, id: searchResult?.id }}
+            onSubmit={handleOfflinePaymentSubmit}
+            isSubmitting={isPaying}
+          />
+          <CButton
+            color="secondary"
+            size="sm"
+            className="mt-2"
+            onClick={() => setPaymentMode(null)}
+          >
+            ← Back
+          </CButton>
+        </div>
+      )}
+    </div>
   );
 };
 
