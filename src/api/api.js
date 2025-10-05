@@ -153,5 +153,11 @@ export async function getSignatoryList() {
   return data;
 }
 
+// Submit Offline Payment
+export async function submitOfflinePayment(paymentData) {
+  const { data } = await api.post('/studentapi/studentfee/submit', paymentData);
+  return data;
+}
+
 
 export default api

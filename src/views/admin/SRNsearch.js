@@ -20,6 +20,7 @@ import {
   getFeeInstallmentDetails,
   getFeeBookNoReceiptNo,
   getAmiFeeDetails,
+  submitOfflinePayment,
 } from "../../api/api";
 import PaymentSummaryCard from "../../components/payments/PaymentSummaryCard";
 import OfflinePaymentForm from "../../components/payments/OfflinePaymentForm";
@@ -356,11 +357,82 @@ const SRNSearch = () => {
 
   const handleOfflinePaymentSubmit = async (paymentData) => {
     console.log('Offline Payment Data:', paymentData);
-    // TODO: Implement offline payment submission API
-    alert(`Offline payment submitted successfully!\n\nDetails:\nMode: ${paymentData.paymentModeName}\nBank: ${paymentData.bank}\nAccount: ${paymentData.account}\nAmount: ₹${paymentData.amount.toFixed(2)}`);
     
-    // Reset payment mode after successful submission
-    setPaymentMode(null);
+    setIsPaying(true);
+    
+    try {
+      // Get selected fee rows for installment details
+      const selectedRows = feeRows.filter(row => row.selectAll);
+      const installmentIds = selectedRows.map(row => row.feeInstallment).join(',');
+      
+      // Prepare the API payload according to the schema
+      const apiPayload = {
+        PaymentMode: paymentData.paymentModeName || '',
+        BankName: paymentData.bankNameField || paymentData.bank || '',
+        ChequeDdNo: paymentData.chequeNo || paymentData.draftNo || '',
+        BankBranch: paymentData.branchName || '',
+        ChequeDdDate: paymentData.chequeDate || paymentData.draftDate || today,
+        ChequeClearingDate: clearingDate || today,
+        TransactionId: paymentData.transactionNo || '',
+        TransactionReceipt: '',
+        TransactionAmount: paymentData.amount.toString(),
+        CardNo: paymentData.cardNo || '',
+        CardAmount: paymentData.cardAmount || '',
+        FeeCollectionInFavourOf: paymentData.favourOfName || '',
+        OtherCharges: '0',
+        OtherChargesRemarks: '',
+        ChequeDraftInFavourOf: paymentData.favourOfName || '',
+        StudentId: searchResult?.id || 0,
+        FeeCategoryId: studentDetails?.feecategoryid || 1,
+        InstalmentId: installmentIds || '1',
+        SubmitDate: today,
+        FineAmount: '0',
+        OtherFineAmount: '0',
+        NetAmountSubmitted: paymentData.amount.toString(),
+        Remarks: paymentData.remarks || '',
+        FeeSubmitLastDate: today,
+        FinancialYearId: BookNoReceiptNoDetails?.financialyearid?.toString() || '1',
+        BookNo: BookNoReceiptNoDetails?.bookno?.toString() || '',
+        ReceiptNo: BookNoReceiptNoDetails?.receiptno?.toString() || '',
+        FavorOfs: paymentData.favourOf?.toString() || '',
+        PaymentModes: paymentData.paymentMode?.toString() || '',
+        BankNames: paymentData.bank || '',
+        BranchNames: paymentData.branchName || '',
+        AccountNumbers: paymentData.account || '',
+        InFavorOfs: paymentData.favourOf?.toString() || '',
+        InstallmentType: '1',
+        DepositDate: depositDate || today,
+        PaymentClearDate: clearingDate || today,
+        EReceiptNo: (installmentDetails?.ereceiptno + 1)?.toString() || '1',
+        InFavOfId: paymentData.favourOf?.toString() || '',
+        AuthorizedSignatory: paymentData.signatoryName || '',
+        Uid: '1',
+        Utype: '1',
+        AccountNoId: paymentData.accountId?.toString() || ''
+      };
+      
+      console.log('API Payload:', apiPayload);
+      
+      // Submit the payment
+      const response = await submitOfflinePayment(apiPayload);
+      
+      console.log('Payment Response:', response);
+      
+      alert(`✅ Offline payment submitted successfully!\n\nDetails:\nMode: ${paymentData.paymentModeName}\nAmount: ₹${paymentData.amount.toFixed(2)}\nReceipt No: ${apiPayload.EReceiptNo}`);
+      
+      // Reset payment mode and refresh data
+      setPaymentMode(null);
+      
+      // Optionally refresh the student data
+      if (srnInput) {
+        handleSearch();
+      }
+    } catch (error) {
+      console.error('Error submitting offline payment:', error);
+      alert(`❌ Error submitting payment: ${error.response?.data?.message || error.message || 'Unknown error occurred'}`);
+    } finally {
+      setIsPaying(false);
+    }
   };
 
   if (isLoading) {
