@@ -8,8 +8,9 @@ import ProtectedRoute from './ProtectedRoute'
 
 const AppContent = () => {
   return (
-    <CContainer className="px-4" lg>
-      <Suspense fallback={<CSpinner color="primary" />}>
+    // <CContainer >
+   
+      <Suspense classname='.px-4' fallback={<CSpinner color="primary" />}>
         <Routes>
           {routes.map((route, idx) => {
             if (!route.element) return null
@@ -34,7 +35,7 @@ const AppContent = () => {
           <Route path="/" element={<Navigate to="dashboard" replace />} />
         </Routes>
       </Suspense>
-    </CContainer>
+   
   )
 }
 

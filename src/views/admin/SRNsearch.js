@@ -376,10 +376,10 @@ const SRNSearch = () => {
   }
 
   return (
-    <CCard className="border-0 shadow-lg rounded-4 mb-5">
+    <CCard className="border-0 shadow-lg ">
       <CCardHeader
         className="text-white fw-bold fs-5 rounded-top-4"
-        style={{ background: "linear-gradient(135deg, #4e73df, #224abe)" }}
+        style={{ background: "linear-gradient(135deg, #224abe, #224abe)" }}
       >
         <CRow className="align-items-center">
           <CCol xs={12} md={6}>
@@ -390,7 +390,7 @@ const SRNSearch = () => {
             <CCol xs={12} md={6}>
               <div className="d-flex justify-content-end align-items-center gap-3 flex-wrap" style={{ fontSize: '0.85rem' }}>
                 <div>
-                  <strong>FY:</strong> {BookNoReceiptNoDetails.financialyear}
+                  <strong>Financial Year:</strong> {BookNoReceiptNoDetails.financialyear}
                 </div>
                 <div>
                   <strong>M Receipt:</strong> {BookNoReceiptNoDetails.receiptno}/{BookNoReceiptNoDetails.bookno}
@@ -523,7 +523,7 @@ const SRNSearch = () => {
         )}
 
         {/* Installment Details */}
-        {installmentDetails && BookNoReceiptNoDetails && (
+        {/* {installmentDetails && BookNoReceiptNoDetails && (
           <CCard className="mb-3 border-0 shadow-sm rounded-3">
             <CCardHeader className="fw-semibold bg-light py-2">
               📑 Installment Details
@@ -610,7 +610,7 @@ const SRNSearch = () => {
               </CRow>
             </CCardBody>
           </CCard>
-        )}
+        )} */}
 
         {/* Payment Summary */}
 
