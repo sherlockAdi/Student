@@ -151,6 +151,16 @@ export async function getSignatoryList() {
   return data;
 }
 
+// Get Student Profile
+export async function getStudentProfile(admissionNo) {
+  const { data } = await api.get('/Studentapi/getProfile', {
+    params: {
+      id: admissionNo,
+    },
+  });
+  return data;
+}
+
 // Submit Offline Payment
 export async function submitOfflinePayment(paymentData) {
   const { data } = await api.post('/studentapi/studentfee/submit', paymentData);
