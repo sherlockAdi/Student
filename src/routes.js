@@ -54,6 +54,7 @@ const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 // Custom pages
 const AdminStudentList = React.lazy(() => import('./views/admin/StudentList'))
 const StudentProfile = React.lazy(() => import('./views/student/Profile'))
+const StudentFeePayment = React.lazy(() => import('./views/student/StudentFeePayment'))
 const AdminStudentView = React.lazy(() => import('./views/admin/StudentView'))
 const AdminStudentEdit = React.lazy(() => import('./views/admin/StudentEdit'))
 const SRNSearch = React.lazy(() => import('./views/admin/SRNsearch'))
@@ -70,6 +71,7 @@ const routes = [
   { path: '/admin/students/:id/edit', name: 'Student Edit', element: AdminStudentEdit, roles: ['admin'] },
   // Student
   { path: '/student/profile', name: 'My Profile', element: StudentProfile, roles: ['student'] },
+  { path: '/student/fees', name: 'My Fees', element: StudentFeePayment, roles: ['student'] },
   { path: '/theme', name: 'Theme', element: Colors, exact: true },
   { path: '/theme/colors', name: 'Colors', element: Colors },
   { path: '/theme/typography', name: 'Typography', element: Typography },

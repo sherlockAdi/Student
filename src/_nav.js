@@ -24,6 +24,12 @@ const _nav = [
     to: '/student/profile',
     roles: ['student'],
   },
+  {
+    component: CNavItem,
+    name: 'My Fees',
+    to: '/student/fees',
+    roles: ['student'],
+  },
 ]
 
 export default _nav

@@ -51,6 +51,10 @@ const Login = () => {
       }
       else{
         loginAs('student')
+        // Store student data in localStorage for later use
+        if (data.StudentData) {
+          localStorage.setItem('studentData', JSON.stringify(data.StudentData))
+        }
       }
       // loginAs(role)
       const from = location.state?.from?.pathname
