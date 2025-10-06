@@ -30,6 +30,12 @@ const _nav = [
     to: '/student/fees',
     roles: ['student'],
   },
+  {
+    component: CNavItem,
+    name: 'Study Portal',
+    to: '/student/study-portal',
+    roles: ['student'],
+  },
 ]
 
 export default _nav
