@@ -34,7 +34,7 @@ const Login = () => {
     setError('')
     setLoading(true)
     try {
-      const data = await apiLogin({ email, password, rememberMe: false, isRemoteLogin: true })
+      const data = await apiLogin({ email, password })
       // Optional: persist token if provided
       if (data?.Token) {
         try { localStorage.setItem('authToken', data.Token) } catch {}
@@ -45,7 +45,14 @@ const Login = () => {
       //   return
       // }
       // Keep existing role-based navigation using mock auth for now
-      loginAs(role)
+      console.log(data)
+      if(data.RoleId === "1"){
+        loginAs('admin')
+      }
+      else{
+        loginAs('student')
+      }
+      // loginAs(role)
       const from = location.state?.from?.pathname
       if (from) {
         navigate(from, { replace: true })
@@ -101,13 +108,13 @@ const Login = () => {
                         required
                       />
                     </CInputGroup>
-                    <CInputGroup className="mb-4">
+                    {/* <CInputGroup className="mb-4">
                       <CInputGroupText>Role</CInputGroupText>
                       <select className="form-select" value={role} onChange={(e) => setRole(e.target.value)}>
                         <option value="admin">Admin</option>
                         <option value="student">Student</option>
                       </select>
-                    </CInputGroup>
+                    </CInputGroup> */}
                     {error && (
                       <CAlert color="danger" className="mb-3">{error}</CAlert>
                     )}

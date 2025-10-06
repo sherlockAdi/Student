@@ -10,12 +10,10 @@ const api = axios.create({
 })
 
 // 🔐 LOGIN
-export async function login({ email, password, rememberMe = false, isRemoteLogin = true }) {
+export async function login({ email, password }) {
   const payload = {
-    User_Email_Id: email,
+    Username: email,
     Password: password,
-    RememberMe: rememberMe,
-    IsRemoteLogin: isRemoteLogin,
   }
   const { data } = await api.post('/studentapi/login', payload)
   return data
