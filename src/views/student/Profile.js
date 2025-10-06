@@ -76,11 +76,11 @@ const Profile = () => {
     return bloodGroups[code] || 'N/A'
   }
 
-  const InfoRow = ({ label, value }) => (
+  const InfoRow = ({ label, value, icon }) => (
     <CCol xs={12} md={6} lg={4} className="mb-3">
-      <div className="d-flex flex-column">
-        <small className="text-muted fw-semibold">{label}</small>
-        <div className="fw-normal">{value || 'N/A'}</div>
+      <div className="border-start border-3 border-primary ps-3 py-2 bg-light">
+        <small className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>{label}</small>
+        <div className="fw-semibold text-dark mt-1">{value || 'N/A'}</div>
       </div>
     </CCol>
   )
@@ -121,60 +121,90 @@ const Profile = () => {
 
   return (
     <div>
-      {/* Header Card with Photo */}
-      <CCard className="border-0 shadow-lg mb-4">
-        <CCardBody className="p-4"
-          style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
-        >
-          <CRow className="align-items-center">
-            <CCol xs={12} md={3} className="text-center mb-3 mb-md-0">
+      {/* Header Card with Photo - Professional College Style */}
+      <CCard className="border-0 shadow mb-4">
+        <CCardBody className="p-0">
+          <div className="bg-primary text-white py-3 px-4">
+            <h4 className="mb-0 fw-bold">Student Profile</h4>
+          </div>
+          <CRow className="p-4">
+            <CCol xs={12} md={2} className="text-center mb-3 mb-md-0">
               <div 
-                className="rounded-circle mx-auto d-flex align-items-center justify-content-center text-white fw-bold shadow-lg"
+                className="border border-3 border-primary rounded mx-auto d-flex align-items-center justify-content-center text-primary fw-bold"
                 style={{ 
-                  width: '120px', 
-                  height: '120px', 
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  fontSize: '3rem',
-                  border: '4px solid white'
+                  width: '100px', 
+                  height: '100px', 
+                  backgroundColor: '#f8f9fa',
+                  fontSize: '2.5rem'
                 }}
               >
                 {profileData.firstname?.charAt(0)}{profileData.lastname?.charAt(0)}
               </div>
-            </CCol>
-            <CCol xs={12} md={9}>
-              <h2 className="text-white mb-2 fw-bold">
-                {profileData.firstname} {profileData.middlename} {profileData.lastname}
-              </h2>
-              <div className="d-flex flex-wrap gap-3 mb-3">
-                <CBadge color="light" className="px-3 py-2 fs-6">
-                  🆔 {profileData.admissionno}
-                </CBadge>
-                <CBadge color="light" className="px-3 py-2 fs-6">
-                  📧 {profileData.collegeemail}
-                </CBadge>
-                <CBadge color="light" className="px-3 py-2 fs-6">
-                  📞 {profileData.mobileno1}
+              <div className="mt-2">
+                <CBadge color="primary" className="px-2 py-1">
+                  {profileData.section || 'N/A'}
                 </CBadge>
               </div>
-              <p className="text-white mb-0 opacity-75">
-                <strong>Branch:</strong> {profileData.Branchname} | <strong>Section:</strong> {profileData.section}
-              </p>
+            </CCol>
+            <CCol xs={12} md={10}>
+              <div className="mb-3">
+                <h3 className="mb-1 fw-bold text-dark">
+                  {profileData.firstname} {profileData.middlename} {profileData.lastname}
+                </h3>
+                <p className="text-muted mb-2">{profileData.Branchname}</p>
+              </div>
+              <CRow className="g-3">
+                <CCol xs={12} sm={6} md={4}>
+                  <div className="d-flex align-items-center">
+                    <div className="bg-primary bg-opacity-10 rounded p-2 me-2">
+                      <strong className="text-primary">🆔</strong>
+                    </div>
+                    <div>
+                      <small className="text-muted d-block">Admission No</small>
+                      <strong>{profileData.admissionno}</strong>
+                    </div>
+                  </div>
+                </CCol>
+                <CCol xs={12} sm={6} md={4}>
+                  <div className="d-flex align-items-center">
+                    <div className="bg-success bg-opacity-10 rounded p-2 me-2">
+                      <strong className="text-success">📧</strong>
+                    </div>
+                    <div>
+                      <small className="text-muted d-block">College Email</small>
+                      <strong className="text-break" style={{ fontSize: '0.9rem' }}>{profileData.collegeemail}</strong>
+                    </div>
+                  </div>
+                </CCol>
+                <CCol xs={12} sm={6} md={4}>
+                  <div className="d-flex align-items-center">
+                    <div className="bg-info bg-opacity-10 rounded p-2 me-2">
+                      <strong className="text-info">📞</strong>
+                    </div>
+                    <div>
+                      <small className="text-muted d-block">Mobile Number</small>
+                      <strong>{profileData.mobileno1}</strong>
+                    </div>
+                  </div>
+                </CCol>
+              </CRow>
             </CCol>
           </CRow>
         </CCardBody>
       </CCard>
 
       {/* Tabs Navigation */}
-      <CCard className="border-0 shadow-sm mb-4">
+      <CCard className="border-0 shadow mb-3">
         <CCardBody className="p-0">
-          <CNav variant="tabs" role="tablist">
+          <CNav variant="tabs" role="tablist" className="border-bottom">
             <CNavItem>
               <CNavLink
                 active={activeTab === 'personal'}
                 onClick={() => setActiveTab('personal')}
                 style={{ cursor: 'pointer' }}
+                className="fw-semibold"
               >
-                👤 Personal Info
+                <span className="me-2">👤</span> Personal Info
               </CNavLink>
             </CNavItem>
             <CNavItem>
@@ -182,8 +212,9 @@ const Profile = () => {
                 active={activeTab === 'academic'}
                 onClick={() => setActiveTab('academic')}
                 style={{ cursor: 'pointer' }}
+                className="fw-semibold"
               >
-                🎓 Academic Details
+                <span className="me-2">🎓</span> Academic Details
               </CNavLink>
             </CNavItem>
             <CNavItem>
@@ -191,8 +222,9 @@ const Profile = () => {
                 active={activeTab === 'family'}
                 onClick={() => setActiveTab('family')}
                 style={{ cursor: 'pointer' }}
+                className="fw-semibold"
               >
-                👨‍👩‍👧‍👦 Family Details
+                <span className="me-2">👨‍👩‍👧‍👦</span> Family Details
               </CNavLink>
             </CNavItem>
             <CNavItem>
@@ -200,8 +232,9 @@ const Profile = () => {
                 active={activeTab === 'contact'}
                 onClick={() => setActiveTab('contact')}
                 style={{ cursor: 'pointer' }}
+                className="fw-semibold"
               >
-                📍 Contact & Address
+                <span className="me-2">📍</span> Contact & Address
               </CNavLink>
             </CNavItem>
           </CNav>
@@ -212,12 +245,12 @@ const Profile = () => {
       <CTabContent>
         {/* Personal Info Tab */}
         <CTabPane visible={activeTab === 'personal'}>
-          <CCard className="border-0 shadow-sm">
-            <CCardHeader className="bg-light fw-semibold">
-              👤 Personal Information
-            </CCardHeader>
-            <CCardBody className="p-4">
-              <CRow>
+          <CCard className="border-0 shadow">
+            <CCardBody className="p-0">
+              <div className="bg-primary text-white py-2 px-4">
+                <h6 className="mb-0 fw-bold">👤 Personal Information</h6>
+              </div>
+              <CRow className="p-4">
                 <InfoRow label="First Name" value={profileData.firstname} />
                 <InfoRow label="Middle Name" value={profileData.middlename} />
                 <InfoRow label="Last Name" value={profileData.lastname} />
@@ -241,12 +274,12 @@ const Profile = () => {
 
         {/* Academic Details Tab */}
         <CTabPane visible={activeTab === 'academic'}>
-          <CCard className="border-0 shadow-sm">
-            <CCardHeader className="bg-light fw-semibold">
-              🎓 Academic Details
-            </CCardHeader>
-            <CCardBody className="p-4">
-              <CRow>
+          <CCard className="border-0 shadow">
+            <CCardBody className="p-0">
+              <div className="bg-success text-white py-2 px-4">
+                <h6 className="mb-0 fw-bold">🎓 Academic Details</h6>
+              </div>
+              <CRow className="p-4">
                 <InfoRow label="Admission Number" value={profileData.admissionno} />
                 <InfoRow label="Student ID" value={profileData.studentid} />
                 <InfoRow label="Branch" value={profileData.Branchname} />
@@ -279,12 +312,14 @@ const Profile = () => {
 
         {/* Family Details Tab */}
         <CTabPane visible={activeTab === 'family'}>
-          <CCard className="border-0 shadow-sm mb-3">
-            <CCardHeader className="bg-light fw-semibold">
-              👨‍👩‍👧‍👦 Family & Guardian Information
-            </CCardHeader>
-            <CCardBody className="p-4">
-              <h6 className="fw-bold mb-3">Father's Details</h6>
+          <CCard className="border-0 shadow mb-3">
+            <CCardBody className="p-0">
+              <div className="bg-info text-white py-2 px-4">
+                <h6 className="mb-0 fw-bold">👨‍👩‍👧‍👦 Family & Guardian Information</h6>
+              </div>
+              <div className="p-4">
+                <div className="bg-light border-start border-4 border-primary p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-primary">Father's Details</h6>
               <CRow>
                 <InfoRow label="Father's Name" value={profileData.fathername} />
                 <InfoRow label="Father's Occupation" value={profileData.fatheroccupation} />
@@ -294,10 +329,11 @@ const Profile = () => {
                 <InfoRow label="Father's Company" value={profileData.f_companyname} />
                 <InfoRow label="Father's Annual Income" value={profileData.f_annualincome} />
               </CRow>
+                </div>
 
-              <hr className="my-4" />
-              <h6 className="fw-bold mb-3">Mother's Details</h6>
-              <CRow>
+                <div className="bg-light border-start border-4 border-success p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-success">Mother's Details</h6>
+                  <CRow>
                 <InfoRow label="Mother's Name" value={profileData.mothername} />
                 <InfoRow label="Mother's Industry" value={profileData.m_industry} />
                 <InfoRow label="Mother's Functional Area" value={profileData.m_functionalarea} />
@@ -305,10 +341,11 @@ const Profile = () => {
                 <InfoRow label="Mother's Company" value={profileData.m_companyname} />
                 <InfoRow label="Mother's Annual Income" value={profileData.m_annualincome} />
               </CRow>
+                </div>
 
-              <hr className="my-4" />
-              <h6 className="fw-bold mb-3">Guardian's Details</h6>
-              <CRow>
+                <div className="bg-light border-start border-4 border-warning p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-warning">Guardian's Details</h6>
+                  <CRow>
                 <InfoRow label="Guardian's Name" value={profileData.g_name} />
                 <InfoRow label="Guardian's Industry" value={profileData.g_industry} />
                 <InfoRow label="Guardian's Functional Area" value={profileData.g_functionalarea} />
@@ -316,20 +353,22 @@ const Profile = () => {
                 <InfoRow label="Guardian's Company" value={profileData.g_companyname} />
                 <InfoRow label="Guardian's Annual Income" value={profileData.g_annualincome} />
               </CRow>
+                </div>
 
-              <hr className="my-4" />
-              <h6 className="fw-bold mb-3">Local Guardian Details</h6>
-              <CRow>
+                <div className="bg-light border-start border-4 border-info p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-info">Local Guardian Details</h6>
+                  <CRow>
                 <InfoRow label="Local Guardian Name" value={profileData.localgurdianname} />
                 <InfoRow label="Relation" value={profileData.relation} />
                 <InfoRow label="Mobile" value={profileData.localmobile1} />
                 <InfoRow label="Landline" value={profileData.locallandlineno} />
                 <InfoRow label="Email" value={profileData.guardianemail} />
               </CRow>
+                </div>
 
-              <hr className="my-4" />
-              <h6 className="fw-bold mb-3">Family Information</h6>
-              <CRow>
+                <div className="bg-light border-start border-4 border-danger p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-danger">Family Information</h6>
+                  <CRow>
                 <InfoRow label="Number of Members" value={profileData.no_of_members} />
                 <InfoRow label="Household Income" value={profileData.HouseHoldIncome} />
                 <InfoRow label="Family Occupation" value={profileData.Family_Occupation} />
@@ -337,18 +376,22 @@ const Profile = () => {
                 <InfoRow label="Parent Mobile 1" value={profileData.mobile1} />
                 <InfoRow label="Parent Mobile 2" value={profileData.mobile2} />
               </CRow>
+                </div>
+              </div>
             </CCardBody>
           </CCard>
         </CTabPane>
 
         {/* Contact & Address Tab */}
         <CTabPane visible={activeTab === 'contact'}>
-          <CCard className="border-0 shadow-sm">
-            <CCardHeader className="bg-light fw-semibold">
-              📍 Contact & Address Information
-            </CCardHeader>
-            <CCardBody className="p-4">
-              <h6 className="fw-bold mb-3">Primary Address</h6>
+          <CCard className="border-0 shadow">
+            <CCardBody className="p-0">
+              <div className="bg-warning text-white py-2 px-4">
+                <h6 className="mb-0 fw-bold">📍 Contact & Address Information</h6>
+              </div>
+              <div className="p-4">
+                <div className="bg-light border-start border-4 border-primary p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-primary">Primary Address</h6>
               <CRow>
                 <InfoRow label="Address Line 1" value={profileData.address} />
                 <InfoRow label="Address Line 2" value={profileData.addressline2} />
@@ -362,25 +405,29 @@ const Profile = () => {
                 <InfoRow label="Country" value={profileData.country} />
                 <InfoRow label="PIN Code" value={profileData.pinno} />
               </CRow>
+                </div>
 
-              <hr className="my-4" />
-              <h6 className="fw-bold mb-3">Local Address</h6>
-              <CRow>
+                <div className="bg-light border-start border-4 border-success p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-success">Local Address</h6>
+                  <CRow>
                 <InfoRow label="Local Address Line 1" value={profileData.Localaddress} />
                 <InfoRow label="Local Address Line 2" value={profileData.Localaddressline2} />
                 <InfoRow label="Local PIN Code" value={profileData.Localpinno} />
                 <InfoRow label="Address Type" value={profileData.addresstype} />
               </CRow>
+                </div>
 
-              <hr className="my-4" />
-              <h6 className="fw-bold mb-3">Branch Contact Details</h6>
-              <CRow>
+                <div className="bg-light border-start border-4 border-info p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-info">Branch Contact Details</h6>
+                  <CRow>
                 <InfoRow label="Branch Name" value={profileData.Branchname} />
                 <InfoRow label="Branch Address" value={profileData.Address1} />
                 <InfoRow label="Branch Phone" value={profileData.phoneNo} />
                 <InfoRow label="Branch Email" value={profileData.email1} />
                 <InfoRow label="Branch ESI Number" value={profileData.BranchESINumber} />
               </CRow>
+                </div>
+              </div>
             </CCardBody>
           </CCard>
         </CTabPane>
