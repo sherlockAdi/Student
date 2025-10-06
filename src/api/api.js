@@ -153,7 +153,7 @@ export async function getSignatoryList() {
 
 // Get Student Profile
 export async function getStudentProfile(admissionNo) {
-  const { data } = await api.get('/Studentapi/getProfile', {
+  const { data } = await api.get('/studentapi/getProfile', {
     params: {
       id: admissionNo,
     },

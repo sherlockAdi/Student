@@ -276,6 +276,7 @@ const StudentFeePayment = () => {
       </CCard>
     );
   }
+  
 
   if (error) {
     return (
@@ -329,6 +330,8 @@ const StudentFeePayment = () => {
                   className="d-flex flex-column align-items-center justify-content-center text-center border-end mb-3 mb-md-0"
                 >
                   {/* Dummy Photo */}
+                  <CRow>
+                    <CCol>
                   <div 
                     className="rounded-circle mb-2 d-flex align-items-center justify-content-center text-white fw-bold"
                     style={{ 
@@ -340,6 +343,9 @@ const StudentFeePayment = () => {
                   >
                     {searchResult.firstname?.charAt(0)}{searchResult.lastname?.charAt(0)}
                   </div>
+
+                  </CCol>
+                  <CCol>
                   <h5 className="fw-bold text-primary mb-1">
                     {searchResult.firstname} {searchResult.lastname}
                   </h5>
@@ -352,6 +358,10 @@ const StudentFeePayment = () => {
                   <div className="badge bg-info mt-2 px-3 py-2">
                     🆔 {studentDetails.admissionno}
                   </div>
+                  </CCol>
+                  </CRow>
+                  
+                  
                 </CCol>
 
                 <CCol xs={12} md={8}>
