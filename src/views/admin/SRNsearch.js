@@ -296,6 +296,12 @@ const SRNSearch = () => {
       return;
     }
 
+    const selectedRows = feeRows.filter(row => row.selectAll);
+    if (selectedRows.length === 0) {
+      alert('⚠️ Please select at least one fee row to submit payment.');
+      return;
+    }
+
     setIsPaying(true);
     setPaymentStatus(null);
 
@@ -307,8 +313,115 @@ const SRNSearch = () => {
         name: "ATM GLOBAL BUSSINESS SCHOOL",
         description: "College Fee Payment",
         image: "https://razorpay.com/favicon.png",
-        handler: function (response) {
-          setPaymentStatus({ type: "success", response });
+        handler: async function (response) {
+          console.log('Razorpay Payment Success:', response);
+          
+          // After successful Razorpay payment, submit each selected row to backend
+          try {
+            const successfulSubmissions = [];
+            const failedSubmissions = [];
+            
+            for (let i = 0; i < selectedRows.length; i++) {
+              const row = selectedRows[i];
+              const currentEReceiptNo = (installmentDetails?.ereceiptno || 0) + 1 + i;
+              
+              try {
+                const apiPayload = {
+                  PaymentMode: 'Online',
+                  BankName: 'Razorpay',
+                  TransactionId: response.razorpay_payment_id || '',
+                  TransactionAmount: row.currentFees.toString(),
+                  StudentId: parseInt(searchResult?.id) || 0,
+                  FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
+                  InstalmentId: '1',
+                  SubmitDate: today,
+                  FineAmount: row.fineAmount?.toString() || '0',
+                  OtherFineAmount: '0',
+                  NetAmountSubmitted: row.currentFees.toString(),
+                  Remarks: `Online Payment - ${row.feeHead} (${row.feeInstallment}) - Razorpay ID: ${response.razorpay_payment_id}`,
+                  FeeSubmitLastDate: today,
+                  FinancialYearId: (BookNoReceiptNoDetails?.financialyearid || 1).toString(),
+                  BookNo: (BookNoReceiptNoDetails?.bookno || '').toString(),
+                  ReceiptNo: (BookNoReceiptNoDetails?.receiptno || '').toString(),
+                  InstallmentType: '1',
+                  DepositDate: today,
+                  PaymentClearDate: today,
+                  EReceiptNo: currentEReceiptNo.toString(),
+                  Uid: '1',
+                  Utype: '1',
+                  ChequeClearingDate: today,
+                  TransactionReceipt: '',
+                  CardNo: '',
+                  CardAmount: '0',
+                  FeeCollectionInFavourOf: '',
+                  OtherCharges: '0',
+                  OtherChargesRemarks: '',
+                  ChequeDraftInFavourOf: '',
+                  ChequeDdNo: '',
+                  BankBranch: '',
+                  ChequeDdDate: today,
+                  FavorOfs: '',
+                  PaymentModes: '',
+                  BankNames: '',
+                  BranchNames: '',
+                  AccountNumbers: '',
+                  InFavorOfs: '',
+                  InFavOfId: '',
+                  AuthorizedSignatory: '',
+                  AccountNoId: '',
+                  WaiverName: ''
+                };
+                
+                const submitResponse = await submitOfflinePayment(apiPayload);
+                console.log(`Payment submitted for row ${i + 1}:`, submitResponse);
+                
+                successfulSubmissions.push({
+                  feeHead: row.feeHead,
+                  installment: row.feeInstallment,
+                  amount: row.currentFees,
+                  receiptNo: currentEReceiptNo
+                });
+              } catch (rowError) {
+                console.error(`Error submitting payment for row ${i + 1}:`, rowError);
+                failedSubmissions.push({
+                  feeHead: row.feeHead,
+                  installment: row.feeInstallment,
+                  amount: row.currentFees,
+                  error: rowError.response?.data?.message || rowError.message
+                });
+              }
+            }
+            
+            // Show summary
+            let message = `🎉 Razorpay Payment ID: ${response.razorpay_payment_id}\n\n`;
+            if (successfulSubmissions.length > 0) {
+              message += `✅ Successfully recorded ${successfulSubmissions.length} payment(s):\n\n`;
+              successfulSubmissions.forEach((sub, idx) => {
+                message += `${idx + 1}. ${sub.feeHead} (${sub.installment}) - ₹${sub.amount.toFixed(2)} - Receipt: ${sub.receiptNo}\n`;
+              });
+            }
+            
+            if (failedSubmissions.length > 0) {
+              message += `\n⚠️ Failed to record ${failedSubmissions.length} payment(s):\n\n`;
+              failedSubmissions.forEach((sub, idx) => {
+                message += `${idx + 1}. ${sub.feeHead} (${sub.installment}) - ₹${sub.amount.toFixed(2)} - Error: ${sub.error}\n`;
+              });
+            }
+            
+            setPaymentStatus({ type: "success", response, message });
+            alert(message);
+            
+            // Refresh data
+            if (srnInput && successfulSubmissions.length > 0) {
+              handleSearch();
+            }
+          } catch (submitError) {
+            console.error('Error submitting payment to backend:', submitError);
+            setPaymentStatus({ 
+              type: "error", 
+              message: `Payment successful on Razorpay but failed to record: ${submitError.message}` 
+            });
+          }
         },
         prefill: {
           name: searchResult
@@ -319,7 +432,7 @@ const SRNSearch = () => {
         },
         notes: {
           srn: studentDetails?.admissionno || "",
-          selectedFeeHeads: selectedFeeRows
+          selectedFeeHeads: selectedRows
             .map((row) => `${row.feeHead} (${row.feeInstallment})`)
             .join(", "),
         },
@@ -363,69 +476,118 @@ const SRNSearch = () => {
     try {
       // Get selected fee rows for installment details
       const selectedRows = feeRows.filter(row => row.selectAll);
-      const installmentIds = selectedRows.map(row => row.feeInstallment).join(',');
       
-      // Prepare the API payload according to the schema
-      const apiPayload = {
-        PaymentMode: paymentData.paymentModeName || '',
-        BankName: paymentData.bankNameField || paymentData.bank || '',
-        ChequeDdNo: paymentData.chequeNo || paymentData.draftNo || '',
-        BankBranch: paymentData.branchName || '',
-        ChequeDdDate: paymentData.chequeDate || paymentData.draftDate || today,
-        ChequeClearingDate: clearingDate || today,
-        TransactionId: paymentData.transactionNo || '',
-        TransactionReceipt: '',
-        TransactionAmount: paymentData.amount.toString(),
-        CardNo: paymentData.cardNo || '',
-        CardAmount: paymentData.cardAmount || '0',
-        FeeCollectionInFavourOf: paymentData.favourOfName || '',
-        OtherCharges: '0',
-        OtherChargesRemarks: '',
-        ChequeDraftInFavourOf: paymentData.favourOfName || '',
-        StudentId: parseInt(searchResult?.id) || 0,
-        FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
-        InstalmentId: '1',
-        SubmitDate: today,
-        FineAmount: '0',
-        OtherFineAmount: '0',
-        NetAmountSubmitted: paymentData.amount.toString(),
-        Remarks: paymentData.remarks || '',
-        FeeSubmitLastDate: today,
-        FinancialYearId: (BookNoReceiptNoDetails?.financialyearid || 1).toString(),
-        BookNo: (BookNoReceiptNoDetails?.bookno || '').toString(),
-        ReceiptNo: (BookNoReceiptNoDetails?.receiptno || '').toString(),
-        FavorOfs: (paymentData.favourOf || '').toString(),
-        PaymentModes: (paymentData.paymentMode || '').toString(),
-        BankNames: paymentData.bank || '',
-        BranchNames: paymentData.branchName || '',
-        AccountNumbers: paymentData.account || '',
-        InFavorOfs: (paymentData.favourOf || '').toString(),
-        InstallmentType: '1',
-        DepositDate: depositDate || today,
-        PaymentClearDate: clearingDate || today,
-        EReceiptNo: ((installmentDetails?.ereceiptno || 0) + 1).toString(),
-        InFavOfId: (paymentData.favourOf || '').toString(),
-        AuthorizedSignatory: paymentData.signatoryName || '',
-        Uid: '1',
-        Utype: '1',
-        AccountNoId: (paymentData.accountId || '').toString()
-      };
+      if (selectedRows.length === 0) {
+        alert('⚠️ Please select at least one fee row to submit payment.');
+        setIsPaying(false);
+        return;
+      }
       
-      console.log('API Payload:', apiPayload);
+      const successfulSubmissions = [];
+      const failedSubmissions = [];
       
-      // Submit the payment
-      const response = await submitOfflinePayment(apiPayload);
+      // Loop through each selected row and submit individually
+      for (let i = 0; i < selectedRows.length; i++) {
+        const row = selectedRows[i];
+        const currentEReceiptNo = (installmentDetails?.ereceiptno || 0) + 1 + i;
+        
+        try {
+          // Prepare the API payload for each row
+          const apiPayload = {
+            PaymentMode: paymentData.paymentModeName || '',
+            BankName: paymentData.bankNameField || paymentData.bank || '',
+            ChequeDdNo: paymentData.chequeNo || paymentData.draftNo || '',
+            BankBranch: paymentData.branchName || '',
+            ChequeDdDate: paymentData.chequeDate || paymentData.draftDate || today,
+            ChequeClearingDate: clearingDate || today,
+            TransactionId: paymentData.transactionNo || '',
+            TransactionReceipt: '',
+            TransactionAmount: row.currentFees.toString(), // Use individual row amount
+            CardNo: paymentData.cardNo || '',
+            CardAmount: paymentData.cardAmount || '0',
+            FeeCollectionInFavourOf: paymentData.favourOfName || '',
+            OtherCharges: '0',
+            OtherChargesRemarks: '',
+            ChequeDraftInFavourOf: paymentData.favourOfName || '',
+            StudentId: parseInt(searchResult?.id) || 0,
+            FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
+            InstalmentId: '1', // You may need to use row-specific installment ID if available
+            SubmitDate: today,
+            FineAmount: row.fineAmount?.toString() || '0',
+            OtherFineAmount: '0',
+            NetAmountSubmitted: row.currentFees.toString(), // Use individual row amount
+            Remarks: `${paymentData.remarks || ''} - ${row.feeHead} (${row.feeInstallment})`,
+            FeeSubmitLastDate: today,
+            FinancialYearId: (BookNoReceiptNoDetails?.financialyearid || 1).toString(),
+            BookNo: (BookNoReceiptNoDetails?.bookno || '').toString(),
+            ReceiptNo: (BookNoReceiptNoDetails?.receiptno || '').toString(),
+            FavorOfs: (paymentData.favourOf || '').toString(),
+            PaymentModes: (paymentData.paymentMode || '').toString(),
+            BankNames: paymentData.bank || '',
+            BranchNames: paymentData.branchName || '',
+            AccountNumbers: paymentData.account || '',
+            InFavorOfs: (paymentData.favourOf || '').toString(),
+            InstallmentType: '1',
+            DepositDate: depositDate || today,
+            PaymentClearDate: clearingDate || today,
+            EReceiptNo: currentEReceiptNo.toString(),
+            InFavOfId: (paymentData.favourOf || '').toString(),
+            AuthorizedSignatory: paymentData.signatoryName || '',
+            Uid: '1',
+            Utype: '1',
+            AccountNoId: (paymentData.accountId || '').toString()
+          };
+          
+          console.log(`API Payload for Row ${i + 1}:`, apiPayload);
+          
+          // Submit the payment for this row
+          const response = await submitOfflinePayment(apiPayload);
+          
+          console.log(`Payment Response for Row ${i + 1}:`, response);
+          
+          successfulSubmissions.push({
+            feeHead: row.feeHead,
+            installment: row.feeInstallment,
+            amount: row.currentFees,
+            receiptNo: currentEReceiptNo
+          });
+        } catch (rowError) {
+          console.error(`Error submitting payment for row ${i + 1}:`, rowError);
+          failedSubmissions.push({
+            feeHead: row.feeHead,
+            installment: row.feeInstallment,
+            amount: row.currentFees,
+            error: rowError.response?.data?.message || rowError.message
+          });
+        }
+      }
       
-      console.log('Payment Response:', response);
+      // Show summary of submissions
+      let message = '';
+      if (successfulSubmissions.length > 0) {
+        message += `✅ Successfully submitted ${successfulSubmissions.length} payment(s):\n\n`;
+        successfulSubmissions.forEach((sub, idx) => {
+          message += `${idx + 1}. ${sub.feeHead} (${sub.installment}) - ₹${sub.amount.toFixed(2)} - Receipt: ${sub.receiptNo}\n`;
+        });
+      }
       
-      alert(`✅ Offline payment submitted successfully!\n\nDetails:\nMode: ${paymentData.paymentModeName}\nAmount: ₹${paymentData.amount.toFixed(2)}\nReceipt No: ${apiPayload.EReceiptNo}`);
+      if (failedSubmissions.length > 0) {
+        message += `\n❌ Failed to submit ${failedSubmissions.length} payment(s):\n\n`;
+        failedSubmissions.forEach((sub, idx) => {
+          message += `${idx + 1}. ${sub.feeHead} (${sub.installment}) - ₹${sub.amount.toFixed(2)} - Error: ${sub.error}\n`;
+        });
+      }
       
-      // Reset payment mode and refresh data
-      setPaymentMode(null);
+      alert(message);
       
-      // Optionally refresh the student data
-      if (srnInput) {
-        handleSearch();
+      // Reset payment mode and refresh data if any submission was successful
+      if (successfulSubmissions.length > 0) {
+        setPaymentMode(null);
+        
+        // Refresh the student data
+        if (srnInput) {
+          handleSearch();
+        }
       }
     } catch (error) {
       console.error('Error submitting offline payment:', error);

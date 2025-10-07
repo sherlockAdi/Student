@@ -16,6 +16,7 @@ import {
   getFeeInstallmentDetails,
   getFeeBookNoReceiptNo,
   getAmiFeeDetails,
+  submitOfflinePayment,
 } from "../../api/api";
 import PaymentSummaryCard from "../../components/payments/PaymentSummaryCard";
 import {
@@ -210,6 +211,12 @@ const StudentFeePayment = () => {
       return;
     }
 
+    const selectedRows = feeRows.filter(row => row.selectAll);
+    if (selectedRows.length === 0) {
+      alert('⚠️ Please select at least one fee row to submit payment.');
+      return;
+    }
+
     setIsPaying(true);
     setPaymentStatus(null);
 
@@ -221,8 +228,116 @@ const StudentFeePayment = () => {
         name: "ATM GLOBAL BUSINESS SCHOOL",
         description: "College Fee Payment",
         image: "https://razorpay.com/favicon.png",
-        handler: function (response) {
-          setPaymentStatus({ type: "success", response });
+        handler: async function (response) {
+          console.log('Razorpay Payment Success:', response);
+          
+          // After successful Razorpay payment, submit each selected row to backend
+          try {
+            const successfulSubmissions = [];
+            const failedSubmissions = [];
+            
+            for (let i = 0; i < selectedRows.length; i++) {
+              const row = selectedRows[i];
+              const currentEReceiptNo = (installmentDetails?.ereceiptno || 0) + 1 + i;
+              
+              try {
+                const apiPayload = {
+                  PaymentMode: 'Online',
+                  BankName: 'Razorpay',
+                  TransactionId: response.razorpay_payment_id || '',
+                  TransactionAmount: row.currentFees.toString(),
+                  StudentId: parseInt(searchResult?.id) || 0,
+                  FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
+                  InstalmentId: '1',
+                  SubmitDate: today,
+                  FineAmount: row.fineAmount?.toString() || '0',
+                  OtherFineAmount: '0',
+                  NetAmountSubmitted: row.currentFees.toString(),
+                  Remarks: `Online Payment - ${row.feeHead} (${row.feeInstallment}) - Razorpay ID: ${response.razorpay_payment_id}`,
+                  FeeSubmitLastDate: today,
+                  FinancialYearId: (BookNoReceiptNoDetails?.financialyearid || 1).toString(),
+                  BookNo: (BookNoReceiptNoDetails?.bookno || '').toString(),
+                  ReceiptNo: (BookNoReceiptNoDetails?.receiptno || '').toString(),
+                  InstallmentType: '1',
+                  DepositDate: today,
+                  PaymentClearDate: today,
+                  EReceiptNo: currentEReceiptNo.toString(),
+                  Uid: '1',
+                  Utype: '1',
+                  ChequeClearingDate: today,
+                  TransactionReceipt: '',
+                  CardNo: '',
+                  CardAmount: '0',
+                  FeeCollectionInFavourOf: '',
+                  OtherCharges: '0',
+                  OtherChargesRemarks: '',
+                  ChequeDraftInFavourOf: '',
+                  ChequeDdNo: '',
+                  BankBranch: '',
+                  ChequeDdDate: today,
+                  FavorOfs: '',
+                  PaymentModes: '',
+                  BankNames: '',
+                  BranchNames: '',
+                  AccountNumbers: '',
+                  InFavorOfs: '',
+                  InFavOfId: '',
+                  AuthorizedSignatory: '',
+                  AccountNoId: '',
+                  WaiverName: ''
+                };
+                
+                const submitResponse = await submitOfflinePayment(apiPayload);
+                console.log(`Payment submitted for row ${i + 1}:`, submitResponse);
+                
+                successfulSubmissions.push({
+                  feeHead: row.feeHead,
+                  installment: row.feeInstallment,
+                  amount: row.currentFees,
+                  receiptNo: currentEReceiptNo
+                });
+              } catch (rowError) {
+                console.error(`Error submitting payment for row ${i + 1}:`, rowError);
+                failedSubmissions.push({
+                  feeHead: row.feeHead,
+                  installment: row.feeInstallment,
+                  amount: row.currentFees,
+                  error: rowError.response?.data?.message || rowError.message
+                });
+              }
+            }
+            
+            // Show summary
+            let message = `🎉 Razorpay Payment ID: ${response.razorpay_payment_id}\n\n`;
+            if (successfulSubmissions.length > 0) {
+              message += `✅ Successfully recorded ${successfulSubmissions.length} payment(s):\n\n`;
+              successfulSubmissions.forEach((sub, idx) => {
+                message += `${idx + 1}. ${sub.feeHead} (${sub.installment}) - ₹${sub.amount.toFixed(2)} - Receipt: ${sub.receiptNo}\n`;
+              });
+            }
+            
+            if (failedSubmissions.length > 0) {
+              message += `\n⚠️ Failed to record ${failedSubmissions.length} payment(s):\n\n`;
+              failedSubmissions.forEach((sub, idx) => {
+                message += `${idx + 1}. ${sub.feeHead} (${sub.installment}) - ₹${sub.amount.toFixed(2)} - Error: ${sub.error}\n`;
+              });
+            }
+            
+            setPaymentStatus({ type: "success", response, message });
+            alert(message);
+            
+            // Reload page to refresh data
+            if (successfulSubmissions.length > 0) {
+              window.location.reload();
+            }
+          } catch (submitError) {
+            console.error('Error submitting payment to backend:', submitError);
+            setPaymentStatus({ 
+              type: "error", 
+              message: `Payment successful on Razorpay but failed to record: ${submitError.message}` 
+            });
+            alert(`⚠️ Payment successful on Razorpay but failed to record: ${submitError.message}\n\nRazorpay Payment ID: ${response.razorpay_payment_id}\n\nPlease contact admin with this payment ID.`);
+          }
         },
         prefill: {
           name: searchResult
@@ -233,7 +348,7 @@ const StudentFeePayment = () => {
         },
         notes: {
           srn: studentDetails?.admissionno || "",
-          selectedFeeHeads: selectedFeeRows
+          selectedFeeHeads: selectedRows
             .map((row) => `${row.feeHead} (${row.feeInstallment})`)
             .join(", "),
         },
