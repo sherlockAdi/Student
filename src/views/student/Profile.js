@@ -13,9 +13,11 @@ import {
   CTabPane,
   CBadge,
 } from '@coreui/react'
-import { getStudentProfile } from '../../api/api'
+import { searchStudentBySRN, getFeeSelectStudent, getStudentProfile } from '../../api/api'
 
 const Profile = () => {
+  const [searchResult, setSearchResult] = useState(null)
+  const [studentDetails, setStudentDetails] = useState(null)
   const [profileData, setProfileData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -41,6 +43,21 @@ const Profile = () => {
           return
         }
 
+        // Call searchStudentBySRN for the top card (same as StudentFeePayment)
+        const data = await searchStudentBySRN(admissionNo)
+        
+        if (data?.length > 0) {
+          setSearchResult(data[0])
+          const id = data[0].id
+
+          // Get detailed student information for top card
+          const data2 = await getFeeSelectStudent(id)
+          setStudentDetails(data2[0])
+        } else {
+          setError('No student record found.')
+        }
+
+        // Call getStudentProfile for detailed tabs below
         const response = await getStudentProfile(admissionNo)
         
         if (response.Success && response.Data && response.Data.length > 0) {
@@ -76,7 +93,7 @@ const Profile = () => {
     return bloodGroups[code] || 'N/A'
   }
 
-  const InfoRow = ({ label, value, icon }) => (
+  const InfoRow = ({ label, value }) => (
     <CCol xs={12} md={6} lg={4} className="mb-3">
       <div className="border-start border-3 border-primary ps-3 py-2 bg-light">
         <small className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>{label}</small>
@@ -108,7 +125,7 @@ const Profile = () => {
     )
   }
 
-  if (!profileData) {
+  if (!searchResult || !studentDetails) {
     return (
       <CCard className="shadow-sm">
         <CCardHeader className="fw-bold">👤 My Profile</CCardHeader>
@@ -121,75 +138,98 @@ const Profile = () => {
 
   return (
     <div>
-      {/* Header Card with Photo - Professional College Style */}
+      {/* Header Card with Photo - EXACT Same as StudentFeePayment */}
       <CCard className="border-0 shadow mb-4">
         <CCardBody className="p-0">
           <div className="bg-primary text-white py-3 px-4">
             <h4 className="mb-0 fw-bold">Student Profile</h4>
           </div>
-          <CRow className="p-4">
-            <CCol xs={12} md={2} className="text-center mb-3 mb-md-0">
-              <div 
-                className="border border-3 border-primary rounded mx-auto d-flex align-items-center justify-content-center text-primary fw-bold"
-                style={{ 
-                  width: '100px', 
-                  height: '100px', 
-                  backgroundColor: '#f8f9fa',
-                  fontSize: '2.5rem'
-                }}
-              >
-                {profileData.firstname?.charAt(0)}{profileData.lastname?.charAt(0)}
-              </div>
-              <div className="mt-2">
-                <CBadge color="primary" className="px-2 py-1">
-                  {profileData.section || 'N/A'}
-                </CBadge>
-              </div>
-            </CCol>
-            <CCol xs={12} md={10}>
-              <div className="mb-3">
-                <h3 className="mb-1 fw-bold text-dark">
-                  {profileData.firstname} {profileData.middlename} {profileData.lastname}
-                </h3>
-                <p className="text-muted mb-2">{profileData.Branchname}</p>
-              </div>
-              <CRow className="g-3">
-                <CCol xs={12} sm={6} md={4}>
-                  <div className="d-flex align-items-center">
-                    <div className="bg-primary bg-opacity-10 rounded p-2 me-2">
-                      <strong className="text-primary">🆔</strong>
-                    </div>
-                    <div>
-                      <small className="text-muted d-block">Admission No</small>
-                      <strong>{profileData.admissionno}</strong>
-                    </div>
-                  </div>
-                </CCol>
-                <CCol xs={12} sm={6} md={4}>
-                  <div className="d-flex align-items-center">
-                    <div className="bg-success bg-opacity-10 rounded p-2 me-2">
-                      <strong className="text-success">📧</strong>
-                    </div>
-                    <div>
-                      <small className="text-muted d-block">College Email</small>
-                      <strong className="text-break" style={{ fontSize: '0.9rem' }}>{profileData.collegeemail}</strong>
-                    </div>
-                  </div>
-                </CCol>
-                <CCol xs={12} sm={6} md={4}>
-                  <div className="d-flex align-items-center">
-                    <div className="bg-info bg-opacity-10 rounded p-2 me-2">
-                      <strong className="text-info">📞</strong>
-                    </div>
-                    <div>
-                      <small className="text-muted d-block">Mobile Number</small>
-                      <strong>{profileData.mobileno1}</strong>
-                    </div>
-                  </div>
-                </CCol>
-              </CRow>
-            </CCol>
-          </CRow>
+          <CCardBody className="p-3">
+            {/* Student Profile Card - Exact copy from StudentFeePayment */}
+            {searchResult && studentDetails && (
+              <CCard className="mb-3 border-0 shadow-sm rounded-3">
+                <CCardBody>
+                  <CRow>
+                    <CCol
+                      xs={12}
+                      md={4}
+                      className="d-flex flex-column align-items-center justify-content-center text-center border-end mb-3 mb-md-0"
+                    >
+                      {/* Dummy Photo */}
+                      <CRow>
+                        <CCol>
+                          <div 
+                            className="rounded-circle mb-2 d-flex align-items-center justify-content-center text-white fw-bold"
+                            style={{ 
+                              width: '100px', 
+                              height: '100px', 
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              fontSize: '2.5rem'
+                            }}
+                          >
+                            {searchResult.firstname?.charAt(0)}{searchResult.lastname?.charAt(0)}
+                          </div>
+                        </CCol>
+                        <CCol>
+                          <h5 className="fw-bold text-primary mb-1">
+                            {searchResult.firstname} {searchResult.lastname}
+                          </h5>
+                          <div className="text-muted mb-2">
+                            {searchResult.personalemail}
+                          </div>
+                          <div>
+                            <strong>📞</strong> {searchResult.mobileno1}
+                          </div>
+                          <div className="badge bg-info mt-2 px-3 py-2">
+                            🆔 {studentDetails.admissionno}
+                          </div>
+                        </CCol>
+                      </CRow>
+                    </CCol>
+
+                    <CCol xs={12} md={8}>
+                      <CRow className="gy-2 gx-3">
+                        <CCol xs={6} md={4}>
+                          <strong>College</strong>
+                          <div className="text-muted">{studentDetails.collegename}</div>
+                        </CCol>
+                        <CCol xs={6} md={2}>
+                          <strong>Branch</strong>
+                          <div className="text-muted">{studentDetails.Branchname}</div>
+                        </CCol>
+                        <CCol xs={6} md={3}>
+                          <strong>Course</strong>
+                          <div className="text-muted">{studentDetails.corsename}</div>
+                        </CCol>
+                        <CCol xs={6} md={3}>
+                          <strong>Type</strong>
+                          <div className="text-muted">{studentDetails.coursename}</div>
+                        </CCol>
+                        <CCol xs={6} md={4}>
+                          <strong>Fee Category</strong>
+                          <div className="text-muted">
+                            {studentDetails.feecategoryname}
+                          </div>
+                        </CCol>
+                        <CCol xs={6} md={2}>
+                          <strong>Semester</strong>
+                          <div className="text-muted">{studentDetails.semesterno}</div>
+                        </CCol>
+                        <CCol xs={6} md={3}>
+                          <strong>Batch</strong>
+                          <div className="text-muted">{studentDetails.Batchno}</div>
+                        </CCol>
+                        <CCol xs={6} md={3}>
+                          <strong>Section</strong>
+                          <div className="text-muted">{studentDetails.Section}</div>
+                        </CCol>
+                      </CRow>
+                    </CCol>
+                  </CRow>
+                </CCardBody>
+              </CCard>
+            )}
+          </CCardBody>
         </CCardBody>
       </CCard>
 
