@@ -52,7 +52,8 @@ const AppHeader = () => {
         >
           <CIcon icon={cilMenu} size="lg" />
         </CHeaderToggler>
-        <CHeaderNav className="d-none d-md-flex">
+        <AppBreadcrumb />
+        {/* <CHeaderNav className="d-none d-md-flex">
           <CNavItem>
             <CNavLink to="/dashboard" as={NavLink}>
               Dashboard
@@ -64,7 +65,7 @@ const AppHeader = () => {
           <CNavItem>
             <CNavLink href="#">Settings</CNavLink>
           </CNavItem>
-        </CHeaderNav>
+        </CHeaderNav> */}
         {/* Centered brand logo */}
         <div className="flex-grow-1 d-none d-md-flex justify-content-center">
           <img
@@ -147,9 +148,9 @@ const AppHeader = () => {
           <AppHeaderDropdown />
         </CHeaderNav>
       </CContainer>
-      <CContainer className="px-4" fluid>
+      {/* <CContainer className="px-4" fluid>
         <AppBreadcrumb />
-      </CContainer>
+      </CContainer> */}
     </CHeader>
   )
 }
