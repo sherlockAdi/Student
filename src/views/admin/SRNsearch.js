@@ -641,9 +641,12 @@ const SRNSearch = () => {
       <CCardBody className="p-3">
         {/* Search Box */}
         <CRow className="align-items-end g-3 mb-3">
+        <CCol xs={12} md={4} lg={2} className="d-flex justify-content-center align-items-center">
+             <div className="fw-semibold text-center">Enter SRN or Mobile Number</div>
+          </CCol>
           <CCol xs={12} md={4} lg={3}>
             <CFormInput
-              label="Enter SRN or Mobile Number"
+              // label="Enter SRN or Mobile Number"
               value={srnInput}
               onChange={(e) => setSrnInput(e.target.value)}
               placeholder="🔎 SRN or 10-digit mobile"
