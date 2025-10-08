@@ -71,7 +71,7 @@ const SRNSearch = () => {
         selectAll: false,
         feeInstallment: item.intalmentname || "N/A",
         feeHead: item.feeheadname || "N/A",
-        installmentId: item.InstalmentId || item.installmentId || 1, // Add installment ID
+        installmentId: item.instalmentid || 1, // Add installment ID from API
         dueDate: today, // Set due date to today
         feeAmount,
         concession,
