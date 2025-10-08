@@ -511,7 +511,7 @@ const SRNSearch = () => {
             ChequeDraftInFavourOf: paymentData.favourOfName || '',
             StudentId: parseInt(searchResult?.id) || 0,
             FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
-            InstalmentId: '1', // You may need to use row-specific installment ID if available
+            InstalmentId: 1, // You may need to use row-specific installment ID if available
             SubmitDate: today,
             FineAmount: row.fineAmount?.toString() || '0',
             OtherFineAmount: '0',
@@ -530,7 +530,7 @@ const SRNSearch = () => {
             InstallmentType: '1',
             DepositDate: depositDate || today,
             PaymentClearDate: clearingDate || today,
-            EReceiptNo: currentEReceiptNo.toString(),
+            EReceiptNo: BookNoReceiptNoDetails.receiptno.toString() + '/' + BookNoReceiptNoDetails.bookno.toString(),
             InFavOfId: (paymentData.favourOf || '').toString(),
             AuthorizedSignatory: paymentData.signatoryName || '',
             Uid: '1',
@@ -681,83 +681,92 @@ const SRNSearch = () => {
         </CRow>
 
         {/* Student Profile */}
-        {searchResult && studentDetails && (
-          <CCard className="mb-3 border-0 shadow-sm rounded-3">
-            <CCardBody>
-              <CRow>
-                <CCol
-                  xs={12}
-                  md={4}
-                  className="d-flex flex-column align-items-center justify-content-center text-center border-end mb-3 mb-md-0"
-                >
-                  {/* Dummy Photo */}
-                  <div 
-                    className="rounded-circle mb-2 d-flex align-items-center justify-content-center text-white fw-bold"
-                    style={{ 
-                      width: '100px', 
-                      height: '100px', 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      fontSize: '2.5rem'
-                    }}
-                  >
-                    {searchResult.firstname?.charAt(0)}{searchResult.lastname?.charAt(0)}
-                  </div>
-                  <h5 className="fw-bold text-primary mb-1">
-                    {searchResult.firstname} {searchResult.lastname}
-                  </h5>
-                  <div className="text-muted mb-2">
-                    {searchResult.personalemail}
-                  </div>
-                  <div>
-                    <strong>📞</strong> {searchResult.mobileno1}
-                  </div>
-                  <div className="badge bg-info mt-2 px-3 py-2">
-                    🆔 {studentDetails.admissionno}
-                  </div>
-                </CCol>
-
-                <CCol xs={12} md={8}>
-                  <CRow className="gy-2 gx-3">
-                    <CCol xs={6} md={4}>
-                      <strong>College</strong>
-                      <div className="text-muted">{studentDetails.collegename}</div>
-                    </CCol>
-                    <CCol xs={6} md={2}>
-                      <strong>Branch</strong>
-                      <div className="text-muted">{studentDetails.Branchname}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>Course</strong>
-                      <div className="text-muted">{studentDetails.corsename}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>Type</strong>
-                      <div className="text-muted">{studentDetails.coursename}</div>
-                    </CCol>
-                    <CCol xs={6} md={4}>
-                      <strong>Fee Category</strong>
-                      <div className="text-muted">
-                        {studentDetails.feecategoryname}
-                      </div>
-                    </CCol>
-                    <CCol xs={6} md={2}>
-                      <strong>Semester</strong>
-                      <div className="text-muted">{studentDetails.semesterno}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>Batch</strong>
-                      <div className="text-muted">{studentDetails.Batchno}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>University</strong>
-                      <div className="text-muted">{studentDetails.name}</div>
-                    </CCol>
-                  </CRow>
-                </CCol>
-              </CRow>
-            </CCardBody>
-          </CCard>
-        )}
+         {searchResult && studentDetails && (
+                  <CCard className="mb-3 border-0 shadow-sm rounded-3">
+                    <CCardBody>
+                      <CRow>
+                        <CCol
+                          xs={12}
+                          md={4}
+                          className="d-flex flex-column align-items-center justify-content-center text-center border-end mb-3 mb-md-0"
+                        >
+                          {/* Dummy Photo */}
+                          <CRow>
+                            <CCol>
+                          <div 
+                            className="rounded-circle mb-2 d-flex align-items-center justify-content-center text-white fw-bold"
+                            style={{ 
+                              width: '100px', 
+                              height: '100px', 
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              fontSize: '2.5rem'
+                            }}
+                          >
+                            {searchResult.firstname?.charAt(0)}{searchResult.lastname?.charAt(0)}
+                          </div>
+        
+                          </CCol>
+                          <CCol>
+                          <h5 className="fw-bold text-primary mb-1">
+                            {searchResult.firstname} {searchResult.lastname}
+                          </h5>
+                          <div className="text-muted mb-2">
+                            {searchResult.personalemail}
+                          </div>
+                          <div>
+                            <strong>📞</strong> {searchResult.mobileno1}
+                          </div>
+                          <div className="badge bg-info mt-2 px-3 py-2">
+                            🆔 {studentDetails.admissionno}
+                          </div>
+                          </CCol>
+                          </CRow>
+                          
+                          
+                        </CCol>
+        
+                        <CCol xs={12} md={8}>
+                          <CRow className="gy-2 gx-3">
+                            <CCol xs={6} md={4}>
+                              <strong>College</strong>
+                              <div className="text-muted">{studentDetails.collegename}</div>
+                            </CCol>
+                            <CCol xs={6} md={2}>
+                              <strong>Branch</strong>
+                              <div className="text-muted">{studentDetails.Branchname}</div>
+                            </CCol>
+                            <CCol xs={6} md={3}>
+                              <strong>Course</strong>
+                              <div className="text-muted">{studentDetails.corsename}</div>
+                            </CCol>
+                            <CCol xs={6} md={3}>
+                              <strong>Type</strong>
+                              <div className="text-muted">{studentDetails.coursename}</div>
+                            </CCol>
+                            <CCol xs={6} md={4}>
+                              <strong>Fee Category</strong>
+                              <div className="text-muted">
+                                {studentDetails.feecategoryname}
+                              </div>
+                            </CCol>
+                            <CCol xs={6} md={2}>
+                              <strong>Semester</strong>
+                              <div className="text-muted">{studentDetails.semesterno}</div>
+                            </CCol>
+                            <CCol xs={6} md={3}>
+                              <strong>Batch</strong>
+                              <div className="text-muted">{studentDetails.Batchno}</div>
+                            </CCol>
+                            <CCol xs={6} md={3}>
+                              <strong>University</strong>
+                              <div className="text-muted">{studentDetails.name}</div>
+                            </CCol>
+                          </CRow>
+                        </CCol>
+                      </CRow>
+                    </CCardBody>
+                  </CCard>
+                )}
 
         {/* Installment Details */}
         {/* {installmentDetails && BookNoReceiptNoDetails && (

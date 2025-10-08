@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
   // Leave baseURL blank to allow Vite proxy in development
-  baseURL: 'http://61.246.33.108:8069/',
+  baseURL: 'http://localhost:62623/',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
