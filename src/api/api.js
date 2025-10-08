@@ -167,5 +167,11 @@ export async function submitOfflinePayment(paymentData) {
   return data;
 }
 
+// Submit Fee (insert into fee table)
+export async function submitFee(feeData) {
+  const { data } = await api.post('/studentapi/student/submit-fee', feeData);
+  return data;
+}
+
 
 export default api

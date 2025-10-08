@@ -21,6 +21,7 @@ import {
   getFeeBookNoReceiptNo,
   getAmiFeeDetails,
   submitOfflinePayment,
+  submitFee,
 } from "../../api/api";
 import PaymentSummaryCard from "../../components/payments/PaymentSummaryCard";
 import OfflinePaymentForm from "../../components/payments/OfflinePaymentForm";
@@ -72,6 +73,7 @@ const SRNSearch = () => {
         feeInstallment: item.intalmentname || "N/A",
         feeHead: item.feeheadname || "N/A",
         installmentId: item.instalmentid || 1, // Add installment ID from API
+        feeHeadId: item.feeheadid || 0, // Add fee head ID from API
         dueDate: today, // Set due date to today
         feeAmount,
         concession,
@@ -376,6 +378,36 @@ const SRNSearch = () => {
                 const submitResponse = await submitOfflinePayment(apiPayload);
                 console.log(`Payment submitted for row ${i + 1}:`, submitResponse);
                 
+                // Also submit to fee table
+                const feePayload = {
+                  UserId: 1,
+                  UserType: 1,
+                  StudentId: parseInt(searchResult?.id) || 0,
+                  FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
+                  InstalmentId: row.installmentId || 1,
+                  FeeHeadId: (row.feeHeadId || 0).toString(),
+                  FeeHeadAmount: row.currentFees.toString(),
+                  TotalFeeAmount: row.feeAmount.toString(),
+                  DepositeFee: row.currentFees.toString(),
+                  WaiveAmount: row.waivedAmount.toString(),
+                  RemainingFee: (row.amountRemaining - row.currentFees).toString(),
+                  SubmitDate: today,
+                  DDate: today,
+                  PaymentClearDate: today,
+                  SubmitId: 0,
+                  IsOcc: false,
+                  InstallmentType: 1,
+                  ActualFeeAmount: row.feeAmount.toString(),
+                  ConssessionAmount: row.concession.toString()
+                };
+                
+                try {
+                  await submitFee(feePayload);
+                  console.log(`Fee data submitted for row ${i + 1}`);
+                } catch (feeError) {
+                  console.error(`Error submitting fee data for row ${i + 1}:`, feeError);
+                }
+                
                 successfulSubmissions.push({
                   feeHead: row.feeHead,
                   installment: row.feeInstallment,
@@ -545,6 +577,36 @@ const SRNSearch = () => {
           const response = await submitOfflinePayment(apiPayload);
           
           console.log(`Payment Response for Row ${i + 1}:`, response);
+          
+          // Also submit to fee table
+          const feePayload = {
+            UserId: 1,
+            UserType: 1,
+            StudentId: parseInt(searchResult?.id) || 0,
+            FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
+            InstalmentId: row.installmentId || 1,
+            FeeHeadId: (row.feeHeadId || 0).toString(),
+            FeeHeadAmount: row.currentFees.toString(),
+            TotalFeeAmount: row.feeAmount.toString(),
+            DepositeFee: row.currentFees.toString(),
+            WaiveAmount: row.waivedAmount.toString(),
+            RemainingFee: (row.amountRemaining - row.currentFees).toString(),
+            SubmitDate: today,
+            DDate: depositDate || today,
+            PaymentClearDate: clearingDate || today,
+            SubmitId: 0,
+            IsOcc: false,
+            InstallmentType: 1,
+            ActualFeeAmount: row.feeAmount.toString(),
+            ConssessionAmount: row.concession.toString()
+          };
+          
+          try {
+            await submitFee(feePayload);
+            console.log(`Fee data submitted for row ${i + 1}`);
+          } catch (feeError) {
+            console.error(`Error submitting fee data for row ${i + 1}:`, feeError);
+          }
           
           successfulSubmissions.push({
             feeHead: row.feeHead,
