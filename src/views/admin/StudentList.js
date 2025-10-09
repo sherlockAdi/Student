@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CIcon from '@coreui/icons-react'
 import { cilPencil, cilSearch } from '@coreui/icons'
@@ -24,10 +24,8 @@ import {
   COffcanvasHeader,
   COffcanvasBody,
 } from '@coreui/react'
-import { students as DATA } from '../../data/students'
 import { getCommonData, getAllStudents } from '../../api/api'
 
-const unique = (arr, key) => Array.from(new Set(arr.map((x) => x[key]))).filter(Boolean)
 
 const StudentList = () => {
   const navigate = useNavigate()
