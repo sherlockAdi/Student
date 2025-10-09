@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CIcon from '@coreui/icons-react'
 import { cilPencil, cilSearch } from '@coreui/icons'
@@ -21,11 +21,38 @@ import {
   CBadge,
 } from '@coreui/react'
 import { students as DATA } from '../../data/students'
+import { getCommonData } from '../../api/api'
 
 const unique = (arr, key) => Array.from(new Set(arr.map((x) => x[key]))).filter(Boolean)
 
 const StudentList = () => {
   const navigate = useNavigate()
+  // Generic Common-Data filters
+  const typeOptions = [
+    { id: 1, label: 'Country' },
+    { id: 2, label: 'State' },
+    { id: 3, label: 'District' },
+    { id: 4, label: 'Tehsil' },
+    { id: 5, label: 'Caste Category' },
+    { id: 6, label: 'Branch' },
+    { id: 7, label: 'Semester' },
+    { id: 8, label: 'Courses' },
+    { id: 9, label: 'Course Type' },
+    { id: 10, label: 'College' },
+    { id: 11, label: 'University' },
+  ];
+  const parentMap = {
+    2: 1,   // State <- Country
+    3: 2,   // District <- State
+    4: 3,   // Tehsil <- District
+    6: 10,  // Branch <- College
+    // 8 (Courses) parent is special in SP; left optional
+  };
+  const [selectedType, setSelectedType] = useState(''); // numeric string or ''
+  const [parentOptions, setParentOptions] = useState([]); // [{id,name}]
+  const [selectedParentId, setSelectedParentId] = useState('');
+  const [mainOptions, setMainOptions] = useState([]); // [{id,name}]
+  const [selectedMainId, setSelectedMainId] = useState('');
   const [filters, setFilters] = useState({
     firstname: '',
     lastname: '',
@@ -37,6 +64,40 @@ const StudentList = () => {
     city: '',
     state: '',
   })
+
+  // Load parent options when type changes and requires parent
+  useEffect(() => {
+    const loadParents = async () => {
+      const t = parseInt(selectedType);
+      const pType = parentMap[t];
+      if (!t || !pType) {
+        setParentOptions([]);
+        setSelectedParentId('');
+        return;
+      }
+      const data = await getCommonData({ type: pType, parentid: -1, selfid: -1 });
+      setParentOptions(data || []);
+      setSelectedParentId('');
+    };
+    loadParents();
+  }, [selectedType]);
+
+  // Load main options when selectedType or selectedParentId changes
+  useEffect(() => {
+    const loadMain = async () => {
+      const t = parseInt(selectedType);
+      if (!t) {
+        setMainOptions([]);
+        setSelectedMainId('');
+        return;
+      }
+      const pType = parentMap[t];
+      const parentid = pType ? (selectedParentId ? parseInt(selectedParentId) : -1) : -1;
+      const data = await getCommonData({ type: t, parentid, selfid: -1 });
+      setMainOptions(data || []);
+    };
+    loadMain();
+  }, [selectedType, selectedParentId]);
 
   const universities = useMemo(() => unique(DATA, 'N_University'), [])
   const courseTypes = useMemo(() => unique(DATA, 'N_CourseType'), [])
@@ -79,6 +140,49 @@ const StudentList = () => {
             <strong>Admin</strong> <small>Student List with Filters</small>
           </CCardHeader>
           <CCardBody>
+            {/* Common-Data Filter Panel */}
+            <CForm className="row g-3 mb-4">
+              <CCol md={3}>
+                <CFormSelect
+                  label="Filter Type"
+                  value={selectedType}
+                  onChange={(e) => { setSelectedType(e.target.value); setSelectedMainId(''); }}
+                >
+                  <option value="">Select Type</option>
+                  {typeOptions.map((t) => (
+                    <option key={t.id} value={t.id}>{t.label}</option>
+                  ))}
+                </CFormSelect>
+              </CCol>
+              {selectedType && parentMap[parseInt(selectedType)] && (
+                <CCol md={3}>
+                  <CFormSelect
+                    label="Parent"
+                    value={selectedParentId}
+                    onChange={(e) => { setSelectedParentId(e.target.value); setSelectedMainId(''); }}
+                  >
+                    <option value="">All</option>
+                    {parentOptions.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+              )}
+              {selectedType && (
+                <CCol md={3}>
+                  <CFormSelect
+                    label="Value"
+                    value={selectedMainId}
+                    onChange={(e) => setSelectedMainId(e.target.value)}
+                  >
+                    <option value="">All</option>
+                    {mainOptions.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+              )}
+            </CForm>
             <CForm className="row g-3 mb-3">
               <CCol md={3}>
                 <CFormInput name="firstname" label="First Name" value={filters.firstname} onChange={onChange} />

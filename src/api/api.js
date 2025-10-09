@@ -173,5 +173,15 @@ export async function submitFee(feeData) {
   return data;
 }
 
+// Example: type=6 (Branch), type=1 (Country), type=2 (State with parentid=countryId)
+export async function getCommonData({ type, parentid = -1, selfid = -1 }) {
+  const { data } = await api.get('/studentapi/commondata', {
+    params: { type, parentid, selfid },
+  });
+  // Normalize to array of {id,name}
+  if (Array.isArray(data)) return data;
+  if (data?.data && Array.isArray(data.data)) return data.data;
+  return [];
+}
 
 export default api
