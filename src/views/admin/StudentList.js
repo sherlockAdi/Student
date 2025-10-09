@@ -27,110 +27,111 @@ const unique = (arr, key) => Array.from(new Set(arr.map((x) => x[key]))).filter(
 
 const StudentList = () => {
   const navigate = useNavigate()
-  // Generic Common-Data filters
-  const typeOptions = [
-    { id: 1, label: 'Country' },
-    { id: 2, label: 'State' },
-    { id: 3, label: 'District' },
-    { id: 4, label: 'Tehsil' },
-    { id: 5, label: 'Caste Category' },
-    { id: 6, label: 'Branch' },
-    { id: 7, label: 'Semester' },
-    { id: 8, label: 'Courses' },
-    { id: 9, label: 'Course Type' },
-    { id: 10, label: 'College' },
-    { id: 11, label: 'University' },
-  ];
-  const parentMap = {
-    2: 1,   // State <- Country
-    3: 2,   // District <- State
-    4: 3,   // Tehsil <- District
-    6: 10,  // Branch <- College
-    // 8 (Courses) parent is special in SP; left optional
-  };
-  const [selectedType, setSelectedType] = useState(''); // numeric string or ''
-  const [parentOptions, setParentOptions] = useState([]); // [{id,name}]
-  const [selectedParentId, setSelectedParentId] = useState('');
-  const [mainOptions, setMainOptions] = useState([]); // [{id,name}]
-  const [selectedMainId, setSelectedMainId] = useState('');
-  const [filters, setFilters] = useState({
-    firstname: '',
-    lastname: '',
-    gender: '',
-    N_University: '',
-    N_CourseType: '',
-    category: '',
-    semesterid: '',
-    city: '',
-    state: '',
-  })
+  // Full filter set via common-data API
+  const [countries, setCountries] = useState([]); // type=1
+  const [states, setStates] = useState([]); // type=2 requires country
+  const [districts, setDistricts] = useState([]); // type=3 requires state
+  const [tehsils, setTehsils] = useState([]); // type=4 requires district
+  const [castes, setCastes] = useState([]); // type=5
+  const [branches, setBranches] = useState([]); // type=6 (parent college optional)
+  const [semestersOpt, setSemestersOpt] = useState([]); // type=7
+  const [courses, setCourses] = useState([]); // type=8 (parent optional)
+  const [courseTypes, setCourseTypes] = useState([]); // type=9
+  const [colleges, setColleges] = useState([]); // type=10
+  const [universities, setUniversities] = useState([]); // type=11
 
-  // Load parent options when type changes and requires parent
+  // Selected values (ids as strings)
+  const [countryId, setCountryId] = useState('');
+  const [stateId, setStateId] = useState('');
+  const [districtId, setDistrictId] = useState('');
+  const [tehsilId, setTehsilId] = useState('');
+  const [casteId, setCasteId] = useState('');
+  const [collegeId, setCollegeId] = useState('');
+  const [branchId, setBranchId] = useState('');
+  const [semesterId, setSemesterId] = useState('');
+  const [courseId, setCourseId] = useState('');
+  const [courseTypeId, setCourseTypeId] = useState('');
+  const [universityId, setUniversityId] = useState('');
+
+  // Load top-level option sets
   useEffect(() => {
-    const loadParents = async () => {
-      const t = parseInt(selectedType);
-      const pType = parentMap[t];
-      if (!t || !pType) {
-        setParentOptions([]);
-        setSelectedParentId('');
-        return;
-      }
-      const data = await getCommonData({ type: pType, parentid: -1, selfid: -1 });
-      setParentOptions(data || []);
-      setSelectedParentId('');
-    };
-    loadParents();
-  }, [selectedType]);
+    (async () => {
+      setCountries(await getCommonData({ type: 1 }));
+      setCastes(await getCommonData({ type: 5 }));
+      setSemestersOpt(await getCommonData({ type: 7 }));
+      setCourses(await getCommonData({ type: 8 }));
+      setCourseTypes(await getCommonData({ type: 9 }));
+      setColleges(await getCommonData({ type: 10 }));
+      setUniversities(await getCommonData({ type: 11 }));
+      // Branches: load all initially to allow All
+      setBranches(await getCommonData({ type: 6 }));
+    })();
+  }, []);
 
-  // Load main options when selectedType or selectedParentId changes
+  // Cascading loads for region hierarchy
   useEffect(() => {
-    const loadMain = async () => {
-      const t = parseInt(selectedType);
-      if (!t) {
-        setMainOptions([]);
-        setSelectedMainId('');
-        return;
-      }
-      const pType = parentMap[t];
-      const parentid = pType ? (selectedParentId ? parseInt(selectedParentId) : -1) : -1;
-      const data = await getCommonData({ type: t, parentid, selfid: -1 });
-      setMainOptions(data || []);
-    };
-    loadMain();
-  }, [selectedType, selectedParentId]);
+    (async () => {
+      setStates(countryId ? await getCommonData({ type: 2, parentid: parseInt(countryId) }) : []);
+      setStateId('');
+      setDistrictId('');
+      setTehsilId('');
+      setDistricts([]);
+      setTehsils([]);
+    })();
+  }, [countryId]);
 
-  const universities = useMemo(() => unique(DATA, 'N_University'), [])
-  const courseTypes = useMemo(() => unique(DATA, 'N_CourseType'), [])
-  const categories = useMemo(() => unique(DATA, 'category'), [])
-  const semesters = useMemo(() => unique(DATA, 'semesterid'), [])
-  const states = useMemo(() => unique(DATA.map((s) => s.address || {}).filter(Boolean), 'state'), [])
-  const cities = useMemo(() => unique(DATA.map((s) => s.address || {}).filter(Boolean), 'city'), [])
+  useEffect(() => {
+    (async () => {
+      setDistricts(stateId ? await getCommonData({ type: 3, parentid: parseInt(stateId) }) : []);
+      setDistrictId('');
+      setTehsilId('');
+      setTehsils([]);
+    })();
+  }, [stateId]);
 
+  useEffect(() => {
+    (async () => {
+      setTehsils(districtId ? await getCommonData({ type: 4, parentid: parseInt(districtId) }) : []);
+      setTehsilId('');
+    })();
+  }, [districtId]);
+
+  // College -> Branch dependency
+  useEffect(() => {
+    (async () => {
+      const list = await getCommonData({ type: 6, parentid: collegeId ? parseInt(collegeId) : -1 });
+      setBranches(list || []);
+      setBranchId('');
+    })();
+  }, [collegeId]);
+
+  // Apply filters to mock DATA using names where possible
+  const nameById = (list, id) => (list.find((x) => String(x.id) === String(id))?.name || '').trim();
   const filtered = useMemo(() => {
+    const sel = {
+      country: nameById(countries, countryId),
+      state: nameById(states, stateId),
+      district: nameById(districts, districtId),
+      tehsil: nameById(tehsils, tehsilId),
+      caste: nameById(castes, casteId),
+      college: nameById(colleges, collegeId),
+      branch: nameById(branches, branchId),
+      semester: nameById(semestersOpt, semesterId),
+      course: nameById(courses, courseId),
+      courseType: nameById(courseTypes, courseTypeId),
+      university: nameById(universities, universityId),
+    };
     return DATA.filter((s) => {
-      const addr = s.address || {}
-      return (
-        (!filters.firstname || s.firstname.toLowerCase().includes(filters.firstname.toLowerCase())) &&
-        (!filters.lastname || s.lastname.toLowerCase().includes(filters.lastname.toLowerCase())) &&
-        (!filters.gender || s.gender === filters.gender) &&
-        (!filters.N_University || s.N_University === filters.N_University) &&
-        (!filters.N_CourseType || s.N_CourseType === filters.N_CourseType) &&
-        (!filters.category || s.category === filters.category) &&
-        (!filters.semesterid || String(s.semesterid) === String(filters.semesterid)) &&
-        (!filters.state || addr.state === filters.state) &&
-        (!filters.city || addr.city === filters.city)
-      )
-    })
-  }, [filters])
-
-  const onChange = (e) => {
-    const { name, value } = e.target
-    setFilters((f) => ({ ...f, [name]: value }))
-  }
-
-  const reset = () => setFilters({
-    firstname: '', lastname: '', gender: '', N_University: '', N_CourseType: '', category: '', semesterid: '', city: '', state: ''
-  })
+      const addr = s.address || {};
+      const okState = !sel.state || addr.state === sel.state;
+      const okSemester = !semesterId || String(s.semesterid) === sel.semester; // assuming semesterno equals s.semesterid
+      const okUniversity = !universityId || s.N_University === sel.university;
+      const okCourseType = !courseTypeId || s.N_CourseType === sel.courseType;
+      const okCategory = !casteId || s.category === sel.caste;
+      // Other filters (country/district/tehsil/college/branch/course) not available in mock DATA, skip
+      return okState && okSemester && okUniversity && okCourseType && okCategory;
+    });
+  }, [DATA, countries, states, districts, tehsils, castes, branches, semestersOpt, courses, courseTypes, colleges, universities, countryId, stateId, districtId, tehsilId, casteId, collegeId, branchId, semesterId, courseId, courseTypeId, universityId]);
 
   return (
     <CRow>
@@ -140,113 +141,73 @@ const StudentList = () => {
             <strong>Admin</strong> <small>Student List with Filters</small>
           </CCardHeader>
           <CCardBody>
-            {/* Common-Data Filter Panel */}
-            <CForm className="row g-3 mb-4">
-              <CCol md={3}>
-                <CFormSelect
-                  label="Filter Type"
-                  value={selectedType}
-                  onChange={(e) => { setSelectedType(e.target.value); setSelectedMainId(''); }}
-                >
-                  <option value="">Select Type</option>
-                  {typeOptions.map((t) => (
-                    <option key={t.id} value={t.id}>{t.label}</option>
-                  ))}
-                </CFormSelect>
-              </CCol>
-              {selectedType && parentMap[parseInt(selectedType)] && (
-                <CCol md={3}>
-                  <CFormSelect
-                    label="Parent"
-                    value={selectedParentId}
-                    onChange={(e) => { setSelectedParentId(e.target.value); setSelectedMainId(''); }}
-                  >
-                    <option value="">All</option>
-                    {parentOptions.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </CFormSelect>
-                </CCol>
-              )}
-              {selectedType && (
-                <CCol md={3}>
-                  <CFormSelect
-                    label="Value"
-                    value={selectedMainId}
-                    onChange={(e) => setSelectedMainId(e.target.value)}
-                  >
-                    <option value="">All</option>
-                    {mainOptions.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </CFormSelect>
-                </CCol>
-              )}
-            </CForm>
+            {/* Full Filter Panel (Common Data) */}
             <CForm className="row g-3 mb-3">
-              <CCol md={3}>
-                <CFormInput name="firstname" label="First Name" value={filters.firstname} onChange={onChange} />
-              </CCol>
-              <CCol md={3}>
-                <CFormInput name="lastname" label="Last Name" value={filters.lastname} onChange={onChange} />
-              </CCol>
               <CCol md={2}>
-                <CFormSelect name="gender" label="Gender" value={filters.gender} onChange={onChange}>
+                <CFormSelect label="Country" value={countryId} onChange={(e) => setCountryId(e.target.value)}>
                   <option value="">All</option>
-                  <option>Male</option>
-                  <option>Female</option>
-                </CFormSelect>
-              </CCol>
-              <CCol md={4}>
-                <CFormSelect name="N_University" label="University" value={filters.N_University} onChange={onChange}>
-                  <option value="">All</option>
-                  {universities.map((u) => (
-                    <option key={u}>{u}</option>
-                  ))}
-                </CFormSelect>
-              </CCol>
-              <CCol md={3}>
-                <CFormSelect name="N_CourseType" label="Course Type" value={filters.N_CourseType} onChange={onChange}>
-                  <option value="">All</option>
-                  {courseTypes.map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </CFormSelect>
-              </CCol>
-              <CCol md={3}>
-                <CFormSelect name="category" label="Category" value={filters.category} onChange={onChange}>
-                  <option value="">All</option>
-                  {categories.map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
+                  {countries.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </CFormSelect>
               </CCol>
               <CCol md={2}>
-                <CFormSelect name="semesterid" label="Semester" value={filters.semesterid} onChange={onChange}>
+                <CFormSelect label="State" value={stateId} onChange={(e) => setStateId(e.target.value)}>
                   <option value="">All</option>
-                  {semesters.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
+                  {states.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </CFormSelect>
               </CCol>
               <CCol md={2}>
-                <CFormSelect name="state" label="State" value={filters.state} onChange={onChange}>
+                <CFormSelect label="District" value={districtId} onChange={(e) => setDistrictId(e.target.value)}>
                   <option value="">All</option>
-                  {states.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
+                  {districts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </CFormSelect>
               </CCol>
               <CCol md={2}>
-                <CFormSelect name="city" label="City" value={filters.city} onChange={onChange}>
+                <CFormSelect label="Tehsil" value={tehsilId} onChange={(e) => setTehsilId(e.target.value)}>
                   <option value="">All</option>
-                  {cities.map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
+                  {tehsils.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </CFormSelect>
               </CCol>
-              <CCol xs={12} className="d-flex gap-2">
-                <CButton color="secondary" variant="outline" onClick={reset}>Reset</CButton>
+              <CCol md={2}>
+                <CFormSelect label="Caste Category" value={casteId} onChange={(e) => setCasteId(e.target.value)}>
+                  <option value="">All</option>
+                  {castes.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={2}>
+                <CFormSelect label="University" value={universityId} onChange={(e) => setUniversityId(e.target.value)}>
+                  <option value="">All</option>
+                  {universities.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={2}>
+                <CFormSelect label="College" value={collegeId} onChange={(e) => setCollegeId(e.target.value)}>
+                  <option value="">All</option>
+                  {colleges.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={2}>
+                <CFormSelect label="Branch" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+                  <option value="">All</option>
+                  {branches.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={2}>
+                <CFormSelect label="Course Type" value={courseTypeId} onChange={(e) => setCourseTypeId(e.target.value)}>
+                  <option value="">All</option>
+                  {courseTypes.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={2}>
+                <CFormSelect label="Course" value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+                  <option value="">All</option>
+                  {courses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={2}>
+                <CFormSelect label="Semester" value={semesterId} onChange={(e) => setSemesterId(e.target.value)}>
+                  <option value="">All</option>
+                  {semestersOpt.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </CFormSelect>
               </CCol>
             </CForm>
 
