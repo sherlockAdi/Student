@@ -50,6 +50,8 @@ const SRNSearch = () => {
   const [isPaying, setIsPaying] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentMode, setPaymentMode] = useState(null);
+  // Installment filter: ALL or AS_OF_NOW (based on due date)
+  const [installmentFilter, setInstallmentFilter] = useState('ALL');
 
   // Select All state for fee rows
   const [selectAll, setSelectAll] = useState(false);
@@ -67,6 +69,9 @@ const SRNSearch = () => {
       const currentFees = feeAmount - feesSubmitted - waivedAmount - concession;
       const amountRemaining = dueAmount - feesSubmitted - waivedAmount;
 
+      // Try to get due date from API if available
+      const apiDue = item.DueDate || item.duedate || item.DDate || item.ddate || today;
+
       return {
         slNo: index + 1,
         selectAll: false,
@@ -74,7 +79,7 @@ const SRNSearch = () => {
         feeHead: item.feeheadname || "N/A",
         installmentId: item.instalmentid || 1, // Add installment ID from API
         feeHeadId: item.feeheadid || 0, // Add fee head ID from API
-        dueDate: today, // Set due date to today
+        dueDate: typeof apiDue === 'string' ? apiDue.split('T')[0] : today,
         feeAmount,
         concession,
         dueAmount,
@@ -181,8 +186,8 @@ const SRNSearch = () => {
     newRows[index].selectAll = !newRows[index].selectAll;
     setFeeRows(newRows);
 
-    // If any row unchecked, uncheck selectAll; else if all checked, check selectAll
-    const allSelected = newRows.every((row) => row.selectAll === true);
+    // Recompute selectAll based on filtered rows only
+    const allSelected = rowsForView.every((p) => newRows[p.idx].selectAll === true);
     setSelectAll(allSelected);
   };
 
@@ -191,12 +196,22 @@ const SRNSearch = () => {
     const newSelectAll = !selectAll;
     setSelectAll(newSelectAll);
 
-    const newRows = feeRows.map((row) => ({
-      ...row,
-      selectAll: newSelectAll,
-    }));
+    const newRows = [...feeRows];
+    rowsForView.forEach(p => {
+      newRows[p.idx].selectAll = newSelectAll;
+    });
     setFeeRows(newRows);
   };
+
+  // Compute filtered rows for view based on installmentFilter and dueDate
+  const rowsForView = React.useMemo(() => {
+    if (!feeRows || feeRows.length === 0) return [];
+    const pairs = feeRows.map((row, idx) => ({ row, idx }));
+    if (installmentFilter === 'AS_OF_NOW') {
+      return pairs.filter(p => (p.row.dueDate || today) <= today);
+    }
+    return pairs;
+  }, [feeRows, installmentFilter]);
 
   // Handler to update currentFees on editable table, recalc totals
   const handleCurrentFeesChange = (index, value) => {
@@ -257,17 +272,18 @@ const SRNSearch = () => {
     setFeeRows(newFeeRows);
   };
 
-  // Totals for footer
-  const totals = feeRows.reduce(
+  // Totals for footer (based on filtered rows)
+  const totals = rowsForView.reduce(
     (acc, row) => {
-      acc.feeAmount += row.feeAmount;
-      acc.concession += row.concession;
-      acc.dueAmount += row.dueAmount;
-      acc.feesSubmitted += row.feesSubmitted;
-      acc.waivedAmount += row.waivedAmount;
-      acc.currentFees += row.currentFees;
-      acc.fineAmount += row.fineAmount;
-      acc.amountRemaining += row.amountRemaining;
+      const r = row.row;
+      acc.feeAmount += r.feeAmount;
+      acc.concession += r.concession;
+      acc.dueAmount += r.dueAmount;
+      acc.feesSubmitted += r.feesSubmitted;
+      acc.waivedAmount += r.waivedAmount;
+      acc.currentFees += r.currentFees;
+      acc.fineAmount += r.fineAmount;
+      acc.amountRemaining += r.amountRemaining;
       return acc;
     },
     {
@@ -282,9 +298,9 @@ const SRNSearch = () => {
     }
   );
 
-  const selectedFeeRows = feeRows.filter((row) => row.selectAll);
-  const totalCurrentFees = feeRows.reduce(
-    (sum, row) => sum + (Number(row.currentFees) || 0),
+  const selectedFeeRows = rowsForView.filter((p) => p.row.selectAll).map(p => p.row);
+  const totalCurrentFees = rowsForView.reduce(
+    (sum, p) => sum + (Number(p.row.currentFees) || 0),
     0
   );
   const selectedRowsAmount = selectedFeeRows.reduce(
@@ -947,7 +963,28 @@ const SRNSearch = () => {
         {feeRows.length > 0 && (
           <CCard className="mb-3 border-0 shadow-sm rounded-3">
             <CCardHeader className="fw-semibold bg-light py-2">
-              💰 Fee Details
+              <CRow className="align-items-center">
+                <CCol xs={12} md={6}>💰 Fee Details</CCol>
+                <CCol xs={12} md={6} className="d-flex justify-content-end gap-2">
+                  <span className="small text-muted d-flex align-items-center me-2">Installment Filter:</span>
+                  <CButton
+                    color={installmentFilter === 'ALL' ? 'primary' : 'secondary'}
+                    size="sm"
+                    variant={installmentFilter === 'ALL' ? undefined : 'outline'}
+                    onClick={() => setInstallmentFilter('ALL')}
+                  >
+                    ALL
+                  </CButton>
+                  <CButton
+                    color={installmentFilter === 'AS_OF_NOW' ? 'primary' : 'secondary'}
+                    size="sm"
+                    variant={installmentFilter === 'AS_OF_NOW' ? undefined : 'outline'}
+                    onClick={() => setInstallmentFilter('AS_OF_NOW')}
+                  >
+                    As of NOW
+                  </CButton>
+                </CCol>
+              </CRow>
             </CCardHeader>
             <CCardBody className="p-2">
               <div className="table-responsive">
@@ -977,7 +1014,7 @@ const SRNSearch = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {feeRows.map((row, idx) => (
+                    {rowsForView.map(({row, idx}) => (
                       <tr key={idx}>
                         <td>{row.slNo}</td>
                         <td>
