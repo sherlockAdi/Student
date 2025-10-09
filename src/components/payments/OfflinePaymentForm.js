@@ -23,7 +23,8 @@ const OfflinePaymentForm = ({
   amount, 
   studentDetails, 
   onSubmit, 
-  isSubmitting = false 
+  isSubmitting = false,
+  showWaiverSection = false,
 }) => {
   const today = new Date().toISOString().split('T')[0];
 
@@ -54,6 +55,15 @@ const OfflinePaymentForm = ({
   const [cardAmount, setCardAmount] = useState('');
   const [transactionNo, setTransactionNo] = useState('');
   const [remarks, setRemarks] = useState('');
+
+  // New Offline meta fields
+  const [dataEntryBy, setDataEntryBy] = useState('Aditya');
+  const [collectedBy, setCollectedBy] = useState('Abshiedk');
+  const [handoverTo, setHandoverTo] = useState('Shameena');
+
+  // Waiver attachment
+  const [waiverAttachmentName, setWaiverAttachmentName] = useState('');
+  const [waiverAttachmentBase64, setWaiverAttachmentBase64] = useState('');
 
   // Loading states
   const [isLoadingBanks, setIsLoadingBanks] = useState(false);
@@ -237,6 +247,12 @@ const OfflinePaymentForm = ({
       cardAmount,
       transactionNo,
       remarks,
+      // New fields
+      dataEntryBy,
+      collectedBy,
+      handoverTo,
+      waiverAttachmentName,
+      waiverAttachmentBase64,
       amount,
     };
 
@@ -261,8 +277,45 @@ const OfflinePaymentForm = ({
       </CCardHeader>
       <CCardBody>
         <CRow className="g-3">
-          {/* Payment Mode */}
-         
+          {/* Section: Collection Meta */}
+          <CCol xs={12}>
+            <div className="fw-bold text-uppercase small text-muted">Collection Meta</div>
+          </CCol>
+          <CCol xs={12} md={4}>
+            <label className="form-label fw-semibold">Data Entry Operator</label>
+            <CFormInput
+              type="text"
+              value={dataEntryBy}
+              onChange={(e) => setDataEntryBy(e.target.value)}
+              placeholder="Enter data entry operator"
+              className="shadow-sm"
+            />
+          </CCol>
+          <CCol xs={12} md={4}>
+            <label className="form-label fw-semibold">Collected By</label>
+            <CFormInput
+              type="text"
+              value={collectedBy}
+              onChange={(e) => setCollectedBy(e.target.value)}
+              placeholder="Enter collector name"
+              className="shadow-sm"
+            />
+          </CCol>
+          <CCol xs={12} md={4}>
+            <label className="form-label fw-semibold">Handover To</label>
+            <CFormInput
+              type="text"
+              value={handoverTo}
+              onChange={(e) => setHandoverTo(e.target.value)}
+              placeholder="Enter handover person"
+              className="shadow-sm"
+            />
+          </CCol>
+
+          {/* Section: Payment Details */}
+          <CCol xs={12} className="mt-2">
+            <div className="fw-bold text-uppercase small text-muted">Payment Details</div>
+          </CCol>
 
           {/* Favour Of */}
           <CCol xs={12} md={6}>
@@ -521,21 +574,58 @@ const OfflinePaymentForm = ({
             />
           </CCol>
 
-          {/* Waiver */}
-          <CCol xs={12} md={6}>
-            <label className="form-label fw-semibold">Waiver</label>
-            <CFormSelect
-              value={selectedWaiver}
-              onChange={(e) => setSelectedWaiver(e.target.value)}
-              className="shadow-sm"
-            >
-              {waiverList.map((waiver) => (
-                <option key={waiver.Id} value={waiver.Id}>
-                  {waiver.Name}
-                </option>
-              ))}
-            </CFormSelect>
-          </CCol>
+          {/* Section: Waiver (conditional) */}
+          {showWaiverSection && (
+            <>
+              <CCol xs={12}>
+                <div className="fw-bold text-uppercase small text-muted">Waiver</div>
+              </CCol>
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Waiver</label>
+                <CFormSelect
+                  value={selectedWaiver}
+                  onChange={(e) => setSelectedWaiver(e.target.value)}
+                  className="shadow-sm"
+                >
+                  {waiverList.map((waiver) => (
+                    <option key={waiver.Id} value={waiver.Id}>
+                      {waiver.Name}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </CCol>
+              <CCol xs={12} md={6}>
+                <label className="form-label fw-semibold">Waiver Attachment</label>
+                <CFormInput
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) {
+                      setWaiverAttachmentName('');
+                      setWaiverAttachmentBase64('');
+                      return;
+                    }
+                    setWaiverAttachmentName(file.name);
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const result = reader.result;
+                      if (typeof result === 'string') {
+                        // Strip prefix if present
+                        const base64 = result.includes(',') ? result.split(',')[1] : result;
+                        setWaiverAttachmentBase64(base64);
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="shadow-sm"
+                />
+                {waiverAttachmentName && (
+                  <div className="small text-muted mt-1">Selected: {waiverAttachmentName}</div>
+                )}
+              </CCol>
+            </>
+          )}
 
           {/* Signatory */}
           <CCol xs={12} md={6}>

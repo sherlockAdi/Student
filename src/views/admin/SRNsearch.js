@@ -293,6 +293,9 @@ const SRNSearch = () => {
   );
   const payableAmount = selectedFeeRows.length ? selectedRowsAmount : totalCurrentFees;
 
+  // Show waiver section if any row has a waived amount > 0
+  const showWaiverSection = feeRows.some((row) => Number(row.waivedAmount) > 0);
+
   const handlePayment = async () => {
     if (!payableAmount || payableAmount <= 0) {
       alert("Please select at least one fee row or ensure payable amount is valid.");
@@ -519,6 +522,16 @@ const SRNSearch = () => {
       const successfulSubmissions = [];
       const failedSubmissions = [];
       
+      // If waiver is applied, ensure a waiver is selected
+      if (showWaiverSection) {
+        const waiverId = parseInt(paymentData.waiver || paymentData.selectedWaiver || '0');
+        if (!waiverId) {
+          alert('Please select a waiver from the list since a waived amount is applied.');
+          setIsPaying(false);
+          return;
+        }
+      }
+      
       // Loop through each selected row and submit individually
       for (let i = 0; i < selectedRows.length; i++) {
         const row = selectedRows[i];
@@ -534,7 +547,7 @@ const SRNSearch = () => {
             ChequeDdDate: paymentData.chequeDate || paymentData.draftDate || today,
             ChequeClearingDate: clearingDate || today,
             TransactionId: paymentData.transactionNo || '',
-            TransactionReceipt: '',
+            TransactionReceipt: paymentData.waiverAttachmentBase64 || '',
             TransactionAmount: row.currentFees.toString(), // Use individual row amount
             CardNo: paymentData.cardNo || '',
             CardAmount: paymentData.cardAmount || '0',
@@ -568,7 +581,13 @@ const SRNSearch = () => {
             AuthorizedSignatory: paymentData.signatoryName || '',
             Uid: '1',
             Utype: '1',
-            AccountNoId: (paymentData.accountId || '').toString()
+            AccountNoId: (paymentData.accountId || '').toString(),
+            // New fields
+            DataEntryOperator: paymentData.dataEntryBy || '',
+            CollectedBy: paymentData.collectedBy || '',
+            HandoverTo: paymentData.handoverTo || '',
+            WaiverId: paymentData.waiver || paymentData.selectedWaiver || '',
+            WaiverName: paymentData.waiverName || '',
           };
           
           console.log(`API Payload for Row ${i + 1}:`, apiPayload);
@@ -1085,6 +1104,7 @@ const SRNSearch = () => {
               studentDetails={{ ...studentDetails, id: searchResult?.id }}
               onSubmit={handleOfflinePaymentSubmit}
               isSubmitting={isPaying}
+              showWaiverSection={showWaiverSection}
             />
             <CButton
               color="secondary"
