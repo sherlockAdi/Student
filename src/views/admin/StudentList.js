@@ -19,9 +19,13 @@ import {
   CTableBody,
   CTableDataCell,
   CBadge,
+  CSpinner,
+  COffcanvas,
+  COffcanvasHeader,
+  COffcanvasBody,
 } from '@coreui/react'
 import { students as DATA } from '../../data/students'
-import { getCommonData } from '../../api/api'
+import { getCommonData, getAllStudents } from '../../api/api'
 
 const unique = (arr, key) => Array.from(new Set(arr.map((x) => x[key]))).filter(Boolean)
 
@@ -52,6 +56,24 @@ const StudentList = () => {
   const [courseId, setCourseId] = useState('');
   const [courseTypeId, setCourseTypeId] = useState('');
   const [universityId, setUniversityId] = useState('');
+
+  // Server data and paging
+  const [students, setStudents] = useState([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Search inputs
+  const [admissionNo, setAdmissionNo] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [gender, setGender] = useState('');
+  const [isLeft, setIsLeft] = useState(''); // '', 'true', 'false'
+
+  // Details drawer
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   // Load top-level option sets
   useEffect(() => {
@@ -105,33 +127,73 @@ const StudentList = () => {
     })();
   }, [collegeId]);
 
-  // Apply filters to mock DATA using names where possible
-  const nameById = (list, id) => (list.find((x) => String(x.id) === String(id))?.name || '').trim();
-  const filtered = useMemo(() => {
-    const sel = {
-      country: nameById(countries, countryId),
-      state: nameById(states, stateId),
-      district: nameById(districts, districtId),
-      tehsil: nameById(tehsils, tehsilId),
-      caste: nameById(castes, casteId),
-      college: nameById(colleges, collegeId),
-      branch: nameById(branches, branchId),
-      semester: nameById(semestersOpt, semesterId),
-      course: nameById(courses, courseId),
-      courseType: nameById(courseTypes, courseTypeId),
-      university: nameById(universities, universityId),
-    };
-    return DATA.filter((s) => {
-      const addr = s.address || {};
-      const okState = !sel.state || addr.state === sel.state;
-      const okSemester = !semesterId || String(s.semesterid) === sel.semester; // assuming semesterno equals s.semesterid
-      const okUniversity = !universityId || s.N_University === sel.university;
-      const okCourseType = !courseTypeId || s.N_CourseType === sel.courseType;
-      const okCategory = !casteId || s.category === sel.caste;
-      // Other filters (country/district/tehsil/college/branch/course) not available in mock DATA, skip
-      return okState && okSemester && okUniversity && okCourseType && okCategory;
-    });
-  }, [DATA, countries, states, districts, tehsils, castes, branches, semestersOpt, courses, courseTypes, colleges, universities, countryId, stateId, districtId, tehsilId, casteId, collegeId, branchId, semesterId, courseId, courseTypeId, universityId]);
+  // Fetch from server
+  const fetchStudents = async (page = pageNumber) => {
+    setIsLoading(true);
+    try {
+      const params = {
+        collegeId: collegeId ? parseInt(collegeId) : -1,
+        branchId: branchId ? parseInt(branchId) : -1,
+        courseId: courseId ? parseInt(courseId) : -1,
+        universityId: universityId ? parseInt(universityId) : -1,
+        courseTypeId: courseTypeId ? parseInt(courseTypeId) : -1,
+        batchId: -1,
+        semesterId: semesterId ? parseInt(semesterId) : -1,
+        religionId: -1,
+        casteId: casteId ? parseInt(casteId) : -1,
+        maritalStatusId: -1,
+        presentStatusId: -1,
+        gender: gender || null,
+        isLeft: isLeft === '' ? null : isLeft === 'true',
+        admissionNo: admissionNo || null,
+        studentName: studentName || null,
+        mobile: mobile || null,
+        searchTerm: null,
+        pageNumber: page,
+        pageSize,
+      };
+      const res = await getAllStudents(params);
+      if (res?.isSuccess) {
+        setStudents(res.data || []);
+        setTotalRecords(res.totalRecords || 0);
+      } else {
+        setStudents([]);
+        setTotalRecords(0);
+      }
+    } catch (e) {
+      console.error('Failed to load students', e);
+      setStudents([]);
+      setTotalRecords(0);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStudents(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onApplyFilters = () => {
+    setPageNumber(1);
+    fetchStudents(1);
+  };
+
+  const onResetFilters = () => {
+    setCountryId(''); setStateId(''); setDistrictId(''); setTehsilId('');
+    setCasteId(''); setCollegeId(''); setBranchId(''); setSemesterId('');
+    setCourseId(''); setCourseTypeId(''); setUniversityId('');
+    setAdmissionNo(''); setStudentName(''); setMobile(''); setGender(''); setIsLeft('');
+    setPageNumber(1);
+    fetchStudents(1);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const gotoPage = (p) => {
+    const page = Math.min(Math.max(1, p), totalPages);
+    setPageNumber(page);
+    fetchStudents(page);
+  };
 
   return (
     <CRow>

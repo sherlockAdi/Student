@@ -184,4 +184,53 @@ export async function getCommonData({ type, parentid = -1, selfid = -1 }) {
   return [];
 }
 
+// 👥 Get all students with filters and pagination
+export async function getAllStudents(params = {}) {
+  const {
+    collegeId = -1,
+    branchId = -1,
+    courseId = -1,
+    universityId = -1,
+    courseTypeId = -1,
+    batchId = -1,
+    semesterId = -1,
+    religionId = -1,
+    casteId = -1,
+    maritalStatusId = -1,
+    presentStatusId = -1,
+    gender = null,
+    isLeft = null,
+    admissionNo = null,
+    studentName = null,
+    mobile = null,
+    searchTerm = null,
+    pageNumber = 1,
+    pageSize = 20,
+  } = params;
+  const { data } = await api.get('/studentapi/getall', {
+    params: {
+      collegeId,
+      branchId,
+      courseId,
+      universityId,
+      courseTypeId,
+      batchId,
+      semesterId,
+      religionId,
+      casteId,
+      maritalStatusId,
+      presentStatusId,
+      gender,
+      isLeft,
+      admissionNo,
+      studentName,
+      mobile,
+      searchTerm,
+      pageNumber,
+      pageSize,
+    },
+  });
+  return data; // { isSuccess, message, totalRecords, data: [...] }
+}
+
 export default api
