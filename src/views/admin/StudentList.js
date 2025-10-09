@@ -290,20 +290,20 @@ const StudentList = () => {
                 </CTableRow>
               </CTableHead>
               <CTableBody>
-                {filtered.map((s, idx) => (
+                {students.map((s, idx) => (
                   <CTableRow key={s.id}>
-                    <CTableHeaderCell scope="row">{idx + 1}</CTableHeaderCell>
-                    <CTableDataCell>{s.studentid}</CTableDataCell>
+                    <CTableHeaderCell scope="row">{(pageNumber - 1) * pageSize + idx + 1}</CTableHeaderCell>
+                    <CTableDataCell>{s.admissionno || '-'}</CTableDataCell>
                     <CTableDataCell>{[s.firstname, s.middlename, s.lastname].filter(Boolean).join(' ')}</CTableDataCell>
                     <CTableDataCell>{s.gender}</CTableDataCell>
-                    <CTableDataCell>{s.N_University}</CTableDataCell>
-                    <CTableDataCell>{s.N_CourseType}</CTableDataCell>
-                    <CTableDataCell>{s.semesterid}</CTableDataCell>
-                    <CTableDataCell>{s.category}</CTableDataCell>
-                    <CTableDataCell>{s.address?.city || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.UniversityName || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.CourseTypeName || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.SemesterName || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.CategoryName || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.city || '-'}</CTableDataCell>
                     <CTableDataCell>
-                      <CBadge color={s.isactive ? 'success' : 'secondary'}>
-                        {s.isactive ? 'Active' : 'Inactive'}
+                      <CBadge color={s.status ? 'success' : 'secondary'}>
+                        {s.status ? 'Active' : 'Inactive'}
                       </CBadge>
                     </CTableDataCell>
                     <CTableDataCell className="text-end">
@@ -314,7 +314,7 @@ const StudentList = () => {
                           variant="outline"
                           className="d-inline-flex align-items-center justify-content-center"
                           style={{ width: 32, height: 32, padding: 0 }}
-                          onClick={() => navigate(`/admin/students/${s.id}/view`)}
+                          onClick={() => { setSelectedStudent(s); setShowDetails(true); }}
                           aria-label="View"
                           title="View"
                         >
@@ -338,6 +338,39 @@ const StudentList = () => {
                 ))}
               </CTableBody>
             </CTable>
+            {/* Right-side Drawer for Student Details */}
+            <COffcanvas placement="end" visible={showDetails} onHide={() => setShowDetails(false)}>
+              <COffcanvasHeader closeButton>Student Details</COffcanvasHeader>
+              <COffcanvasBody>
+                {selectedStudent ? (
+                  <div className="small">
+                    <div className="fw-semibold mb-2">{[selectedStudent.firstname, selectedStudent.middlename, selectedStudent.lastname].filter(Boolean).join(' ')}</div>
+                    <div><strong>Admission No:</strong> {selectedStudent.admissionno || '-'}</div>
+                    <div><strong>Mobile:</strong> {selectedStudent.mobileno1 || '-'}</div>
+                    <div><strong>Email (Personal):</strong> {selectedStudent.personalemail || '-'}</div>
+                    <div><strong>Email (College):</strong> {selectedStudent.collegeemail || '-'}</div>
+                    <div><strong>Gender:</strong> {selectedStudent.gender === '1' ? 'Male' : selectedStudent.gender === '2' ? 'Female' : (selectedStudent.gender || '-')}</div>
+                    <div><strong>Date of Birth:</strong> {selectedStudent.dateofbirth ? String(selectedStudent.dateofbirth).split('T')[0] : '-'}</div>
+                    <hr />
+                    <div><strong>College:</strong> {selectedStudent.CollegeName || '-'} {selectedStudent.collegeid ? `(ID: ${selectedStudent.collegeid})` : ''}</div>
+                    <div><strong>Branch:</strong> {selectedStudent.BranchName || '-'} {selectedStudent.branchid ? `(ID: ${selectedStudent.branchid})` : ''}</div>
+                    <div><strong>Course Type:</strong> {selectedStudent.CourseTypeName || '-'} {selectedStudent.coursetypeid ? `(ID: ${selectedStudent.coursetypeid})` : ''}</div>
+                    <div><strong>Course:</strong> {selectedStudent.CourseName || '-'} {selectedStudent.courseid ? `(ID: ${selectedStudent.courseid})` : ''}</div>
+                    <div><strong>University:</strong> {selectedStudent.UniversityName || '-'} {selectedStudent.universityid ? `(ID: ${selectedStudent.universityid})` : ''}</div>
+                    <div><strong>Semester:</strong> {selectedStudent.SemesterName || '-'} {selectedStudent.semesterid ? `(ID: ${selectedStudent.semesterid})` : ''}</div>
+                    <hr />
+                    <div><strong>Category:</strong> {selectedStudent.CategoryName || '-'} {selectedStudent.CategoryId ? `(ID: ${selectedStudent.CategoryId})` : ''}</div>
+                    <div><strong>Religion:</strong> {selectedStudent.ReligionName || '-'} {selectedStudent.ReligionId ? `(ID: ${selectedStudent.ReligionId})` : ''}</div>
+                    <div><strong>Marital Status:</strong> {selectedStudent.MaritalStatusName || '-'} {selectedStudent.MaritalStatusId ? `(ID: ${selectedStudent.MaritalStatusId})` : ''}</div>
+                    <div><strong>Present Status:</strong> {selectedStudent.PresentStatusName || '-'} {selectedStudent.PresentStatusId ? `(ID: ${selectedStudent.PresentStatusId})` : ''}</div>
+                    <div><strong>Left:</strong> {selectedStudent.isleft ? 'Yes' : 'No'}</div>
+                    <div><strong>Status:</strong> {selectedStudent.status ? 'Active' : 'Inactive'}</div>
+                  </div>
+                ) : (
+                  <div className="text-muted">No student selected.</div>
+                )}
+              </COffcanvasBody>
+            </COffcanvas>
           </CCardBody>
         </CCard>
       </CCol>
