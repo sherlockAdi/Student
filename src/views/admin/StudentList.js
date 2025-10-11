@@ -167,15 +167,18 @@ const StudentList = () => {
     }
   };
 
+  // Auto-fetch on initial load
   useEffect(() => {
     fetchStudents(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onApplyFilters = () => {
+  // Auto-filter when any master data filter changes
+  useEffect(() => {
     setPageNumber(1);
     fetchStudents(1);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collegeId, branchId, courseId, universityId, courseTypeId, semesterId, casteId, gender, isLeft, admissionNo, studentName, mobile]);
 
   const onResetFilters = () => {
     setCountryId(''); setStateId(''); setDistrictId(''); setTehsilId('');
@@ -183,7 +186,7 @@ const StudentList = () => {
     setCourseId(''); setCourseTypeId(''); setUniversityId('');
     setAdmissionNo(''); setStudentName(''); setMobile(''); setGender(''); setIsLeft('');
     setPageNumber(1);
-    fetchStudents(1);
+    // fetchStudents will be triggered by useEffect
   };
 
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
@@ -203,73 +206,132 @@ const StudentList = () => {
           <CCardBody>
             {/* Full Filter Panel (Common Data) */}
             <CForm className="row g-3 mb-3">
-              <CCol md={2}>
-                <CFormSelect label="Country" value={countryId} onChange={(e) => setCountryId(e.target.value)}>
-                  <option value="">All</option>
-                  {countries.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                </CFormSelect>
-              </CCol>
-              <CCol md={2}>
-                <CFormSelect label="State" value={stateId} onChange={(e) => setStateId(e.target.value)}>
-                  <option value="">All</option>
-                  {states.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                </CFormSelect>
-              </CCol>
-              <CCol md={2}>
-                <CFormSelect label="District" value={districtId} onChange={(e) => setDistrictId(e.target.value)}>
-                  <option value="">All</option>
-                  {districts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                </CFormSelect>
-              </CCol>
-              <CCol md={2}>
-                <CFormSelect label="Tehsil" value={tehsilId} onChange={(e) => setTehsilId(e.target.value)}>
-                  <option value="">All</option>
-                  {tehsils.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                </CFormSelect>
-              </CCol>
-              <CCol md={2}>
-                <CFormSelect label="Caste Category" value={casteId} onChange={(e) => setCasteId(e.target.value)}>
-                  <option value="">All</option>
-                  {castes.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                </CFormSelect>
-              </CCol>
-              <CCol md={2}>
+              <CCol md={3}>
                 <CFormSelect label="University" value={universityId} onChange={(e) => setUniversityId(e.target.value)}>
-                  <option value="">All</option>
+                  <option value="">All Universities</option>
                   {universities.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </CFormSelect>
               </CCol>
-              <CCol md={2}>
+              <CCol md={3}>
                 <CFormSelect label="College" value={collegeId} onChange={(e) => setCollegeId(e.target.value)}>
-                  <option value="">All</option>
+                  <option value="">All Colleges</option>
                   {colleges.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </CFormSelect>
               </CCol>
-              <CCol md={2}>
+              <CCol md={3}>
                 <CFormSelect label="Branch" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-                  <option value="">All</option>
+                  <option value="">All Branches</option>
                   {branches.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </CFormSelect>
               </CCol>
-              <CCol md={2}>
+              <CCol md={3}>
                 <CFormSelect label="Course Type" value={courseTypeId} onChange={(e) => setCourseTypeId(e.target.value)}>
-                  <option value="">All</option>
+                  <option value="">All Course Types</option>
                   {courseTypes.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </CFormSelect>
               </CCol>
-              <CCol md={2}>
+              <CCol md={3}>
                 <CFormSelect label="Course" value={courseId} onChange={(e) => setCourseId(e.target.value)}>
-                  <option value="">All</option>
+                  <option value="">All Courses</option>
                   {courses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </CFormSelect>
               </CCol>
-              <CCol md={2}>
+              <CCol md={3}>
                 <CFormSelect label="Semester" value={semesterId} onChange={(e) => setSemesterId(e.target.value)}>
-                  <option value="">All</option>
+                  <option value="">All Semesters</option>
                   {semestersOpt.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
                 </CFormSelect>
               </CCol>
+              <CCol md={3}>
+                <CFormSelect label="Caste Category" value={casteId} onChange={(e) => setCasteId(e.target.value)}>
+                  <option value="">All Categories</option>
+                  {castes.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={3}>
+                <CFormSelect label="Gender" value={gender} onChange={(e) => setGender(e.target.value)}>
+                  <option value="">All Genders</option>
+                  <option value="1">Male</option>
+                  <option value="2">Female</option>
+                </CFormSelect>
+              </CCol>
+              <CCol md={3}>
+                <CFormInput
+                  label="Admission No"
+                  placeholder="Search by admission no"
+                  value={admissionNo}
+                  onChange={(e) => setAdmissionNo(e.target.value)}
+                />
+              </CCol>
+              <CCol md={3}>
+                <CFormInput
+                  label="Student Name"
+                  placeholder="Search by name"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                />
+              </CCol>
+              <CCol md={3}>
+                <CFormInput
+                  label="Mobile"
+                  placeholder="Search by mobile"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                />
+              </CCol>
+              <CCol md={3}>
+                <CFormSelect label="Student Status" value={isLeft} onChange={(e) => setIsLeft(e.target.value)}>
+                  <option value="">All Students</option>
+                  <option value="false">Active</option>
+                  <option value="true">Left</option>
+                </CFormSelect>
+              </CCol>
+              <CCol md={12} className="d-flex justify-content-end gap-2">
+                <CButton color="secondary" variant="outline" onClick={onResetFilters}>
+                  Reset Filters
+                </CButton>
+              </CCol>
             </CForm>
+
+            {/* Loading Indicator */}
+            {isLoading && (
+              <div className="text-center py-3">
+                <CSpinner color="primary" />
+                <div className="mt-2 text-muted">Loading students...</div>
+              </div>
+            )}
+
+            {/* Results Info */}
+            {!isLoading && (
+              <div className="mb-3 d-flex justify-content-between align-items-center">
+                <div className="text-muted">
+                  Showing {students.length > 0 ? (pageNumber - 1) * pageSize + 1 : 0} to {Math.min(pageNumber * pageSize, totalRecords)} of {totalRecords} students
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  <CButton
+                    color="primary"
+                    variant="outline"
+                    size="sm"
+                    disabled={pageNumber === 1}
+                    onClick={() => gotoPage(pageNumber - 1)}
+                  >
+                    Previous
+                  </CButton>
+                  <span className="text-muted">
+                    Page {pageNumber} of {totalPages}
+                  </span>
+                  <CButton
+                    color="primary"
+                    variant="outline"
+                    size="sm"
+                    disabled={pageNumber >= totalPages}
+                    onClick={() => gotoPage(pageNumber + 1)}
+                  >
+                    Next
+                  </CButton>
+                </div>
+              </div>
+            )}
 
             <CTable hover responsive>
               <CTableHead>
@@ -336,6 +398,45 @@ const StudentList = () => {
                 ))}
               </CTableBody>
             </CTable>
+
+            {/* Bottom Pagination */}
+            {!isLoading && students.length > 0 && (
+              <div className="mt-3 d-flex justify-content-between align-items-center">
+                <div className="text-muted">
+                  Showing {students.length > 0 ? (pageNumber - 1) * pageSize + 1 : 0} to {Math.min(pageNumber * pageSize, totalRecords)} of {totalRecords} students
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  <CButton
+                    color="primary"
+                    variant="outline"
+                    size="sm"
+                    disabled={pageNumber === 1}
+                    onClick={() => gotoPage(pageNumber - 1)}
+                  >
+                    Previous
+                  </CButton>
+                  <span className="text-muted">
+                    Page {pageNumber} of {totalPages}
+                  </span>
+                  <CButton
+                    color="primary"
+                    variant="outline"
+                    size="sm"
+                    disabled={pageNumber >= totalPages}
+                    onClick={() => gotoPage(pageNumber + 1)}
+                  >
+                    Next
+                  </CButton>
+                </div>
+              </div>
+            )}
+
+            {/* No Results Message */}
+            {!isLoading && students.length === 0 && (
+              <div className="text-center py-4 text-muted">
+                No students found matching the selected filters.
+              </div>
+            )}
             {/* Right-side Drawer for Student Details */}
             <COffcanvas placement="end" visible={showDetails} onHide={() => setShowDetails(false)}>
               <COffcanvasHeader closeButton>Student Details</COffcanvasHeader>
