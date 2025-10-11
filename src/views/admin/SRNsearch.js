@@ -8,17 +8,28 @@ import {
   CFormInput,
   CFormCheck,
   CButton,
+  CDropdown,
 } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
 import { cilSearch } from "@coreui/icons";
 
 import {
   searchStudentBySRN,
+  searchStudentByMobile,
   getFeeSelectStudent,
   getFeeInstallmentDetails,
   getFeeBookNoReceiptNo,
   getAmiFeeDetails,
+  submitOfflinePayment,
+  submitFee,
 } from "../../api/api";
+import PaymentSummaryCard from "../../components/payments/PaymentSummaryCard";
+import OfflinePaymentForm from "../../components/payments/OfflinePaymentForm";
+import {
+  initializeRazorpayCheckout,
+  loadRazorpayScript,
+} from "../../utils/razorpay";
+import { RAZORPAY_KEY_ID } from "../../config/razorpayConfig";
 
 const SRNSearch = () => {
   const [srnInput, setSrnInput] = useState("");
@@ -36,6 +47,11 @@ const SRNSearch = () => {
   const [amiDetails, setAmiDetails] = useState([]);
   const [feeRows, setFeeRows] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [paymentMode, setPaymentMode] = useState(null);
+  // Installment filter: ALL or AS_OF_NOW (based on due date)
+  const [installmentFilter, setInstallmentFilter] = useState('ALL');
 
   // Select All state for fee rows
   const [selectAll, setSelectAll] = useState(false);
@@ -49,20 +65,28 @@ const SRNSearch = () => {
       const feesSubmitted = Number(item.DepositeFee) || 0;
       const waivedAmount = Number(item.WaivedAmount) || 0;
       const waiveAmount = 0; // Add if you have data
+      const fineAmount = 0; // Initialize fine amount
       const currentFees = feeAmount - feesSubmitted - waivedAmount - concession;
       const amountRemaining = dueAmount - feesSubmitted - waivedAmount;
+
+      // Try to get due date from API if available
+      const apiDue = item.DueDate || item.duedate || item.DDate || item.ddate || today;
 
       return {
         slNo: index + 1,
         selectAll: false,
         feeInstallment: item.intalmentname || "N/A",
         feeHead: item.feeheadname || "N/A",
+        installmentId: item.instalmentid || 1, // Add installment ID from API
+        feeHeadId: item.feeheadid || 0, // Add fee head ID from API
+        dueDate: typeof apiDue === 'string' ? apiDue.split('T')[0] : today,
         feeAmount,
         concession,
         dueAmount,
         feesSubmitted,
         waivedAmount,
         currentFees: currentFees > 0 ? currentFees : 0,
+        fineAmount,
         waiveAmount,
         amountRemaining: amountRemaining > 0 ? amountRemaining : 0,
       };
@@ -71,14 +95,28 @@ const SRNSearch = () => {
 
   const handleSearch = async () => {
     if (!srnInput.trim()) {
-      alert("Please enter an SRN number.");
+      alert("Please enter an SRN number or mobile number.");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const data = await searchStudentBySRN(srnInput);
+      // Check if input is a 10-digit mobile number
+      const isMobileNumber = /^\d{10}$/.test(srnInput.trim());
+      
+      let data;
+      let AdminNo;
+      if (isMobileNumber) {
+        // Search by mobile number
+        data = await searchStudentByMobile(srnInput.trim());
+        AdminNo = data[0].admissionno;
+      } else {
+        // Search by SRN
+        data = await searchStudentBySRN(srnInput);
+        AdminNo = srnInput;
+      }
+      
       if (data?.length > 0) {
         setSearchResult(data[0]);
         const collegeId = 1;
@@ -89,7 +127,7 @@ const SRNSearch = () => {
 
         const data3 = await getFeeInstallmentDetails({
           collegeid: collegeId,
-          SrnNo: srnInput,
+          SrnNo: AdminNo,
         });
         setInstallmentDetails(data3[0]);
 
@@ -148,8 +186,8 @@ const SRNSearch = () => {
     newRows[index].selectAll = !newRows[index].selectAll;
     setFeeRows(newRows);
 
-    // If any row unchecked, uncheck selectAll; else if all checked, check selectAll
-    const allSelected = newRows.every((row) => row.selectAll === true);
+    // Recompute selectAll based on filtered rows only
+    const allSelected = rowsForView.every((p) => newRows[p.idx].selectAll === true);
     setSelectAll(allSelected);
   };
 
@@ -158,12 +196,22 @@ const SRNSearch = () => {
     const newSelectAll = !selectAll;
     setSelectAll(newSelectAll);
 
-    const newRows = feeRows.map((row) => ({
-      ...row,
-      selectAll: newSelectAll,
-    }));
+    const newRows = [...feeRows];
+    rowsForView.forEach(p => {
+      newRows[p.idx].selectAll = newSelectAll;
+    });
     setFeeRows(newRows);
   };
+
+  // Compute filtered rows for view based on installmentFilter and dueDate
+  const rowsForView = React.useMemo(() => {
+    if (!feeRows || feeRows.length === 0) return [];
+    const pairs = feeRows.map((row, idx) => ({ row, idx }));
+    if (installmentFilter === 'AS_OF_NOW') {
+      return pairs.filter(p => (p.row.dueDate || today) <= today);
+    }
+    return pairs;
+  }, [feeRows, installmentFilter]);
 
   // Handler to update currentFees on editable table, recalc totals
   const handleCurrentFeesChange = (index, value) => {
@@ -193,17 +241,49 @@ const SRNSearch = () => {
     setFeeRows(newFeeRows);
   };
 
-  // Totals for footer
-  const totals = feeRows.reduce(
+  // Handler to update waived amount (editable)
+  const handleWaivedAmountChange = (index, value) => {
+    const newFeeRows = [...feeRows];
+    let val = Number(value);
+    if (isNaN(val) || val < 0) val = 0;
+
+    newFeeRows[index].waivedAmount = val;
+    
+    // Recalculate current fees and amount remaining
+    const maxCurrentFees =
+      newFeeRows[index].feeAmount -
+      newFeeRows[index].feesSubmitted -
+      val -
+      newFeeRows[index].concession;
+
+    if (newFeeRows[index].currentFees > maxCurrentFees) {
+      newFeeRows[index].currentFees = maxCurrentFees > 0 ? maxCurrentFees : 0;
+    }
+
+    newFeeRows[index].amountRemaining =
+      newFeeRows[index].dueAmount -
+      newFeeRows[index].feesSubmitted -
+      val -
+      newFeeRows[index].currentFees;
+
+    if (newFeeRows[index].amountRemaining < 0)
+      newFeeRows[index].amountRemaining = 0;
+
+    setFeeRows(newFeeRows);
+  };
+
+  // Totals for footer (based on filtered rows)
+  const totals = rowsForView.reduce(
     (acc, row) => {
-      acc.feeAmount += row.feeAmount;
-      acc.concession += row.concession;
-      acc.dueAmount += row.dueAmount;
-      acc.feesSubmitted += row.feesSubmitted;
-      acc.waivedAmount += row.waivedAmount;
-      acc.currentFees += row.currentFees;
-      acc.waiveAmount += row.waiveAmount;
-      acc.amountRemaining += row.amountRemaining;
+      const r = row.row;
+      acc.feeAmount += r.feeAmount;
+      acc.concession += r.concession;
+      acc.dueAmount += r.dueAmount;
+      acc.feesSubmitted += r.feesSubmitted;
+      acc.waivedAmount += r.waivedAmount;
+      acc.currentFees += r.currentFees;
+      acc.fineAmount += r.fineAmount;
+      acc.amountRemaining += r.amountRemaining;
       return acc;
     },
     {
@@ -213,10 +293,407 @@ const SRNSearch = () => {
       feesSubmitted: 0,
       waivedAmount: 0,
       currentFees: 0,
-      waiveAmount: 0,
+      fineAmount: 0,
       amountRemaining: 0,
     }
   );
+
+  const selectedFeeRows = rowsForView.filter((p) => p.row.selectAll).map(p => p.row);
+  const totalCurrentFees = rowsForView.reduce(
+    (sum, p) => sum + (Number(p.row.currentFees) || 0),
+    0
+  );
+  const selectedRowsAmount = selectedFeeRows.reduce(
+    (sum, row) => sum + (Number(row.currentFees) || 0),
+    0
+  );
+  const payableAmount = selectedFeeRows.length ? selectedRowsAmount : totalCurrentFees;
+
+  // Show waiver section if any row has a waived amount > 0
+  const showWaiverSection = feeRows.some((row) => Number(row.waivedAmount) > 0);
+
+  const handlePayment = async () => {
+    if (!payableAmount || payableAmount <= 0) {
+      alert("Please select at least one fee row or ensure payable amount is valid.");
+      return;
+    }
+
+    const selectedRows = feeRows.filter(row => row.selectAll);
+    if (selectedRows.length === 0) {
+      alert('⚠️ Please select at least one fee row to submit payment.');
+      return;
+    }
+
+    setIsPaying(true);
+    setPaymentStatus(null);
+
+    try {
+      const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: Math.round(payableAmount * 100),
+        currency: "INR",
+        name: "ATM GLOBAL BUSSINESS SCHOOL",
+        description: "College Fee Payment",
+        image: "https://razorpay.com/favicon.png",
+        handler: async function (response) {
+          console.log('Razorpay Payment Success:', response);
+          
+          // After successful Razorpay payment, submit each selected row to backend
+          try {
+            const successfulSubmissions = [];
+            const failedSubmissions = [];
+            
+            for (let i = 0; i < selectedRows.length; i++) {
+              const row = selectedRows[i];
+              const currentEReceiptNo = (installmentDetails?.ereceiptno || 0) + 1 + i;
+              
+              try {
+                const apiPayload = {
+                  PaymentMode: 'Online',
+                  BankName: 'Razorpay',
+                  TransactionId: response.razorpay_payment_id || '',
+                  TransactionAmount: row.currentFees.toString(),
+                  StudentId: parseInt(searchResult?.id) || 0,
+                  FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
+                  InstalmentId: (row.installmentId || 1).toString(),
+                  SubmitDate: today,
+                  FineAmount: row.fineAmount?.toString() || '0',
+                  OtherFineAmount: '0',
+                  NetAmountSubmitted: row.currentFees.toString(),
+                  Remarks: `Online Payment - ${row.feeHead} (${row.feeInstallment}) - Razorpay ID: ${response.razorpay_payment_id}`,
+                  FeeSubmitLastDate: today,
+                  FinancialYearId: (BookNoReceiptNoDetails?.financialyearid || 1).toString(),
+                  BookNo: (BookNoReceiptNoDetails?.bookno || '').toString(),
+                  ReceiptNo: (BookNoReceiptNoDetails?.receiptno || '').toString(),
+                  InstallmentType: '1',
+                  DepositDate: today,
+                  PaymentClearDate: today,
+                  EReceiptNo: currentEReceiptNo.toString(),
+                  Uid: '1',
+                  Utype: '1',
+                  ChequeClearingDate: today,
+                  TransactionReceipt: '',
+                  CardNo: '',
+                  CardAmount: '0',
+                  FeeCollectionInFavourOf: '',
+                  OtherCharges: '0',
+                  OtherChargesRemarks: '',
+                  ChequeDraftInFavourOf: '',
+                  ChequeDdNo: '',
+                  BankBranch: '',
+                  ChequeDdDate: today,
+                  FavorOfs: '',
+                  PaymentModes: 'Online',
+                  BankNames: '',
+                  BranchNames: '',
+                  AccountNumbers: '',
+                  InFavorOfs: '',
+                  InFavOfId: '',
+                  AuthorizedSignatory: '',
+                  AccountNoId: '',
+                  WaiverName: ''
+                };
+                
+                const submitResponse = await submitOfflinePayment(apiPayload);
+                console.log(`Payment submitted for row ${i + 1}:`, submitResponse);
+                
+                // Also submit to fee table
+                const feePayload = {
+                  UserId: 1,
+                  UserType: 1,
+                  StudentId: parseInt(searchResult?.id) || 0,
+                  FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
+                  InstalmentId: row.installmentId || 1,
+                  FeeHeadId: (row.feeHeadId || 0).toString(),
+                  FeeHeadAmount: row.currentFees.toString(),
+                  TotalFeeAmount: row.feeAmount.toString(),
+                  DepositeFee: row.currentFees.toString(),
+                  WaiveAmount: row.waivedAmount.toString(),
+                  RemainingFee: (row.amountRemaining - row.currentFees).toString(),
+                  SubmitDate: today,
+                  DDate: today,
+                  PaymentClearDate: today,
+                  SubmitId: 0,
+                  IsOcc: false,
+                  InstallmentType: 1,
+                  ActualFeeAmount: row.feeAmount.toString(),
+                  ConssessionAmount: row.concession.toString()
+                };
+                
+                try {
+                  await submitFee(feePayload);
+                  console.log(`Fee data submitted for row ${i + 1}`);
+                } catch (feeError) {
+                  console.error(`Error submitting fee data for row ${i + 1}:`, feeError);
+                }
+                
+                successfulSubmissions.push({
+                  feeHead: row.feeHead,
+                  installment: row.feeInstallment,
+                  amount: row.currentFees,
+                  receiptNo: currentEReceiptNo
+                });
+              } catch (rowError) {
+                console.error(`Error submitting payment for row ${i + 1}:`, rowError);
+                failedSubmissions.push({
+                  feeHead: row.feeHead,
+                  installment: row.feeInstallment,
+                  amount: row.currentFees,
+                  error: rowError.response?.data?.message || rowError.message
+                });
+              }
+            }
+            
+            // Show summary
+            let message = `🎉 Razorpay Payment ID: ${response.razorpay_payment_id}\n\n`;
+            if (successfulSubmissions.length > 0) {
+              message += `✅ Successfully recorded ${successfulSubmissions.length} payment(s):\n\n`;
+              successfulSubmissions.forEach((sub, idx) => {
+                message += `${idx + 1}. ${sub.feeHead} (${sub.installment}) - ₹${sub.amount.toFixed(2)} - Receipt: ${sub.receiptNo}\n`;
+              });
+            }
+            
+            if (failedSubmissions.length > 0) {
+              message += `\n⚠️ Failed to record ${failedSubmissions.length} payment(s):\n\n`;
+              failedSubmissions.forEach((sub, idx) => {
+                message += `${idx + 1}. ${sub.feeHead} (${sub.installment}) - ₹${sub.amount.toFixed(2)} - Error: ${sub.error}\n`;
+              });
+            }
+            
+            setPaymentStatus({ type: "success", response, message });
+            alert(message);
+            
+            // Refresh data
+            if (srnInput && successfulSubmissions.length > 0) {
+              handleSearch();
+            }
+          } catch (submitError) {
+            console.error('Error submitting payment to backend:', submitError);
+            setPaymentStatus({ 
+              type: "error", 
+              message: `Payment successful on Razorpay but failed to record: ${submitError.message}` 
+            });
+          }
+        },
+        prefill: {
+          name: searchResult
+            ? `${searchResult.firstname || ""} ${searchResult.lastname || ""}`.trim()
+            : "",
+          email: searchResult?.personalemail || "",
+          contact: searchResult?.mobileno1 || "",
+        },
+        notes: {
+          srn: studentDetails?.admissionno || "",
+          selectedFeeHeads: selectedRows
+            .map((row) => `${row.feeHead} (${row.feeInstallment})`)
+            .join(", "),
+        },
+        theme: {
+          color: "#1d976c",
+        },
+        modal: {
+          ondismiss: () => {
+            setPaymentStatus((prev) =>
+              prev && prev.type === "success"
+                ? prev
+                : { type: "error", message: "Payment popup closed." }
+            );
+            setIsPaying(false);
+          },
+        },
+      };
+
+      const razorpay = await initializeRazorpayCheckout(options);
+      razorpay.open();
+    } catch (error) {
+      console.error("Razorpay Error", error);
+      setPaymentStatus({
+        type: "error",
+        message: error?.message || "Failed to initiate payment. Please try again.",
+      });
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
+  const handlePaymentmode = (mode) => {
+    setPaymentMode(mode);
+  };
+
+  const handleOfflinePaymentSubmit = async (paymentData) => {
+    console.log('Offline Payment Data:', paymentData);
+    
+    setIsPaying(true);
+    
+    try {
+      // Get selected fee rows for installment details
+      const selectedRows = feeRows.filter(row => row.selectAll);
+      
+      if (selectedRows.length === 0) {
+        alert('⚠️ Please select at least one fee row to submit payment.');
+        setIsPaying(false);
+        return;
+      }
+      
+      const successfulSubmissions = [];
+      const failedSubmissions = [];
+      
+      // If waiver is applied, ensure a waiver is selected
+      if (showWaiverSection) {
+        const waiverId = parseInt(paymentData.waiver || paymentData.selectedWaiver || '0');
+        if (!waiverId) {
+          alert('Please select a waiver from the list since a waived amount is applied.');
+          setIsPaying(false);
+          return;
+        }
+      }
+      
+      // Loop through each selected row and submit individually
+      for (let i = 0; i < selectedRows.length; i++) {
+        const row = selectedRows[i];
+        const currentEReceiptNo = (installmentDetails?.ereceiptno || 0) + 1 + i;
+        
+        try {
+          // Prepare the API payload for each row
+          const apiPayload = {
+            PaymentMode: paymentData.paymentModeName || '',
+            BankName: paymentData.bankNameField || paymentData.bank || '',
+            ChequeDdNo: paymentData.chequeNo || paymentData.draftNo || '',
+            BankBranch: paymentData.branchName || '',
+            ChequeDdDate: paymentData.chequeDate || paymentData.draftDate || today,
+            ChequeClearingDate: clearingDate || today,
+            TransactionId: paymentData.transactionNo || '',
+            TransactionReceipt: paymentData.waiverAttachmentBase64 || '',
+            TransactionAmount: row.currentFees.toString(), // Use individual row amount
+            CardNo: paymentData.cardNo || '',
+            CardAmount: paymentData.cardAmount || '0',
+            FeeCollectionInFavourOf: paymentData.favourOfName || '',
+            OtherCharges: '0',
+            OtherChargesRemarks: '',
+            ChequeDraftInFavourOf: paymentData.favourOfName || '',
+            StudentId: parseInt(searchResult?.id) || 0,
+            FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
+            InstalmentId: (row.installmentId || 1).toString(),
+            SubmitDate: today,
+            FineAmount: row.fineAmount?.toString() || '0',
+            OtherFineAmount: '0',
+            NetAmountSubmitted: row.currentFees.toString(), // Use individual row amount
+            Remarks: `${paymentData.remarks || ''} - ${row.feeHead} (${row.feeInstallment})`,
+            FeeSubmitLastDate: today,
+            FinancialYearId: (BookNoReceiptNoDetails?.financialyearid || 1).toString(),
+            BookNo: (BookNoReceiptNoDetails?.bookno || '').toString(),
+            ReceiptNo: (BookNoReceiptNoDetails?.receiptno || '').toString(),
+            FavorOfs: paymentData.favourOfName || '',
+            PaymentModes: paymentData.paymentModeName || '',
+            BankNames: paymentData.bank || '',
+            BranchNames: paymentData.branchName || '',
+            AccountNumbers: paymentData.account || '',
+            InFavorOfs: paymentData.favourOfName || '',
+            InstallmentType: '1',
+            DepositDate: depositDate || today,
+            PaymentClearDate: clearingDate || today,
+            EReceiptNo: BookNoReceiptNoDetails.receiptno.toString() + '/' + BookNoReceiptNoDetails.bookno.toString(),
+            InFavOfId: (paymentData.favourOf || '').toString(),
+            AuthorizedSignatory: paymentData.signatoryName || '',
+            Uid: '1',
+            Utype: '1',
+            AccountNoId: (paymentData.accountId || '').toString(),
+            // New fields
+            DataEntryOperator: paymentData.dataEntryBy || '',
+            CollectedBy: paymentData.collectedBy || '',
+            HandoverTo: paymentData.handoverTo || '',
+            WaiverId: paymentData.waiver || paymentData.selectedWaiver || '',
+            WaiverName: paymentData.waiverName || '',
+          };
+          
+          console.log(`API Payload for Row ${i + 1}:`, apiPayload);
+          
+          // Submit the payment for this row
+          const response = await submitOfflinePayment(apiPayload);
+          
+          console.log(`Payment Response for Row ${i + 1}:`, response);
+          
+          // Also submit to fee table
+          const feePayload = {
+            UserId: 1,
+            UserType: 1,
+            StudentId: parseInt(searchResult?.id) || 0,
+            FeeCategoryId: parseInt(studentDetails?.feecategoryid) || 1,
+            InstalmentId: row.installmentId || 1,
+            FeeHeadId: (row.feeHeadId || 0).toString(),
+            FeeHeadAmount: row.currentFees.toString(),
+            TotalFeeAmount: row.feeAmount.toString(),
+            DepositeFee: row.currentFees.toString(),
+            WaiveAmount: row.waivedAmount.toString(),
+            RemainingFee: (row.amountRemaining - row.currentFees).toString(),
+            SubmitDate: today,
+            DDate: depositDate || today,
+            PaymentClearDate: clearingDate || today,
+            SubmitId: 0,
+            IsOcc: false,
+            InstallmentType: 1,
+            ActualFeeAmount: row.feeAmount.toString(),
+            ConssessionAmount: row.concession.toString()
+          };
+          
+          try {
+            await submitFee(feePayload);
+            console.log(`Fee data submitted for row ${i + 1}`);
+          } catch (feeError) {
+            console.error(`Error submitting fee data for row ${i + 1}:`, feeError);
+          }
+          
+          successfulSubmissions.push({
+            feeHead: row.feeHead,
+            installment: row.feeInstallment,
+            amount: row.currentFees,
+            receiptNo: currentEReceiptNo
+          });
+        } catch (rowError) {
+          console.error(`Error submitting payment for row ${i + 1}:`, rowError);
+          failedSubmissions.push({
+            feeHead: row.feeHead,
+            installment: row.feeInstallment,
+            amount: row.currentFees,
+            error: rowError.response?.data?.message || rowError.message
+          });
+        }
+      }
+      
+      // Show summary of submissions
+      let message = '';
+      if (successfulSubmissions.length > 0) {
+        message += `✅ Successfully submitted ${successfulSubmissions.length} payment(s):\n\n`;
+        successfulSubmissions.forEach((sub, idx) => {
+          message += `${idx + 1}. ${sub.feeHead} (${sub.installment}) - ₹${sub.amount.toFixed(2)} - Receipt: ${sub.receiptNo}\n`;
+        });
+      }
+      
+      if (failedSubmissions.length > 0) {
+        message += `\n❌ Failed to submit ${failedSubmissions.length} payment(s):\n\n`;
+        failedSubmissions.forEach((sub, idx) => {
+          message += `${idx + 1}. ${sub.feeHead} (${sub.installment}) - ₹${sub.amount.toFixed(2)} - Error: ${sub.error}\n`;
+        });
+      }
+      
+      alert(message);
+      
+      // Reset payment mode and refresh data if any submission was successful
+      if (successfulSubmissions.length > 0) {
+        setPaymentMode(null);
+        
+        // Refresh the student data
+        if (srnInput) {
+          handleSearch();
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting offline payment:', error);
+      alert(`❌ Error submitting payment: ${error.response?.data?.message || error.message || 'Unknown error occurred'}`);
+    } finally {
+      setIsPaying(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -231,24 +708,55 @@ const SRNSearch = () => {
   }
 
   return (
-    <CCard className="shadow-sm mb-4">
-      <CCardHeader className="fw-bold">🎓 SRN-Based Fee Search</CCardHeader>
-      <CCardBody>
-        <CRow className="align-items-end g-3 mb-4">
+    <CCard className="border-0 shadow-lg ">
+      <CCardHeader
+        className="text-white fw-bold fs-5 rounded-top-4"
+        style={{ background: "linear-gradient(135deg, #224abe, #224abe)" }}
+      >
+        <CRow className="align-items-center">
+          <CCol xs={12} md={6}>
+            🎓 SRN-Based Fee Search
+          </CCol>
+          {/* Installment Details at Top Right */}
+          {installmentDetails && BookNoReceiptNoDetails && (
+            <CCol xs={12} md={6}>
+              <div className="d-flex justify-content-end align-items-center gap-3 flex-wrap" style={{ fontSize: '0.85rem' }}>
+                <div>
+                  <strong>Financial Year:</strong> {BookNoReceiptNoDetails.financialyear}
+                </div>
+                <div>
+                  <strong>M Receipt:</strong> {BookNoReceiptNoDetails.receiptno}/{BookNoReceiptNoDetails.bookno}
+                </div>
+                <div>
+                  <strong>E-Receipt:</strong> {installmentDetails.ShortName}/{installmentDetails.ereceiptno + 1}
+                </div>
+              </div>
+            </CCol>
+          )}
+        </CRow>
+      </CCardHeader>
+
+      <CCardBody className="p-3">
+        {/* Search Box */}
+        <CRow className="align-items-end g-3 mb-3">
+        <CCol xs={12} md={4} lg={2} className="d-flex justify-content-center align-items-center">
+             <div className="fw-semibold text-center">Enter SRN or Mobile Number</div>
+          </CCol>
           <CCol xs={12} md={4} lg={3}>
             <CFormInput
-              label="Enter SRN Number"
+              // label="Enter SRN or Mobile Number"
               value={srnInput}
               onChange={(e) => setSrnInput(e.target.value)}
-              placeholder="e.g., SRN123456"
+              placeholder="🔎 SRN or 10-digit mobile"
               size="lg"
+              className="rounded-pill shadow-sm"
             />
           </CCol>
           <CCol xs={12} md={4} lg={3}>
             <CButton
               color="primary"
               size="lg"
-              className="w-100"
+              className="w-100 rounded-pill shadow"
               onClick={handleSearch}
               disabled={isLoading}
             >
@@ -257,7 +765,6 @@ const SRNSearch = () => {
                   <span
                     className="spinner-border spinner-border-sm me-2"
                     role="status"
-                    aria-hidden="true"
                   />
                   Searching...
                 </>
@@ -272,154 +779,174 @@ const SRNSearch = () => {
         </CRow>
 
         {/* Student Profile */}
-        {searchResult && studentDetails && (
-          <CCard className="mb-4 border-0 shadow-sm profile-card">
-            <CCardBody>
-              <CRow>
-                <CCol
-                  xs={12}
-                  md={4}
-                  className="d-flex flex-column align-items-center justify-content-center text-center border-end mb-3 mb-md-0"
-                >
-                  <h5 className="fw-bold mb-1">
-                    {searchResult.firstname} {searchResult.lastname}
-                  </h5>
-                  <div className="text-muted mb-2">
-                    {searchResult.personalemail}
-                  </div>
-                  <div>
-                    <strong>📞</strong> {searchResult.mobileno1}
-                  </div>
-                  <div>
-                    <strong>🆔 SRN:</strong> {studentDetails.admissionno}
-                  </div>
-                </CCol>
-
-                <CCol xs={12} md={8}>
-                  <CRow className="mb-2">
-                    <CCol xs={6} md={4}>
-                      <strong>College:</strong>
-                      <div className="text-muted">{studentDetails.collegename}</div>
-                    </CCol>
-                    <CCol xs={6} md={2}>
-                      <strong>Branch:</strong>
-                      <div className="text-muted">{studentDetails.Branchname}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>Course:</strong>
-                      <div className="text-muted">{studentDetails.corsename}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>Type:</strong>
-                      <div className="text-muted">{studentDetails.coursename}</div>
-                    </CCol>
-                  </CRow>
-                  <CRow className="mb-2">
-                    <CCol xs={6} md={4}>
-                      <strong>Fee Category:</strong>
-                      <div className="text-muted">
-                        {studentDetails.feecategoryname}
-                      </div>
-                    </CCol>
-                    <CCol xs={6} md={2}>
-                      <strong>Semester:</strong>
-                      <div className="text-muted">{studentDetails.semesterno}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>Batch:</strong>
-                      <div className="text-muted">{studentDetails.Batchno}</div>
-                    </CCol>
-                    <CCol xs={6} md={3}>
-                      <strong>University:</strong>
-                      <div className="text-muted">{studentDetails.name}</div>
-                    </CCol>
-                  </CRow>
-                </CCol>
-              </CRow>
-            </CCardBody>
-          </CCard>
-        )}
+         {searchResult && studentDetails && (
+                  <CCard className="mb-3 border-0 shadow-sm rounded-3">
+                    <CCardBody>
+                      <CRow>
+                        <CCol
+                          xs={12}
+                          md={4}
+                          className="d-flex flex-column align-items-center justify-content-center text-center border-end mb-3 mb-md-0"
+                        >
+                          {/* Dummy Photo */}
+                          <CRow>
+                            <CCol>
+                          <div 
+                            className="rounded-circle mb-2 d-flex align-items-center justify-content-center text-white fw-bold"
+                            style={{ 
+                              width: '100px', 
+                              height: '100px', 
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              fontSize: '2.5rem'
+                            }}
+                          >
+                            {searchResult.firstname?.charAt(0)}{searchResult.lastname?.charAt(0)}
+                          </div>
+        
+                          </CCol>
+                          <CCol>
+                          <h5 className="fw-bold text-primary mb-1">
+                            {searchResult.firstname} {searchResult.lastname}
+                          </h5>
+                          <div className="text-muted mb-2">
+                            {searchResult.personalemail}
+                          </div>
+                          <div>
+                            <strong>📞</strong> {searchResult.mobileno1}
+                          </div>
+                          <div className="badge bg-info mt-2 px-3 py-2">
+                            🆔 {studentDetails.admissionno}
+                          </div>
+                          </CCol>
+                          </CRow>
+                          
+                          
+                        </CCol>
+        
+                        <CCol xs={12} md={8}>
+                          <CRow className="gy-2 gx-3">
+                            <CCol xs={6} md={4}>
+                              <strong>College</strong>
+                              <div className="text-muted">{studentDetails.collegename}</div>
+                            </CCol>
+                            <CCol xs={6} md={2}>
+                              <strong>Branch</strong>
+                              <div className="text-muted">{studentDetails.Branchname}</div>
+                            </CCol>
+                            <CCol xs={6} md={3}>
+                              <strong>Course</strong>
+                              <div className="text-muted">{studentDetails.corsename}</div>
+                            </CCol>
+                            <CCol xs={6} md={3}>
+                              <strong>Type</strong>
+                              <div className="text-muted">{studentDetails.coursename}</div>
+                            </CCol>
+                            <CCol xs={6} md={4}>
+                              <strong>Fee Category</strong>
+                              <div className="text-muted">
+                                {studentDetails.feecategoryname}
+                              </div>
+                            </CCol>
+                            <CCol xs={6} md={2}>
+                              <strong>Semester</strong>
+                              <div className="text-muted">{studentDetails.semesterno}</div>
+                            </CCol>
+                            <CCol xs={6} md={3}>
+                              <strong>Batch</strong>
+                              <div className="text-muted">{studentDetails.Batchno}</div>
+                            </CCol>
+                            <CCol xs={6} md={3}>
+                              <strong>University</strong>
+                              <div className="text-muted">{studentDetails.name}</div>
+                            </CCol>
+                          </CRow>
+                        </CCol>
+                      </CRow>
+                    </CCardBody>
+                  </CCard>
+                )}
 
         {/* Installment Details */}
-        {installmentDetails && BookNoReceiptNoDetails && (
-          <CCard className="mb-4 border-0 border-start border-4 border-warning shadow-sm">
-            <CCardHeader className="fw-semibold bg-light">Installment Details</CCardHeader>
-            <CCardBody>
-              <CRow className="gy-3 gx-4">
-                <CCol xs={12} sm={6} md={3} className="d-flex align-items-center">
-                  <strong>Financial Year:&nbsp;</strong> 
-                  <span className="text-muted">{BookNoReceiptNoDetails.financialyear}</span>
+        {/* {installmentDetails && BookNoReceiptNoDetails && (
+          <CCard className="mb-3 border-0 shadow-sm rounded-3">
+            <CCardHeader className="fw-semibold bg-light py-2">
+              📑 Installment Details
+            </CCardHeader>
+            <CCardBody className="p-3">
+              <CRow className="gy-2 gx-3">
+                <CCol xs={12} sm={6} md={3}>
+                  <strong>Financial Year:</strong>
+                  <div className="text-muted">
+                    {BookNoReceiptNoDetails.financialyear}
+                  </div>
                 </CCol>
-
-                <CCol xs={12} sm={6} md={3} className="d-flex align-items-center">
-                  <strong>M Receipt No.:&nbsp;</strong> 
-                  <span className="text-muted">
-                    {BookNoReceiptNoDetails.receiptno}/{BookNoReceiptNoDetails.bookno}
-                  </span>
+                <CCol xs={12} sm={6} md={3}>
+                  <strong>M Receipt No.:</strong>
+                  <div className="text-muted">
+                    {BookNoReceiptNoDetails.receiptno}/
+                    {BookNoReceiptNoDetails.bookno}
+                  </div>
                 </CCol>
-
-                <CCol xs={12} sm={6} md={3} className="d-flex align-items-center">
-                  <strong>E-Receipt No.:&nbsp;</strong>
-                  <span className="text-muted">
-                    {installmentDetails.ShortName} / {installmentDetails.ereceiptno + 1}
-                  </span>
+                <CCol xs={12} sm={6} md={3}>
+                  <strong>E-Receipt No.:</strong>
+                  <div className="text-muted">
+                    {installmentDetails.ShortName} /{" "}
+                    {installmentDetails.ereceiptno + 1}
+                  </div>
                 </CCol>
-
-                <CCol xs={12} sm={6} md={3} className="d-flex align-items-center gap-2">
-                  <strong>E-Receipt Date:&nbsp;</strong>
+                <CCol xs={12} sm={6} md={3}>
+                  <strong>E-Receipt Date:</strong>
                   <CFormInput
                     type="date"
                     value={receiptDate}
                     onChange={(e) => setReceiptDate(e.target.value)}
                     size="sm"
-                    style={{ maxWidth: "160px" }}
+                    className="shadow-sm"
                   />
                 </CCol>
-
-                <CCol xs={12} sm={6} md={3} className="d-flex align-items-center gap-2 mt-3 mt-sm-0">
-                  <strong>Fee Deposited:&nbsp;</strong>
-                  <CFormCheck
-                    type="radio"
-                    label="Yes"
-                    name="feeDeposited"
-                    checked={feeDeposited === true}
-                    onChange={() => {
-                      setFeeDeposited(true);
-                      setDepositDate(today);
-                      setClearingDate(today);
-                    }}
-                    inline
-                  />
-                  <CFormCheck
-                    type="radio"
-                    label="No"
-                    name="feeDeposited"
-                    checked={feeDeposited === false}
-                    onChange={() => setFeeDeposited(false)}
-                    inline
-                  />
+                <CCol xs={12} sm={6} md={4} className="mt-3">
+                  <strong>Fee Deposited:</strong>
+                  <div className="d-flex gap-3 mt-2">
+                    <CFormCheck
+                      type="radio"
+                      label="Yes"
+                      name="feeDeposited"
+                      checked={feeDeposited === true}
+                      onChange={() => {
+                        setFeeDeposited(true);
+                        setDepositDate(today);
+                        setClearingDate(today);
+                      }}
+                    />
+                    <CFormCheck
+                      type="radio"
+                      label="No"
+                      name="feeDeposited"
+                      checked={feeDeposited === false}
+                      onChange={() => setFeeDeposited(false)}
+                    />
+                  </div>
                 </CCol>
-
                 {feeDeposited && (
                   <>
-                    <CCol xs={12} sm={6} md={3} className="d-flex align-items-center gap-2 mt-3">
-                      <strong>Deposit Date:&nbsp;</strong>
+                    <CCol xs={12} sm={6} md={4} className="mt-3">
+                      <strong>Deposit Date:</strong>
                       <CFormInput
                         type="date"
                         value={depositDate}
                         onChange={(e) => setDepositDate(e.target.value)}
                         size="sm"
-                        style={{ maxWidth: "160px" }}
+                        className="shadow-sm"
                       />
                     </CCol>
-                    <CCol xs={12} sm={6} md={3} className="d-flex align-items-center gap-2 mt-3">
-                      <strong>Clearing Date:&nbsp;</strong>
+                    <CCol xs={12} sm={6} md={4} className="mt-3">
+                      <strong>Clearing Date:</strong>
                       <CFormInput
                         type="date"
                         value={clearingDate}
                         onChange={(e) => setClearingDate(e.target.value)}
                         size="sm"
-                        style={{ maxWidth: "160px" }}
+                        className="shadow-sm"
                       />
                     </CCol>
                   </>
@@ -427,106 +954,203 @@ const SRNSearch = () => {
               </CRow>
             </CCardBody>
           </CCard>
-        )}
+        )} */}
 
-        {/* Fee Details & Payment Table */}
+        {/* Payment Summary */}
+
+
+        {/* Fee Details */}
         {feeRows.length > 0 && (
-          <CCard className="mb-5 border-0 shadow-sm">
-            <CCardHeader className="fw-semibold bg-light d-flex justify-content-between align-items-center">
-              <div>💰 Fee Details & Payment</div>
-              <CFormCheck
-                type="checkbox"
-                label="Select All"
-                checked={selectAll}
-                onChange={handleSelectAllToggle}
-                id="selectAllCheckbox"
-                inline
-              />
+          <CCard className="mb-3 border-0 shadow-sm rounded-3">
+            <CCardHeader className="fw-semibold bg-light py-2">
+              <CRow className="align-items-center">
+                <CCol xs={12} md={6}>💰 Fee Details</CCol>
+                <CCol xs={12} md={6} className="d-flex justify-content-end gap-2">
+                  <span className="small text-muted d-flex align-items-center me-2">Installment Filter:</span>
+                  <CButton
+                    color={installmentFilter === 'ALL' ? 'primary' : 'secondary'}
+                    size="sm"
+                    variant={installmentFilter === 'ALL' ? undefined : 'outline'}
+                    onClick={() => setInstallmentFilter('ALL')}
+                  >
+                    ALL
+                  </CButton>
+                  <CButton
+                    color={installmentFilter === 'AS_OF_NOW' ? 'primary' : 'secondary'}
+                    size="sm"
+                    variant={installmentFilter === 'AS_OF_NOW' ? undefined : 'outline'}
+                    onClick={() => setInstallmentFilter('AS_OF_NOW')}
+                  >
+                    As of NOW
+                  </CButton>
+                </CCol>
+              </CRow>
             </CCardHeader>
-            <CCardBody className="p-0">
+            <CCardBody className="p-2">
               <div className="table-responsive">
-                <table className="table table-bordered mb-0 align-middle">
-                  <thead className="table-light">
+                <table className="table table-hover table-striped align-middle mb-0">
+                  <thead className="table-dark sticky-top">
                     <tr>
-                      <th scope="col" style={{ width: "3rem", textAlign: "center" }}>
-                        #
+                      <th>#</th>
+                      <th>
+                        <CFormCheck
+                          type="checkbox"
+                          label="Select All"
+                          checked={selectAll}
+                          onChange={handleSelectAllToggle}
+                        />
                       </th>
-                      <th scope="col" style={{ width: "3rem", textAlign: "center" }}>
-                        Select
-                      </th>
-                      <th scope="col" style={{ minWidth: "150px" }}>Fee Installment</th>
-                      <th scope="col" style={{ minWidth: "150px" }}>Fee Head</th>
-                      <th scope="col" style={{ width: "100px" }}>Fee Amount</th>
-                      <th scope="col" style={{ width: "100px" }}>Concession</th>
-                      <th scope="col" style={{ width: "100px" }}>Due Amount</th>
-                      <th scope="col" style={{ width: "110px" }}>Fees Submitted</th>
-                      <th scope="col" style={{ width: "110px" }}>Waived Amount</th>
-                      <th scope="col" style={{ width: "120px" }}>Current Fees</th>
-                      <th scope="col" style={{ width: "110px" }}>Waive Amount</th>
-                      <th scope="col" style={{ width: "120px" }}>Amount Remaining</th>
+                      <th>Fee Installment</th>
+                      <th>Fee Head</th>
+                      <th className="text-end">Fee Amount</th>
+                      <th className="text-end">Fees Submitted</th>
+                      <th className="text-end">Amount Due</th>
+                      <th className="text-end">Current Fees</th>
+                      <th className="text-end">Due Date</th>
+                      <th className="text-end">Fine Amount</th>
+                      <th className="text-end">Waived Amount</th>
+                      <th className="text-end">Net Amount</th>
+                      <th className="text-end">Amount Remaining</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {feeRows.map((row, idx) => (
+                    {rowsForView.map(({row, idx}) => (
                       <tr key={idx}>
-                        <td style={{ textAlign: "center" }}>{row.slNo}</td>
-                        <td style={{ textAlign: "center" }}>
+                        <td>{row.slNo}</td>
+                        <td>
                           <CFormCheck
                             type="checkbox"
                             checked={row.selectAll || false}
                             onChange={() => handleRowSelectToggle(idx)}
-                            aria-label={`Select fee row ${row.slNo}`}
                           />
                         </td>
                         <td>{row.feeInstallment}</td>
                         <td>{row.feeHead}</td>
                         <td className="text-end">{row.feeAmount.toFixed(2)}</td>
-                        <td className="text-end">{row.concession.toFixed(2)}</td>
-                        <td className="text-end">{row.dueAmount.toFixed(2)}</td>
                         <td className="text-end">{row.feesSubmitted.toFixed(2)}</td>
-                        <td className="text-end">{row.waivedAmount.toFixed(2)}</td>
+                        <td className="text-end">{(row.feeAmount - row.feesSubmitted).toFixed(2)}</td>
                         <td>
                           <CFormInput
                             type="number"
                             size="sm"
-                            min={0}
-                            max={
-                              row.feeAmount -
-                              row.feesSubmitted -
-                              row.waivedAmount -
-                              row.concession
-                            }
                             value={row.currentFees}
                             onChange={(e) =>
                               handleCurrentFeesChange(idx, e.target.value)
                             }
+                            className="shadow-sm"
                             style={{ maxWidth: "90px" }}
                           />
                         </td>
-                        <td className="text-end">{row.waiveAmount.toFixed(2)}</td>
-                        <td className="text-end">{row.amountRemaining.toFixed(2)}</td>
+                        <td className="text-end">{row.dueDate}</td>
+                        <td className="text-end">{row.fineAmount.toFixed(2)}</td>
+                        <td>
+                          <CFormInput
+                            type="number"
+                            size="sm"
+                            value={row.waivedAmount}
+                            onChange={(e) =>
+                              handleWaivedAmountChange(idx, e.target.value)
+                            }
+                            className="shadow-sm"
+                            style={{ maxWidth: "90px" }}
+                          />
+                        </td>
+                        <td className="text-end">{(row.feeAmount - row.waivedAmount + row.fineAmount - row.feesSubmitted).toFixed(2)}</td>
+                        <td className="text-end">
+                          {(row.feeAmount - row.currentFees - row.waivedAmount + row.fineAmount - row.feesSubmitted).toFixed(2)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="table-light fw-semibold">
+                  <tfoot className="table-secondary fw-semibold">
                     <tr>
                       <td colSpan={4} className="text-end">
                         Totals
                       </td>
                       <td className="text-end">{totals.feeAmount.toFixed(2)}</td>
-                      <td className="text-end">{totals.concession.toFixed(2)}</td>
-                      <td className="text-end">{totals.dueAmount.toFixed(2)}</td>
                       <td className="text-end">{totals.feesSubmitted.toFixed(2)}</td>
+                      <td className="text-end">{(totals.feeAmount - totals.feesSubmitted).toFixed(2)}</td>
+                      <td className="text-end">{payableAmount.toFixed(2)}</td>
+                      <td className="text-end">N/A</td>
+                      <td className="text-end">{totals.fineAmount.toFixed(2)}</td>
                       <td className="text-end">{totals.waivedAmount.toFixed(2)}</td>
-                      <td className="text-end">{totals.currentFees.toFixed(2)}</td>
-                      <td className="text-end">{totals.waiveAmount.toFixed(2)}</td>
-                      <td className="text-end">{totals.amountRemaining.toFixed(2)}</td>
+                      <td className="text-end">{(totals.feeAmount - totals.waivedAmount + totals.fineAmount - totals.feesSubmitted).toFixed(2)}</td>
+                      <td className="text-end">
+                        {(totals.feeAmount - payableAmount - totals.waivedAmount + totals.fineAmount - totals.feesSubmitted).toFixed(2)}
+                      </td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
             </CCardBody>
           </CCard>
+        )}
+
+        {/* Payment Mode Selection Buttons */}
+        {feeRows.length > 0 && !paymentMode && (
+          <CRow className="g-3 mb-3">
+            <CCol xs={12} md={6}>
+              <CButton
+                color="success"
+                size="lg"
+                className="w-100 rounded-pill shadow"
+                onClick={() => handlePaymentmode('online')}
+              >
+                💳 Online Payment
+              </CButton>
+            </CCol>
+            <CCol xs={12} md={6}>
+              <CButton
+                color="warning"
+                size="lg"
+                className="w-100 rounded-pill shadow"
+                onClick={() => handlePaymentmode('offline')}
+              >
+                🏦 Offline Payment
+              </CButton>
+            </CCol>
+          </CRow>
+        )}
+
+        {/* Online Payment Summary */}
+        {feeRows.length > 0 && paymentMode === 'online' && (
+          <>
+            <PaymentSummaryCard
+              amount={payableAmount}
+              onPay={handlePayment}
+              isPaying={isPaying}
+              selectedCount={selectedFeeRows.length}
+              totalCount={feeRows.length}
+              paymentStatus={paymentStatus}
+            />
+            <CButton
+              color="secondary"
+              className="mt-3"
+              onClick={() => setPaymentMode(null)}
+            >
+              ← Back to Payment Options
+            </CButton>
+          </>
+        )}
+
+        {/* Offline Payment Form */}
+        {feeRows.length > 0 && paymentMode === 'offline' && (
+          <>
+            <OfflinePaymentForm
+              amount={payableAmount}
+              studentDetails={{ ...studentDetails, id: searchResult?.id }}
+              onSubmit={handleOfflinePaymentSubmit}
+              isSubmitting={isPaying}
+              showWaiverSection={showWaiverSection}
+            />
+            <CButton
+              color="secondary"
+              className="mt-3"
+              onClick={() => setPaymentMode(null)}
+            >
+              ← Back to Payment Options
+            </CButton>
+          </>
         )}
       </CCardBody>
     </CCard>

@@ -1,368 +1,478 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   CCard,
   CCardBody,
   CCardHeader,
   CCol,
   CRow,
-  CForm,
-  CFormInput,
-  CFormSelect,
-  CFormLabel,
-  CButton,
-  CInputGroup,
-  CInputGroupText,
-  CTable,
-  CTableHead,
-  CTableRow,
-  CTableHeaderCell,
-  CTableBody,
-  CTableDataCell,
+  CAlert,
+  CNav,
+  CNavItem,
+  CNavLink,
+  CTabContent,
+  CTabPane,
+  CBadge,
 } from '@coreui/react'
-import { students as DATA } from '../../data/students'
-import {
-  organizations,
-  colleges,
-  branches,
-  sectors,
-  courseTypes,
-  universities as UNIS,
-  courses,
-  batches,
-  sessions,
-  countries as M_COUNTRIES,
-  states as M_STATES,
-  districts as M_DISTRICTS,
-  cities as M_CITIES,
-} from '../../data/masters'
+import { searchStudentBySRN, getFeeSelectStudent, getStudentProfile } from '../../api/api'
 
 const Profile = () => {
-  const base = useMemo(() => DATA[0], [])
-  const [form, setForm] = useState({
-    // read-only
-    firstname: base.firstname,
-    middlename: base.middlename,
-    lastname: base.lastname,
-    studentid: base.studentid,
-    admissionno: base.admissionno,
-    // editable
-    personalemail: base.personalemail,
-    mobileno1: base.mobileno1,
-    mobileno2: base.mobileno2 || '',
-    gender: base.gender,
-    bloodgroup: base.bloodgroup || '',
-    address: { ...base.address },
-    previousEducations: [...(base.previousEducations || [])],
-  })
+  const [searchResult, setSearchResult] = useState(null)
+  const [studentDetails, setStudentDetails] = useState(null)
+  const [profileData, setProfileData] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [activeTab, setActiveTab] = useState('personal')
 
-  // Resolve masters for noneditable program info
-  const program = useMemo(() => {
-    const college = colleges.find((c) => String(c.id) === String(base.N_CollegeId)) || null
-    const organization = college ? organizations.find((o) => o.id === college.organizationId) : null
-    const branch = branches.find((b) => String(b.id) === String(base.N_BranchId)) || null
-    const sector = sectors.find((s) => String(s.id) === String(base.N_SectorId)) || null
-    const courseType = courseTypes.find((t) => t.id === base.N_CourseType) || { id: base.N_CourseType, name: base.N_CourseType }
-    const university = UNIS.find((u) => u.name === base.N_University) || { id: base.N_University, name: base.N_University }
-    const course = courses.find((c) => String(c.id) === String(base.N_CourseId)) || null
-    const batch = batches.find((b) => String(b.id) === String(base.N_BatchId)) || null
-    // session not in base; pick first or compute
-    const session = sessions[0]
-    return { organization, college, branch, sector, courseType, university, course, batch, session }
-  }, [base])
-
-  // Address cascading: keep codes for selection while preserving names in form
-  const [addrCodes, setAddrCodes] = useState({ country: '', state: '', district: '', city: '' })
-
+  // Load profile data on component mount
   useEffect(() => {
-    // Try to infer codes from names present in base.address
-    const inferredCountry = M_COUNTRIES.find((c) => c.name === form.address.country)?.code || 'IN'
-    const inferredState = M_STATES.find((s) => s.name === form.address.state)?.code || ''
-    const inferredDistrict = M_DISTRICTS.find((d) => d.name === form.address.district)?.code || ''
-    const inferredCity = M_CITIES.find((c) => c.name === form.address.city)?.code || ''
-    setAddrCodes({ country: inferredCountry, state: inferredState, district: inferredDistrict, city: inferredCity })
+    const loadProfile = async () => {
+      try {
+        const studentDataStr = localStorage.getItem('studentData')
+        if (!studentDataStr) {
+          setError('Please login to view your profile.')
+          setIsLoading(false)
+          return
+        }
+
+        const studentData = JSON.parse(studentDataStr)
+        const admissionNo = studentData.admissionno
+
+        if (!admissionNo) {
+          setError('Admission number not found. Please login again.')
+          setIsLoading(false)
+          return
+        }
+
+        // Call searchStudentBySRN for the top card (same as StudentFeePayment)
+        const data = await searchStudentBySRN(admissionNo)
+        
+        if (data?.length > 0) {
+          setSearchResult(data[0])
+          const id = data[0].id
+
+          // Get detailed student information for top card
+          const data2 = await getFeeSelectStudent(id)
+          setStudentDetails(data2[0])
+        } else {
+          setError('No student record found.')
+        }
+
+        // Call getStudentProfile for detailed tabs below
+        const response = await getStudentProfile(admissionNo)
+        
+        if (response.Success && response.Data && response.Data.length > 0) {
+          setProfileData(response.Data[0])
+        } else {
+          setError('Profile data not found.')
+        }
+      } catch (err) {
+        console.error('Error loading profile:', err)
+        setError('Failed to load profile. Please try again.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadProfile()
   }, [])
 
-  const filteredStates = useMemo(() => M_STATES.filter((s) => s.country === addrCodes.country), [addrCodes.country])
-  const filteredDistricts = useMemo(() => M_DISTRICTS.filter((d) => d.state === addrCodes.state), [addrCodes.state])
-  const filteredCities = useMemo(() => M_CITIES.filter((c) => c.district === addrCodes.district), [addrCodes.district])
-
-  const onChange = (e) => {
-    const { name, value } = e.target
-    setForm((f) => ({ ...f, [name]: value }))
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A'
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
   }
 
-  const onAddrChange = (e) => {
-    const { name, value } = e.target
-    setForm((f) => ({ ...f, address: { ...f.address, [name]: value } }))
+  const getGenderLabel = (genderCode) => {
+    if (genderCode === '1') return 'Male'
+    if (genderCode === '2') return 'Female'
+    return 'Other'
   }
 
-  const onAddrCodeChange = (level, code) => {
-    // Update codes and corresponding names in form.address
-    if (level === 'country') {
-      const country = M_COUNTRIES.find((c) => c.code === code)
-      setAddrCodes({ country: code, state: '', district: '', city: '' })
-      setForm((f) => ({ ...f, address: { ...f.address, country: country?.name || '' , state: '', district: '', city: '' } }))
-    } else if (level === 'state') {
-      const state = M_STATES.find((s) => s.code === code)
-      setAddrCodes((a) => ({ ...a, state: code, district: '', city: '' }))
-      setForm((f) => ({ ...f, address: { ...f.address, state: state?.name || '' , district: '', city: '' } }))
-    } else if (level === 'district') {
-      const dist = M_DISTRICTS.find((d) => d.code === code)
-      setAddrCodes((a) => ({ ...a, district: code, city: '' }))
-      setForm((f) => ({ ...f, address: { ...f.address, district: dist?.name || '' , city: '' } }))
-    } else if (level === 'city') {
-      const city = M_CITIES.find((c) => c.code === code)
-      setAddrCodes((a) => ({ ...a, city: code }))
-      setForm((f) => ({ ...f, address: { ...f.address, city: city?.name || '' } }))
-    }
+  const getBloodGroupLabel = (code) => {
+    const bloodGroups = { '1': 'A+', '2': 'A-', '3': 'B+', '4': 'B-', '5': 'O+', '6': 'O-', '7': 'AB+', '8': 'AB-' }
+    return bloodGroups[code] || 'N/A'
   }
 
-  const addEdu = () => {
-    setForm((f) => ({
-      ...f,
-      previousEducations: [...f.previousEducations, { degree: '', board: '', year: '', percentage: '' }],
-    }))
+  const InfoRow = ({ label, value }) => (
+    <CCol xs={12} md={6} lg={4} className="mb-3">
+      <div className="border-start border-3 border-primary ps-3 py-2 bg-light">
+        <small className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>{label}</small>
+        <div className="fw-semibold text-dark mt-1">{value || 'N/A'}</div>
+      </div>
+    </CCol>
+  )
+
+  if (isLoading) {
+    return (
+      <CCard className="shadow-sm">
+        <CCardHeader className="fw-bold">👤 My Profile</CCardHeader>
+        <CCardBody className="text-center py-5">
+          <div className="spinner-border text-primary mb-3" role="status" />
+          <div className="fw-semibold">Loading your profile...</div>
+        </CCardBody>
+      </CCard>
+    )
   }
 
-  const updateEdu = (idx, key, value) => {
-    setForm((f) => {
-      const list = f.previousEducations.map((e, i) => (i === idx ? { ...e, [key]: value } : e))
-      return { ...f, previousEducations: list }
-    })
+  if (error) {
+    return (
+      <CCard className="shadow-sm">
+        <CCardHeader className="fw-bold">👤 My Profile</CCardHeader>
+        <CCardBody>
+          <CAlert color="danger">{error}</CAlert>
+        </CCardBody>
+      </CCard>
+    )
   }
 
-  const removeEdu = (idx) => {
-    setForm((f) => ({
-      ...f,
-      previousEducations: f.previousEducations.filter((_, i) => i !== idx),
-    }))
-  }
-
-  const save = () => {
-    console.log('Mock save', form)
-    alert('Saved (static). Check console for payload.')
+  if (!searchResult || !studentDetails) {
+    return (
+      <CCard className="shadow-sm">
+        <CCardHeader className="fw-bold">👤 My Profile</CCardHeader>
+        <CCardBody>
+          <CAlert color="info">No profile data available.</CAlert>
+        </CCardBody>
+      </CCard>
+    )
   }
 
   return (
-    <CRow>
-      <CCol xs={12}>
-        <CCard className="mb-4">
-          <CCardHeader>
-            <strong>Student</strong> <small>Profile</small>
-          </CCardHeader>
-          <CCardBody>
-            <CForm className="row g-3">
-              {/* Read-only overview */}
-              <CCol xs={12} className="mb-2">
-                <CFormLabel>Overview</CFormLabel>
-                <CRow className="g-3">
-                  <CCol md={3}><CFormInput label="Student ID" value={form.studentid} readOnly /></CCol>
-                  <CCol md={3}><CFormInput label="Admission No" value={form.admissionno} readOnly /></CCol>
-                  <CCol md={3}><CFormInput label="Name" value={[form.firstname, form.middlename, form.lastname].filter(Boolean).join(' ')} readOnly /></CCol>
-                  <CCol md={3}><CFormInput label="Gender" value={form.gender} readOnly /></CCol>
-                  <CCol md={3}><CFormInput label="University" value={program.university?.name || ''} readOnly /></CCol>
-                  <CCol md={3}><CFormInput label="Course Type" value={program.courseType?.name || ''} readOnly /></CCol>
-                  <CCol md={3}><CFormInput label="Semester" value={String(DATA[0].semesterid || '')} readOnly /></CCol>
-                  <CCol md={3}><CFormInput label="Category" value={DATA[0].category || ''} readOnly /></CCol>
-                </CRow>
-              </CCol>
+    <div>
+      {/* Header Card with Photo - EXACT Same as StudentFeePayment */}
+      <CCard className="border-0 shadow mb-4">
+        <CCardBody className="p-0">
+          <div className="bg-primary text-white py-3 px-4">
+            <h4 className="mb-0 fw-bold">Student Profile</h4>
+          </div>
+          <CCardBody className="p-3">
+            {/* Student Profile Card - Exact copy from StudentFeePayment */}
+            {searchResult && studentDetails && (
+              <CCard className="mb-3 border-0 shadow-sm rounded-3">
+                <CCardBody>
+                  <CRow>
+                    <CCol
+                      xs={12}
+                      md={4}
+                      className="d-flex flex-column align-items-center justify-content-center text-center border-end mb-3 mb-md-0"
+                    >
+                      {/* Dummy Photo */}
+                      <CRow>
+                        <CCol>
+                          <div 
+                            className="rounded-circle mb-2 d-flex align-items-center justify-content-center text-white fw-bold"
+                            style={{ 
+                              width: '100px', 
+                              height: '100px', 
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              fontSize: '2.5rem'
+                            }}
+                          >
+                            {searchResult.firstname?.charAt(0)}{searchResult.lastname?.charAt(0)}
+                          </div>
+                        </CCol>
+                        <CCol>
+                          <h5 className="fw-bold text-primary mb-1">
+                            {searchResult.firstname} {searchResult.lastname}
+                          </h5>
+                          <div className="text-muted mb-2">
+                            {searchResult.personalemail}
+                          </div>
+                          <div>
+                            <strong>📞</strong> {searchResult.mobileno1}
+                          </div>
+                          <div className="badge bg-info mt-2 px-3 py-2">
+                            🆔 {studentDetails.admissionno}
+                          </div>
+                        </CCol>
+                      </CRow>
+                    </CCol>
 
-              {/* Program Details (non-editable) */}
-              <CCol xs={12} className="mt-2">
-                <CFormLabel>Program Details</CFormLabel>
-                <CRow className="g-3">
-                  <CCol md={3}>
-                    <CFormSelect label="Organization" value={program.organization?.id || ''} disabled className="bg-body-tertiary">
-                      {organizations.map((o) => (
-                        <option key={o.id} value={o.id}>{o.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <CFormSelect label="College" value={program.college?.id || ''} disabled className="bg-body-tertiary">
-                      {colleges.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <CFormSelect label="Branch" value={program.branch?.id || ''} disabled className="bg-body-tertiary">
-                      {branches.map((b) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <CFormSelect label="Sector" value={program.sector?.id || ''} disabled className="bg-body-tertiary">
-                      {sectors.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <CFormSelect label="Course Type" value={program.courseType?.id || ''} disabled className="bg-body-tertiary">
-                      {courseTypes.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <CFormSelect label="University" value={program.university?.id || ''} disabled className="bg-body-tertiary">
-                      {UNIS.map((u) => (
-                        <option key={u.id} value={u.id}>{u.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <CFormSelect label="Course" value={program.course?.id || ''} disabled className="bg-body-tertiary">
-                      {courses.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <CFormSelect label="Batch" value={program.batch?.id || ''} disabled className="bg-body-tertiary">
-                      {batches.map((b) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <CFormSelect label="Session" value={program.session?.id || ''} disabled className="bg-body-tertiary">
-                      {sessions.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                </CRow>
-              </CCol>
-              <CCol md={3}>
-                <CFormInput label="First Name (read-only)" value={form.firstname} readOnly />
-              </CCol>
-              <CCol md={3}>
-                <CFormInput label="Middle Name (read-only)" value={form.middlename} readOnly />
-              </CCol>
-              <CCol md={3}>
-                <CFormInput label="Last Name (read-only)" value={form.lastname} readOnly />
-              </CCol>
-              <CCol md={3}>
-                <CFormInput label="Student ID (read-only)" value={form.studentid} readOnly />
-              </CCol>
-              <CCol md={3}>
-                <CFormInput label="Admission No (read-only)" value={form.admissionno} readOnly />
-              </CCol>
-
-              <CCol md={4}>
-                <CFormInput name="personalemail" label="Personal Email" value={form.personalemail} onChange={onChange} />
-              </CCol>
-              <CCol md={2}>
-                <CFormSelect name="gender" label="Gender" value={form.gender} onChange={onChange}>
-                  <option>Male</option>
-                  <option>Female</option>
-                  <option>Other</option>
-                </CFormSelect>
-              </CCol>
-              <CCol md={2}>
-                <CFormInput name="bloodgroup" label="Blood Group" value={form.bloodgroup} onChange={onChange} />
-              </CCol>
-              <CCol md={3}>
-                <CFormInput name="mobileno1" label="Mobile No 1" value={form.mobileno1} onChange={onChange} />
-              </CCol>
-              <CCol md={3}>
-                <CFormInput name="mobileno2" label="Mobile No 2" value={form.mobileno2} onChange={onChange} />
-              </CCol>
-
-              <CCol xs={12} className="mt-2">
-                <CFormLabel>Address</CFormLabel>
-                <CRow className="g-3">
-                  <CCol md={4}>
-                    <CFormInput name="addressline1" label="Address Line 1" value={form.address.addressline1} onChange={onAddrChange} />
-                  </CCol>
-                  <CCol md={4}>
-                    <CFormInput name="addressline2" label="Address Line 2" value={form.address.addressline2} onChange={onAddrChange} />
-                  </CCol>
-                  <CCol md={2}>
-                    <CFormSelect label="Country" value={addrCodes.country} onChange={(e) => onAddrCodeChange('country', e.target.value)}>
-                      {M_COUNTRIES.map((c) => (
-                        <option key={c.code} value={c.code}>{c.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={2}>
-                    <CFormSelect label="State" value={addrCodes.state} onChange={(e) => onAddrCodeChange('state', e.target.value)}>
-                      <option value="">Select</option>
-                      {filteredStates.map((s) => (
-                        <option key={s.code} value={s.code}>{s.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <CFormSelect label="District" value={addrCodes.district} onChange={(e) => onAddrCodeChange('district', e.target.value)}>
-                      <option value="">Select</option>
-                      {filteredDistricts.map((d) => (
-                        <option key={d.code} value={d.code}>{d.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={3}>
-                    <CFormSelect label="City" value={addrCodes.city} onChange={(e) => onAddrCodeChange('city', e.target.value)}>
-                      <option value="">Select</option>
-                      {filteredCities.map((c) => (
-                        <option key={c.code} value={c.code}>{c.name}</option>
-                      ))}
-                    </CFormSelect>
-                  </CCol>
-                  <CCol md={2}>
-                    <CFormInput name="pinno" label="PIN" value={form.address.pinno} onChange={onAddrChange} />
-                  </CCol>
-                </CRow>
-              </CCol>
-
-              <CCol xs={12} className="mt-3">
-                <CFormLabel>Previous Educations</CFormLabel>
-                <CButton size="sm" color="secondary" variant="outline" className="ms-2" onClick={addEdu}>Add</CButton>
-                <CTable small bordered className="mt-2">
-                  <CTableHead>
-                    <CTableRow>
-                      <CTableHeaderCell>Degree</CTableHeaderCell>
-                      <CTableHeaderCell>Board</CTableHeaderCell>
-                      <CTableHeaderCell>Year</CTableHeaderCell>
-                      <CTableHeaderCell>%</CTableHeaderCell>
-                      <CTableHeaderCell></CTableHeaderCell>
-                    </CTableRow>
-                  </CTableHead>
-                  <CTableBody>
-                    {form.previousEducations.map((e, idx) => (
-                      <CTableRow key={idx}>
-                        <CTableDataCell>
-                          <CFormInput value={e.degree} onChange={(ev) => updateEdu(idx, 'degree', ev.target.value)} />
-                        </CTableDataCell>
-                        <CTableDataCell>
-                          <CFormInput value={e.board} onChange={(ev) => updateEdu(idx, 'board', ev.target.value)} />
-                        </CTableDataCell>
-                        <CTableDataCell>
-                          <CFormInput value={e.year} onChange={(ev) => updateEdu(idx, 'year', ev.target.value)} />
-                        </CTableDataCell>
-                        <CTableDataCell>
-                          <CFormInput value={e.percentage} onChange={(ev) => updateEdu(idx, 'percentage', ev.target.value)} />
-                        </CTableDataCell>
-                        <CTableDataCell className="text-end">
-                          <CButton size="sm" color="danger" variant="outline" onClick={() => removeEdu(idx)}>Remove</CButton>
-                        </CTableDataCell>
-                      </CTableRow>
-                    ))}
-                  </CTableBody>
-                </CTable>
-              </CCol>
-
-              <CCol xs={12} className="mt-3 d-flex gap-2">
-                <CButton color="primary" onClick={save}>Save</CButton>
-              </CCol>
-            </CForm>
+                    <CCol xs={12} md={8}>
+                      <CRow className="gy-2 gx-3">
+                        <CCol xs={6} md={4}>
+                          <strong>College</strong>
+                          <div className="text-muted">{studentDetails.collegename}</div>
+                        </CCol>
+                        <CCol xs={6} md={2}>
+                          <strong>Branch</strong>
+                          <div className="text-muted">{studentDetails.Branchname}</div>
+                        </CCol>
+                        <CCol xs={6} md={3}>
+                          <strong>Course</strong>
+                          <div className="text-muted">{studentDetails.corsename}</div>
+                        </CCol>
+                        <CCol xs={6} md={3}>
+                          <strong>Type</strong>
+                          <div className="text-muted">{studentDetails.coursename}</div>
+                        </CCol>
+                        <CCol xs={6} md={4}>
+                          <strong>Fee Category</strong>
+                          <div className="text-muted">
+                            {studentDetails.feecategoryname}
+                          </div>
+                        </CCol>
+                        <CCol xs={6} md={2}>
+                          <strong>Semester</strong>
+                          <div className="text-muted">{studentDetails.semesterno}</div>
+                        </CCol>
+                        <CCol xs={6} md={3}>
+                          <strong>Batch</strong>
+                          <div className="text-muted">{studentDetails.Batchno}</div>
+                        </CCol>
+                        <CCol xs={6} md={3}>
+                          <strong>Section</strong>
+                          <div className="text-muted">{studentDetails.Section}</div>
+                        </CCol>
+                      </CRow>
+                    </CCol>
+                  </CRow>
+                </CCardBody>
+              </CCard>
+            )}
           </CCardBody>
-        </CCard>
-      </CCol>
-    </CRow>
+        </CCardBody>
+      </CCard>
+
+      {/* Tabs Navigation */}
+      <CCard className="border-0 shadow mb-3">
+        <CCardBody className="p-0">
+          <CNav variant="tabs" role="tablist" className="border-bottom">
+            <CNavItem>
+              <CNavLink
+                active={activeTab === 'personal'}
+                onClick={() => setActiveTab('personal')}
+                style={{ cursor: 'pointer' }}
+                className="fw-semibold"
+              >
+                <span className="me-2">👤</span> Personal Info
+              </CNavLink>
+            </CNavItem>
+            <CNavItem>
+              <CNavLink
+                active={activeTab === 'academic'}
+                onClick={() => setActiveTab('academic')}
+                style={{ cursor: 'pointer' }}
+                className="fw-semibold"
+              >
+                <span className="me-2">🎓</span> Academic Details
+              </CNavLink>
+            </CNavItem>
+            <CNavItem>
+              <CNavLink
+                active={activeTab === 'family'}
+                onClick={() => setActiveTab('family')}
+                style={{ cursor: 'pointer' }}
+                className="fw-semibold"
+              >
+                <span className="me-2">👨‍👩‍👧‍👦</span> Family Details
+              </CNavLink>
+            </CNavItem>
+            <CNavItem>
+              <CNavLink
+                active={activeTab === 'contact'}
+                onClick={() => setActiveTab('contact')}
+                style={{ cursor: 'pointer' }}
+                className="fw-semibold"
+              >
+                <span className="me-2">📍</span> Contact & Address
+              </CNavLink>
+            </CNavItem>
+          </CNav>
+        </CCardBody>
+      </CCard>
+
+      {/* Tab Content */}
+      <CTabContent>
+        {/* Personal Info Tab */}
+        <CTabPane visible={activeTab === 'personal'}>
+          <CCard className="border-0 shadow">
+            <CCardBody className="p-0">
+              <div className="bg-primary text-white py-2 px-4">
+                <h6 className="mb-0 fw-bold">👤 Personal Information</h6>
+              </div>
+              <CRow className="p-4">
+                <InfoRow label="First Name" value={profileData.firstname} />
+                <InfoRow label="Middle Name" value={profileData.middlename} />
+                <InfoRow label="Last Name" value={profileData.lastname} />
+                <InfoRow label="Gender" value={getGenderLabel(profileData.gender)} />
+                <InfoRow label="Date of Birth" value={formatDate(profileData.dateofbirth)} />
+                <InfoRow label="Blood Group" value={getBloodGroupLabel(profileData.bloodgroup)} />
+                <InfoRow label="Personal Email" value={profileData.personalemail} />
+                <InfoRow label="College Email" value={profileData.collegeemail} />
+                <InfoRow label="Mobile Number 1" value={profileData.mobileno1} />
+                <InfoRow label="Mobile Number 2" value={profileData.mobileno2} />
+                <InfoRow label="Landline" value={profileData.studentlandline} />
+                <InfoRow label="Aadhar Card No" value={profileData.adharcardno} />
+                <InfoRow label="Height (cm)" value={profileData.studentheight} />
+                <InfoRow label="Weight (kg)" value={profileData.studentweight} />
+                <InfoRow label="Marital Status" value={profileData.MaritalStatus} />
+                <InfoRow label="Religion" value={profileData.Religion} />
+              </CRow>
+            </CCardBody>
+          </CCard>
+        </CTabPane>
+
+        {/* Academic Details Tab */}
+        <CTabPane visible={activeTab === 'academic'}>
+          <CCard className="border-0 shadow">
+            <CCardBody className="p-0">
+              <div className="bg-success text-white py-2 px-4">
+                <h6 className="mb-0 fw-bold">🎓 Academic Details</h6>
+              </div>
+              <CRow className="p-4">
+                <InfoRow label="Admission Number" value={profileData.admissionno} />
+                <InfoRow label="Student ID" value={profileData.studentid} />
+                <InfoRow label="Branch" value={profileData.Branchname} />
+                <InfoRow label="Course ID" value={profileData.courseid} />
+                <InfoRow label="University ID" value={profileData.universityid} />
+                <InfoRow label="Course Type ID" value={profileData.coursetypeid} />
+                <InfoRow label="Batch ID" value={profileData.batchid} />
+                <InfoRow label="Semester ID" value={profileData.semesterid} />
+                <InfoRow label="All Semesters" value={profileData.allsemesters} />
+                <InfoRow label="Section" value={profileData.section} />
+                <InfoRow label="Specialisation" value={profileData.specialisation} />
+                <InfoRow label="Specialisation 2" value={profileData.specialisation2} />
+                <InfoRow label="Fee Category ID" value={profileData.feescategoryid} />
+                <InfoRow label="Fee Submitted" value={profileData.feesubmitted ? 'Yes' : 'No'} />
+                <InfoRow label="Total Fee Paid" value={profileData.TotalFeePaid} />
+                <InfoRow label="Confirmation Date" value={formatDate(profileData.confirmationdate)} />
+                <InfoRow label="TSRN" value={profileData.tsrn} />
+                <InfoRow label="PES No" value={profileData.PES_No} />
+                <InfoRow label="SDMS ID" value={profileData.SDMSID} />
+                <InfoRow label="Form No" value={profileData.formno} />
+                <InfoRow label="App No" value={profileData.appno} />
+                <InfoRow label="Category" value={profileData.category} />
+                <InfoRow label="Punch Code" value={profileData.punchcode} />
+                <InfoRow label="Is Active" value={profileData.isactive ? 'Yes' : 'No'} />
+                <InfoRow label="Status" value={profileData.status ? 'Active' : 'Inactive'} />
+              </CRow>
+            </CCardBody>
+          </CCard>
+        </CTabPane>
+
+        {/* Family Details Tab */}
+        <CTabPane visible={activeTab === 'family'}>
+          <CCard className="border-0 shadow mb-3">
+            <CCardBody className="p-0">
+              <div className="bg-info text-white py-2 px-4">
+                <h6 className="mb-0 fw-bold">👨‍👩‍👧‍👦 Family & Guardian Information</h6>
+              </div>
+              <div className="p-4">
+                <div className="bg-light border-start border-4 border-primary p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-primary">Father's Details</h6>
+              <CRow>
+                <InfoRow label="Father's Name" value={profileData.fathername} />
+                <InfoRow label="Father's Occupation" value={profileData.fatheroccupation} />
+                <InfoRow label="Father's Industry" value={profileData.f_industry} />
+                <InfoRow label="Father's Functional Area" value={profileData.f_functionalarea} />
+                <InfoRow label="Father's Role" value={profileData.f_role} />
+                <InfoRow label="Father's Company" value={profileData.f_companyname} />
+                <InfoRow label="Father's Annual Income" value={profileData.f_annualincome} />
+              </CRow>
+                </div>
+
+                <div className="bg-light border-start border-4 border-success p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-success">Mother's Details</h6>
+                  <CRow>
+                <InfoRow label="Mother's Name" value={profileData.mothername} />
+                <InfoRow label="Mother's Industry" value={profileData.m_industry} />
+                <InfoRow label="Mother's Functional Area" value={profileData.m_functionalarea} />
+                <InfoRow label="Mother's Role" value={profileData.m_role} />
+                <InfoRow label="Mother's Company" value={profileData.m_companyname} />
+                <InfoRow label="Mother's Annual Income" value={profileData.m_annualincome} />
+              </CRow>
+                </div>
+
+                <div className="bg-light border-start border-4 border-warning p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-warning">Guardian's Details</h6>
+                  <CRow>
+                <InfoRow label="Guardian's Name" value={profileData.g_name} />
+                <InfoRow label="Guardian's Industry" value={profileData.g_industry} />
+                <InfoRow label="Guardian's Functional Area" value={profileData.g_functionalarea} />
+                <InfoRow label="Guardian's Role" value={profileData.g_role} />
+                <InfoRow label="Guardian's Company" value={profileData.g_companyname} />
+                <InfoRow label="Guardian's Annual Income" value={profileData.g_annualincome} />
+              </CRow>
+                </div>
+
+                <div className="bg-light border-start border-4 border-info p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-info">Local Guardian Details</h6>
+                  <CRow>
+                <InfoRow label="Local Guardian Name" value={profileData.localgurdianname} />
+                <InfoRow label="Relation" value={profileData.relation} />
+                <InfoRow label="Mobile" value={profileData.localmobile1} />
+                <InfoRow label="Landline" value={profileData.locallandlineno} />
+                <InfoRow label="Email" value={profileData.guardianemail} />
+              </CRow>
+                </div>
+
+                <div className="bg-light border-start border-4 border-danger p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-danger">Family Information</h6>
+                  <CRow>
+                <InfoRow label="Number of Members" value={profileData.no_of_members} />
+                <InfoRow label="Household Income" value={profileData.HouseHoldIncome} />
+                <InfoRow label="Family Occupation" value={profileData.Family_Occupation} />
+                <InfoRow label="Parent Email" value={profileData.parentemail} />
+                <InfoRow label="Parent Mobile 1" value={profileData.mobile1} />
+                <InfoRow label="Parent Mobile 2" value={profileData.mobile2} />
+              </CRow>
+                </div>
+              </div>
+            </CCardBody>
+          </CCard>
+        </CTabPane>
+
+        {/* Contact & Address Tab */}
+        <CTabPane visible={activeTab === 'contact'}>
+          <CCard className="border-0 shadow">
+            <CCardBody className="p-0">
+              <div className="bg-warning text-white py-2 px-4">
+                <h6 className="mb-0 fw-bold">📍 Contact & Address Information</h6>
+              </div>
+              <div className="p-4">
+                <div className="bg-light border-start border-4 border-primary p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-primary">Primary Address</h6>
+              <CRow>
+                <InfoRow label="Address Line 1" value={profileData.address} />
+                <InfoRow label="Address Line 2" value={profileData.addressline2} />
+                <InfoRow label="Village" value={profileData.village} />
+                <InfoRow label="Town" value={profileData.town} />
+                <InfoRow label="Block" value={profileData.block} />
+                <InfoRow label="Ward" value={profileData.ward} />
+                <InfoRow label="Tehsil" value={profileData.tehsil} />
+                <InfoRow label="District" value={profileData.District_Name} />
+                <InfoRow label="State" value={profileData.state} />
+                <InfoRow label="Country" value={profileData.country} />
+                <InfoRow label="PIN Code" value={profileData.pinno} />
+              </CRow>
+                </div>
+
+                <div className="bg-light border-start border-4 border-success p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-success">Local Address</h6>
+                  <CRow>
+                <InfoRow label="Local Address Line 1" value={profileData.Localaddress} />
+                <InfoRow label="Local Address Line 2" value={profileData.Localaddressline2} />
+                <InfoRow label="Local PIN Code" value={profileData.Localpinno} />
+                <InfoRow label="Address Type" value={profileData.addresstype} />
+              </CRow>
+                </div>
+
+                <div className="bg-light border-start border-4 border-info p-3 mb-4">
+                  <h6 className="fw-bold mb-3 text-info">Branch Contact Details</h6>
+                  <CRow>
+                <InfoRow label="Branch Name" value={profileData.Branchname} />
+                <InfoRow label="Branch Address" value={profileData.Address1} />
+                <InfoRow label="Branch Phone" value={profileData.phoneNo} />
+                <InfoRow label="Branch Email" value={profileData.email1} />
+                <InfoRow label="Branch ESI Number" value={profileData.BranchESINumber} />
+              </CRow>
+                </div>
+              </div>
+            </CCardBody>
+          </CCard>
+        </CTabPane>
+      </CTabContent>
+    </div>
   )
 }
 
