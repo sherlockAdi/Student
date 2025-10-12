@@ -35,41 +35,64 @@ const Login = () => {
     setLoading(true)
     try {
       const data = await apiLogin({ email, password })
+      console.log('Login response:', data)
+      
+      // Check if login was successful
+      if (data?.Success === false || data?.success === false) {
+        setError(data?.Message || 'Login failed. Invalid username or password.')
+        setLoading(false)
+        return
+      }
+      
       // Optional: persist token if provided
       if (data?.Token) {
         try { localStorage.setItem('authToken', data.Token) } catch {}
       }
-      // If backend indicates failure, surface error
-      // if (data?.status === false) {
-      //   setError('Login failed. Please check your credentials or access rights.')
-      //   return
-      // }
-      // Keep existing role-based navigation using mock auth for now
-      console.log(data)
+      
+      // Role-based navigation
       if(data.RoleId === "1"){
         loginAs('admin')
+        const from = location.state?.from?.pathname
+        if (from) {
+          navigate(from, { replace: true })
+        } else {
+          navigate('/admin/students', { replace: true })
+        }
       }
-      else{
+      else if(data.RoleId === "2"){
         loginAs('student')
         // Store student data in localStorage for later use
         if (data.StudentData) {
           localStorage.setItem('studentData', JSON.stringify(data.StudentData))
         }
+        const from = location.state?.from?.pathname
+        if (from) {
+          navigate(from, { replace: true })
+        } else {
+          navigate('/student/profile', { replace: true })
+        }
       }
-      // loginAs(role)
-      const from = location.state?.from?.pathname
-      if (from) {
-        navigate(from, { replace: true })
+      else {
+        setError('Login failed. Invalid role or access rights.')
+        setLoading(false)
         return
       }
-      navigate(role === 'admin' ? '/admin/students' : '/student/profile', { replace: true })
     } catch (err) {
-      if (err.response) {
+      console.error('Login error:', err)
+      if (err.response?.data) {
+        // Handle API error response
+        const errorData = err.response.data
+        if (errorData.Success === false || errorData.success === false) {
+          setError(errorData.Message || 'Login failed. Invalid username or password.')
+        } else {
+          setError(`Request failed: ${err.response.status} ${err.response.statusText}`)
+        }
+      } else if (err.response) {
         setError(`Request failed: ${err.response.status} ${err.response.statusText}`)
       } else if (err.request) {
-        setError('No response received (possible CORS issue).')
+        setError('No response received. Please check your network connection.')
       } else {
-        setError(err.message)
+        setError(err.message || 'An unexpected error occurred.')
       }
     } finally {
       setLoading(false)

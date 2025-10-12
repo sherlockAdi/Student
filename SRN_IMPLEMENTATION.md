@@ -80,6 +80,26 @@ Created a complete student admission form with:
 - Added route: `{ path: '/admin/students/add', name: 'Add Student', element: AdminStudentAdd, roles: ['admin'] }`
 - Imported `AdminStudentAdd` component
 
+## Auto-Generated Fields
+
+### 1. **Student ID (SRN)**
+- Auto-generated based on College, Course Type, University, and Batch
+- Format: Numeric (e.g., "1001")
+- Read-only field
+
+### 2. **College Email**
+- Auto-generated based on First Name and SRN
+- Format: `firstname.srnnumber@atm.edu.in`
+- Example: If FirstName = "John" and SRN = "1001", email = `john.1001@atm.edu.in`
+- Automatically updates when First Name or SRN changes
+- Read-only field
+
+### 3. **Password (Default)**
+- Auto-generated as the SRN number
+- Example: If SRN = "1001", password = "1001"
+- Read-only field
+- Student can change this after first login
+
 ## How It Works
 
 ### SRN Auto-Generation Flow:
@@ -88,8 +108,17 @@ Created a complete student admission form with:
 3. If all 4 fields have values, API call is triggered: `getSRN({ collegeId, courseTypeId, universityId, batchId })`
 4. Loading spinner appears next to Student ID field
 5. SRN is fetched and auto-populated in the **Student ID** field
-6. Field is read-only to prevent manual editing
-7. If any of the 4 fields changes, SRN is re-fetched automatically
+6. **Password** is automatically set to the SRN value
+7. Field is read-only to prevent manual editing
+8. If any of the 4 fields changes, SRN is re-fetched automatically
+
+### College Email Auto-Generation Flow:
+1. User enters **First Name**
+2. **SRN** is already generated (from above flow)
+3. `useEffect` hook detects changes in First Name or SRN
+4. College email is auto-generated: `firstname.srn@atm.edu.in`
+5. First name is converted to lowercase and spaces are removed
+6. Email field is read-only to prevent manual editing
 
 ### Form Submission Flow:
 1. User fills all required fields (marked with *)

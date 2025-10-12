@@ -53,6 +53,8 @@ const StudentAdd = () => {
     MobileNo3: '',
     AdmissionNo: '',
     StudentId: '', // This will be auto-generated SRN
+    CollegeEmail: '', // Auto-generated: firstname.srn@atm.edu.in
+    Password: '', // Auto-generated: SRN number
   })
 
   // UI state
@@ -105,7 +107,7 @@ const StudentAdd = () => {
             batchId: parseInt(BatchId),
           })
           if (result?.srn) {
-            setForm((f) => ({ ...f, StudentId: result.srn }))
+            setForm((f) => ({ ...f, StudentId: result.srn, Password: result.srn }))
           }
         } catch (e) {
           console.error('Failed to get SRN', e)
@@ -116,9 +118,20 @@ const StudentAdd = () => {
       })()
     } else {
       // Clear SRN if required fields are not filled
-      setForm((f) => ({ ...f, StudentId: '' }))
+      setForm((f) => ({ ...f, StudentId: '', Password: '' }))
     }
   }, [form.CollegeId, form.CourseTypeId, form.UniversityId, form.BatchId])
+
+  // Auto-generate College Email when FirstName and StudentId are available
+  useEffect(() => {
+    if (form.FirstName && form.StudentId) {
+      const firstName = form.FirstName.toLowerCase().replace(/\s+/g, '')
+      const collegeEmail = `${firstName}.${form.StudentId}@atm.edu.in`
+      setForm((f) => ({ ...f, CollegeEmail: collegeEmail }))
+    } else {
+      setForm((f) => ({ ...f, CollegeEmail: '' }))
+    }
+  }, [form.FirstName, form.StudentId])
 
   const onChange = (e) => {
     const { name, value } = e.target
@@ -388,6 +401,37 @@ const StudentAdd = () => {
                   onChange={onChange}
                   placeholder="Alternate mobile"
                 />
+              </CCol>
+
+              {/* Auto-generated College Email */}
+              <CCol md={6}>
+                <CFormLabel>College Email *</CFormLabel>
+                <CFormInput
+                  name="CollegeEmail"
+                  value={form.CollegeEmail}
+                  readOnly
+                  placeholder="Auto-generated"
+                  className="bg-light"
+                />
+                <small className="text-muted">
+                  Auto-generated: firstname.srn@atm.edu.in
+                </small>
+              </CCol>
+
+              {/* Auto-generated Password */}
+              <CCol md={6}>
+                <CFormLabel>Password (Default) *</CFormLabel>
+                <CFormInput
+                  name="Password"
+                  type="text"
+                  value={form.Password}
+                  readOnly
+                  placeholder="Auto-generated"
+                  className="bg-light"
+                />
+                <small className="text-muted">
+                  Default password is the SRN number
+                </small>
               </CCol>
 
               {/* <CCol md={4}>
