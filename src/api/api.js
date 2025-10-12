@@ -2,7 +2,8 @@ import axios from 'axios'
 
 const api = axios.create({
   // Leave baseURL blank to allow Vite proxy in development
-  baseURL: 'http://localhost:62623/',
+  // baseURL: 'http://localhost:62623/',
+  baseURL: 'http://61.246.33.108:8069/',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -231,6 +232,25 @@ export async function getAllStudents(params = {}) {
     },
   });
   return data; // { isSuccess, message, totalRecords, data: [...] }
+}
+
+// 🔢 Get SRN (Student Registration Number)
+export async function getSRN({ collegeId, courseTypeId, universityId, batchId }) {
+  const { data } = await api.get('/studentapi/getsrn', {
+    params: {
+      collegeid: collegeId,
+      ctype: courseTypeId,
+      uid: universityId,
+      batchid: batchId,
+    },
+  });
+  return data; // { srn: "1001" }
+}
+
+// 📝 Insert Student Administration
+export async function insertStudentAdministration(studentData) {
+  const { data } = await api.post('/studentapi/insertAdministration', studentData);
+  return data;
 }
 
 export default api

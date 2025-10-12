@@ -53,6 +53,7 @@ const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 
 // Custom pages
 const AdminStudentList = React.lazy(() => import('./views/admin/StudentList'))
+const AdminStudentAdd = React.lazy(() => import('./views/admin/StudentAdd'))
 const StudentProfile = React.lazy(() => import('./views/student/Profile'))
 const StudentFeePayment = React.lazy(() => import('./views/student/StudentFeePayment'))
 const StudentStudyPortal = React.lazy(() => import('./views/student/StudyPortal'))
@@ -68,6 +69,7 @@ const routes = [
   { path: '/admin/dashboard', name: 'Admin Dashboard', element: AdminDashboard, roles: ['admin'] },
   { path: '/admin/fees', name: 'Fees Module', element: SRNSearch, roles: ['admin'] },
   { path: '/admin/students', name: 'Students', element: AdminStudentList, roles: ['admin'] },
+  { path: '/admin/students/add', name: 'Add Student', element: AdminStudentAdd, roles: ['admin'] },
   { path: '/admin/students/:id/view', name: 'Student View', element: AdminStudentView, roles: ['admin'] },
   { path: '/admin/students/:id/edit', name: 'Student Edit', element: AdminStudentEdit, roles: ['admin'] },
   // Student

@@ -155,7 +155,8 @@ const StudentEdit = () => {
   const save = () => {
     console.log('Admin mock save', { id, ...form })
     alert('Admin changes saved (static). Check console for payload.')
-    navigate(`/admin/students/${id}/view`)
+    // Navigate back to list with refresh flag
+    navigate('/admin/students', { state: { refresh: true, timestamp: Date.now() } })
   }
 
   return (

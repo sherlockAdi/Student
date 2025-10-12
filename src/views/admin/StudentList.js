@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import CIcon from '@coreui/icons-react'
-import { cilPencil, cilSearch } from '@coreui/icons'
+import { cilPencil, cilSearch, cilPlus } from '@coreui/icons'
 import {
   CCard,
   CCardBody,
@@ -29,6 +29,7 @@ import { getCommonData, getAllStudents } from '../../api/api'
 
 const StudentList = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   // Full filter set via common-data API
   const [countries, setCountries] = useState([]); // type=1
   const [states, setStates] = useState([]); // type=2 requires country
@@ -180,6 +181,16 @@ const StudentList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collegeId, branchId, courseId, universityId, courseTypeId, semesterId, casteId, gender, isLeft, admissionNo, studentName, mobile]);
 
+  // Refresh when returning from add/edit page
+  useEffect(() => {
+    if (location.state?.refresh) {
+      fetchStudents(1);
+      // Clear the state to prevent refresh on subsequent renders
+      window.history.replaceState({}, document.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
   const onResetFilters = () => {
     setCountryId(''); setStateId(''); setDistrictId(''); setTehsilId('');
     setCasteId(''); setCollegeId(''); setBranchId(''); setSemesterId('');
@@ -200,8 +211,18 @@ const StudentList = () => {
     <CRow>
       <CCol xs={12}>
         <CCard className="mb-4">
-          <CCardHeader>
-            <strong>Admin</strong> <small>Student List with Filters</small>
+          <CCardHeader className="d-flex justify-content-between align-items-center">
+            <div>
+              <strong>Admin</strong> <small>Student List with Filters</small>
+            </div>
+            <CButton
+              color="primary"
+              size="sm"
+              onClick={() => navigate('/admin/students/add')}
+            >
+              <CIcon icon={cilPlus} className="me-1" />
+              Add Student
+            </CButton>
           </CCardHeader>
           <CCardBody>
             {/* Full Filter Panel (Common Data) */}
