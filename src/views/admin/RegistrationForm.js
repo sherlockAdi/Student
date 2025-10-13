@@ -121,20 +121,24 @@ const RegistrationForm = () => {
           <CCardBody>
             {success && <CAlert color="success" dismissible onClose={() => setSuccess('')}>{success}</CAlert>}
 
-            <CNav variant="tabs" role="tablist" className="mb-3">
-              <CNavItem><CNavLink active={activeTab === 'administration'} onClick={() => setActiveTab('administration')} style={{ cursor: 'pointer' }}>Administration Details</CNavLink></CNavItem>
-              <CNavItem><CNavLink active={activeTab === 'studentDetails'} onClick={() => setActiveTab('studentDetails')} style={{ cursor: 'pointer' }}>Student Details</CNavLink></CNavItem>
-              <CNavItem><CNavLink active={activeTab === 'parentGuardian'} onClick={() => setActiveTab('parentGuardian')} style={{ cursor: 'pointer' }}>Parent & Guardian</CNavLink></CNavItem>
-              <CNavItem><CNavLink active={activeTab === 'loginDetails'} onClick={() => setActiveTab('loginDetails')} style={{ cursor: 'pointer' }}>Login Details</CNavLink></CNavItem>
-              <CNavItem><CNavLink active={activeTab === 'address'} onClick={() => setActiveTab('address')} style={{ cursor: 'pointer' }}>Address Details</CNavLink></CNavItem>
-              <CNavItem><CNavLink active={activeTab === 'lastSchool'} onClick={() => setActiveTab('lastSchool')} style={{ cursor: 'pointer' }}>Last School</CNavLink></CNavItem>
-              <CNavItem><CNavLink active={activeTab === 'previousSchool'} onClick={() => setActiveTab('previousSchool')} style={{ cursor: 'pointer' }}>Previous School</CNavLink></CNavItem>
-              <CNavItem><CNavLink active={activeTab === 'schoolList'} onClick={() => setActiveTab('schoolList')} style={{ cursor: 'pointer' }}>School List</CNavLink></CNavItem>
-              <CNavItem><CNavLink active={activeTab === 'bestFriend'} onClick={() => setActiveTab('bestFriend')} style={{ cursor: 'pointer' }}>Best Friend</CNavLink></CNavItem>
-              <CNavItem><CNavLink active={activeTab === 'medical'} onClick={() => setActiveTab('medical')} style={{ cursor: 'pointer' }}>Medical Records</CNavLink></CNavItem>
-              <CNavItem><CNavLink active={activeTab === 'transport'} onClick={() => setActiveTab('transport')} style={{ cursor: 'pointer' }}>Transport</CNavLink></CNavItem>
-            </CNav>
+            <CRow>
+              <CCol md={3}>
+                <CNav variant="pills" layout="vertical" role="tablist" className="flex-column">
+                  <CNavItem><CNavLink active={activeTab === 'administration'} onClick={() => setActiveTab('administration')} style={{ cursor: 'pointer' }}>Administration Details</CNavLink></CNavItem>
+                  <CNavItem><CNavLink active={activeTab === 'studentDetails'} onClick={() => setActiveTab('studentDetails')} style={{ cursor: 'pointer' }}>Student Details</CNavLink></CNavItem>
+                  <CNavItem><CNavLink active={activeTab === 'parentGuardian'} onClick={() => setActiveTab('parentGuardian')} style={{ cursor: 'pointer' }}>Parent & Guardian</CNavLink></CNavItem>
+                  <CNavItem><CNavLink active={activeTab === 'loginDetails'} onClick={() => setActiveTab('loginDetails')} style={{ cursor: 'pointer' }}>Login Details</CNavLink></CNavItem>
+                  <CNavItem><CNavLink active={activeTab === 'address'} onClick={() => setActiveTab('address')} style={{ cursor: 'pointer' }}>Address Details</CNavLink></CNavItem>
+                  <CNavItem><CNavLink active={activeTab === 'lastSchool'} onClick={() => setActiveTab('lastSchool')} style={{ cursor: 'pointer' }}>Last School</CNavLink></CNavItem>
+                  <CNavItem><CNavLink active={activeTab === 'previousSchool'} onClick={() => setActiveTab('previousSchool')} style={{ cursor: 'pointer' }}>Previous School</CNavLink></CNavItem>
+                  <CNavItem><CNavLink active={activeTab === 'schoolList'} onClick={() => setActiveTab('schoolList')} style={{ cursor: 'pointer' }}>School List</CNavLink></CNavItem>
+                  <CNavItem><CNavLink active={activeTab === 'bestFriend'} onClick={() => setActiveTab('bestFriend')} style={{ cursor: 'pointer' }}>Best Friend</CNavLink></CNavItem>
+                  <CNavItem><CNavLink active={activeTab === 'medical'} onClick={() => setActiveTab('medical')} style={{ cursor: 'pointer' }}>Medical Records</CNavLink></CNavItem>
+                  <CNavItem><CNavLink active={activeTab === 'transport'} onClick={() => setActiveTab('transport')} style={{ cursor: 'pointer' }}>Transport</CNavLink></CNavItem>
+                </CNav>
+              </CCol>
 
+              <CCol md={9}>
             <CForm onSubmit={handleSubmit}>
               <CTabContent>
                 {/* Administration Details Tab */}
@@ -349,6 +353,8 @@ const RegistrationForm = () => {
                 <CButton type="button" color="secondary" onClick={handleReset}><CIcon icon={cilX} className="me-1" />Reset</CButton>
               </div>
             </CForm>
+              </CCol>
+            </CRow>
           </CCardBody>
         </CCard>
       </CCol>
