@@ -2,8 +2,8 @@ import axios from 'axios'
 
 const api = axios.create({
   // Leave baseURL blank to allow Vite proxy in development
-  // baseURL: 'http://localhost:62623/',
-  baseURL: 'http://61.246.33.108:8069/',
+  baseURL: 'http://localhost:62623/',
+  // baseURL: 'http://61.246.33.108:8069/',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -250,6 +250,108 @@ export async function getSRN({ collegeId, courseTypeId, universityId, batchId })
 // 📝 Insert Student Administration
 export async function insertStudentAdministration(studentData) {
   const { data } = await api.post('/studentapi/insertAdministration', studentData);
+  return data;
+}
+
+// 👨‍👩‍👧 Insert Parent Details
+export async function insertParentDetails(parentData) {
+  const { data } = await api.post('/studentapi/parent-details', parentData);
+  return data;
+}
+
+// 🏢 Get Organization Names
+export async function getOrganizations() {
+  const { data } = await api.get('/studentapi/organization-names');
+  return data;
+}
+
+// 🏫 Get Colleges by Organization
+export async function getCollegesByOrganization(organizationId) {
+  const { data } = await api.get(`/studentapi/colleges/${organizationId}`);
+  return data;
+}
+
+// 🏢 Get Branches by College
+export async function getBranchesByCollege(collegeId) {
+  const { data } = await api.get(`/studentapi/branches/by-college/${collegeId}`);
+  return data;
+}
+
+// 📚 Get Course Types by College
+export async function getCourseTypesByCollege(collegeId) {
+  const { data } = await api.get(`/studentapi/coursetypes/by-college/${collegeId}`);
+  return data;
+}
+
+// 🎓 Get Universities by Course Type
+export async function getUniversitiesByCourseType(courseTypeId) {
+  const { data } = await api.get(`/studentapi/universities/by-course/${courseTypeId}`);
+  return data;
+}
+
+// 📅 Get Batches by University
+export async function getBatchesByUniversity(courseTypeId, universityId) {
+  const { data } = await api.get('/studentapi/batches/by-university', {
+    params: {
+      coursetype: courseTypeId,
+      universityid: universityId,
+    },
+  });
+  return data;
+}
+
+// 📖 Get Courses by Batch
+export async function getCoursesByBatch(courseTypeId, universityId, batchId) {
+  const { data } = await api.get('/studentapi/courses/by-batch', {
+    params: {
+      coursetype: courseTypeId,
+      universityid: universityId,
+      batchid: batchId,
+    },
+  });
+  return data;
+}
+
+// 📋 Get Sections by Course
+export async function getSectionsByCourse(courseTypeId, universityId, batchId, courseId) {
+  const { data } = await api.get('/studentapi/semesters/by-course', {
+    params: {
+      coursetype: courseTypeId,
+      universityid: universityId,
+      batchid: batchId,
+      courses: courseId,
+    },
+  });
+  return data;
+}
+
+// 🌍 Get Nationalities
+export async function getNationalities() {
+  const { data } = await api.get('/studentapt/master/nationalities');
+  return data;
+}
+
+// 🗣️ Get Mother Tongues
+export async function getMotherTongues() {
+  const { data } = await api.get('/studentapi/master/mothertongues');
+  return data;
+}
+
+// 📊 Get Caste Categories
+export async function getCasteCategories() {
+  const { data } = await api.get('/studentapi/master/castecategories');
+  return data;
+}
+
+// 📊 Get Sub Categories by Category
+export async function getSubCategories(categoryId) {
+  const { data } = await api.get(`/studentapi/master/subcategories/${categoryId}`);
+  return data;
+}
+
+// 🕉️ Get Religions
+export async function getReligions() {
+  const { data } = await api.get('/studentapi/master/religions');
   return data;
 }
 
