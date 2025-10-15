@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   CCard, CCardBody, CCardHeader, CCol, CRow, CNav, CNavItem, CNavLink,
   CTabContent, CTabPane, CButton, CForm, CFormInput, CFormSelect,
-  CFormLabel, CFormTextarea, CAlert, CSpinner,
+  CFormLabel, CFormTextarea, CAlert, CSpinner, CFormCheck,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilSave, cilArrowLeft, cilX } from '@coreui/icons'
@@ -12,7 +12,11 @@ import {
   getCourseTypesByCollege, getUniversitiesByCourseType, getBatchesByUniversity,
   getCoursesByBatch, getSectionsByCourse, getSRN, getNationalities,
   getMotherTongues, getCasteCategories, getSubCategories, getReligions,
-  insertStudentAdministration, insertParentDetails
+  insertStudentAdministration, insertParentDetails, updateStudentDetails,
+  submitAddressDetails, insertLastSchoolDetails, getSchoolMasterDropdown,
+  insertPreviousSchoolDetails, addSibling, addBestFriend, insertMedicalRecord,
+  insertTransportDetails, getTransportRoutes, getTransportStops, getCountries,
+  getStatesByCountry, getDistrictsByState, getAreasByDistrict
 } from '../../api/api'
 
 const RegistrationForm = () => {
@@ -22,6 +26,8 @@ const RegistrationForm = () => {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [studentId, setStudentId] = useState(null) // Store StudentID after administration submission
+  const [sameAsPermanent, setSameAsPermanent] = useState(false) // Correspondence same as permanent
+  const [guardianSameAsPermanent, setGuardianSameAsPermanent] = useState(false) // Guardian same as permanent
   
   // Dropdown data states
   const [organizations, setOrganizations] = useState([])
@@ -37,6 +43,19 @@ const RegistrationForm = () => {
   const [categories, setCategories] = useState([])
   const [subCategories, setSubCategories] = useState([])
   const [religions, setReligions] = useState([])
+  const [schools, setSchools] = useState([])
+  const [routes, setRoutes] = useState([])
+  const [stops, setStops] = useState([])
+  const [countries, setCountries] = useState([])
+  const [pStates, setPStates] = useState([])
+  const [pDistricts, setPDistricts] = useState([])
+  const [pAreas, setPAreas] = useState([])
+  const [cStates, setCStates] = useState([])
+  const [cDistricts, setCDistricts] = useState([])
+  const [cAreas, setCAreas] = useState([])
+  const [gStates, setGStates] = useState([])
+  const [gDistricts, setGDistricts] = useState([])
+  const [gAreas, setGAreas] = useState([])
 
   const [formData, setFormData] = useState({
     // Administration Details
@@ -54,9 +73,10 @@ const RegistrationForm = () => {
     fatherName: '', fatherMobileAdmission: '', fatherContactNo: '', fatherEmailId: '', fatherAdharNo: '',
     fatherQualification: '', fatherProfession: '', fatherCompanyName: '', fatherOfficeAddress: '',
     fatherDesignation: '', familyIncome: '', motherName: '', motherContactNumber: '', motherMobileAdmission: '',
-    motherEmailId: '', motherQualification: '', motherProfession: '', motherOfficeAddress: '',
-    guardianName: '', guardianMobileAdmission: '', guardianMobileNo: '', guardianEmailId: '',
-    relationWithStudent: '', spouseName: '',
+    motherEmailId: '', motherQualification: '', motherProfession: '', motherOfficeAddress: '', guardianName: '',
+    guardianMobileAdmission: '', guardianMobileNo: '', guardianEmailId: '', relationWithStudent: '', 
+    spouseName: '', spouseContactNo: '', spouseMobileAdmission: '', spouseEmailId: '', spouseQualification: '',
+    spouseProfession: '', spouseOfficeAddress: '',
     
     // Login Details
     studentUserId: '', studentPassword: '', parentLoginId: '', parentPassword: '',
@@ -95,18 +115,24 @@ const RegistrationForm = () => {
   useEffect(() => {
     const loadMasterData = async () => {
       try {
-        const [orgsData, natsData, tonguesData, catsData, relsData] = await Promise.all([
+        const [orgsData, natsData, tonguesData, catsData, relsData, schoolsData, routesData, countriesData] = await Promise.all([
           getOrganizations(),
           getNationalities(),
           getMotherTongues(),
           getCasteCategories(),
-          getReligions()
+          getReligions(),
+          getSchoolMasterDropdown(),
+          getTransportRoutes(),
+          getCountries()
         ])
         setOrganizations(orgsData || [])
         setNationalities(natsData || [])
         setMotherTongues(tonguesData || [])
         setCategories(catsData || [])
         setReligions(relsData || [])
+        setSchools(schoolsData || [])
+        setRoutes(routesData || [])
+        setCountries(countriesData || [])
       } catch (err) {
         console.error('Error loading master data:', err)
         setError('Failed to load master data')
@@ -234,9 +260,149 @@ const RegistrationForm = () => {
     }
   }, [formData.studentName, formData.studentRegistrationNumber])
 
+  // Load stops when route changes
+  useEffect(() => {
+    if (formData.routeId) {
+      getTransportStops(formData.routeId)
+        .then(data => setStops(data || []))
+        .catch(err => console.error('Error loading stops:', err))
+    } else {
+      setStops([])
+    }
+  }, [formData.routeId])
+
+  // Load Permanent Address cascading dropdowns
+  useEffect(() => {
+    if (formData.pCountry) {
+      getStatesByCountry(formData.pCountry)
+        .then(data => setPStates(data || []))
+        .catch(err => console.error('Error loading P states:', err))
+    } else {
+      setPStates([])
+    }
+  }, [formData.pCountry])
+
+  useEffect(() => {
+    if (formData.pState) {
+      getDistrictsByState(formData.pState)
+        .then(data => setPDistricts(data || []))
+        .catch(err => console.error('Error loading P districts:', err))
+    } else {
+      setPDistricts([])
+    }
+  }, [formData.pState])
+
+  useEffect(() => {
+    if (formData.pDistrict) {
+      getAreasByDistrict(formData.pDistrict)
+        .then(data => setPAreas(data || []))
+        .catch(err => console.error('Error loading P areas:', err))
+    } else {
+      setPAreas([])
+    }
+  }, [formData.pDistrict])
+
+  // Load Correspondence Address cascading dropdowns
+  useEffect(() => {
+    if (formData.cCountry) {
+      getStatesByCountry(formData.cCountry)
+        .then(data => setCStates(data || []))
+        .catch(err => console.error('Error loading C states:', err))
+    } else {
+      setCStates([])
+    }
+  }, [formData.cCountry])
+
+  useEffect(() => {
+    if (formData.cState) {
+      getDistrictsByState(formData.cState)
+        .then(data => setCDistricts(data || []))
+        .catch(err => console.error('Error loading C districts:', err))
+    } else {
+      setCDistricts([])
+    }
+  }, [formData.cState])
+
+  useEffect(() => {
+    if (formData.cDistrict) {
+      getAreasByDistrict(formData.cDistrict)
+        .then(data => setCAreas(data || []))
+        .catch(err => console.error('Error loading C areas:', err))
+    } else {
+      setCAreas([])
+    }
+  }, [formData.cDistrict])
+
+  // Load Guardian Address cascading dropdowns
+  useEffect(() => {
+    if (formData.gCountry) {
+      getStatesByCountry(formData.gCountry)
+        .then(data => setGStates(data || []))
+        .catch(err => console.error('Error loading G states:', err))
+    } else {
+      setGStates([])
+    }
+  }, [formData.gCountry])
+
+  useEffect(() => {
+    if (formData.gState) {
+      getDistrictsByState(formData.gState)
+        .then(data => setGDistricts(data || []))
+        .catch(err => console.error('Error loading G districts:', err))
+    } else {
+      setGDistricts([])
+    }
+  }, [formData.gState])
+
+  useEffect(() => {
+    if (formData.gDistrict) {
+      getAreasByDistrict(formData.gDistrict)
+        .then(data => setGAreas(data || []))
+        .catch(err => console.error('Error loading G areas:', err))
+    } else {
+      setGAreas([])
+    }
+  }, [formData.gDistrict])
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  // Handle "Same as Permanent Address" for Correspondence
+  const handleSameAsPermanent = (e) => {
+    const checked = e.target.checked
+    setSameAsPermanent(checked)
+    
+    if (checked) {
+      setFormData(prev => ({
+        ...prev,
+        cCountry: prev.pCountry,
+        cState: prev.pState,
+        cDistrict: prev.pDistrict,
+        cArea: prev.pArea,
+        cPincode: prev.pPincode,
+        cAddress: prev.pAddress
+      }))
+    }
+  }
+
+  // Handle "Same as Permanent Address" for Guardian
+  const handleGuardianSameAsPermanent = (e) => {
+    const checked = e.target.checked
+    setGuardianSameAsPermanent(checked)
+    
+    if (checked) {
+      setFormData(prev => ({
+        ...prev,
+        gCountry: prev.pCountry,
+        gState: prev.pState,
+        gDistrict: prev.pDistrict,
+        gArea: prev.pArea,
+        gPincode: prev.pPincode,
+        gAddress: prev.pAddress
+      }))
+    }
   }
 
   const handleSubmit = async (e, action = 'next') => {
@@ -331,6 +497,45 @@ const RegistrationForm = () => {
     }
   }
 
+  const handleStudentDetailsSubmit = async () => {
+    if (!studentId) {
+      setError('Please submit Administration details first.')
+      return
+    }
+    
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      const payload = {
+        StudentId: studentId,
+        EmailId: formData.emailId || '',
+        Gender: formData.gender || '',
+        DateOfBirth: formData.dateOfBirth || '',
+        Nationality: parseInt(formData.nationality) || 0,
+        Birthplace: formData.birthplace || '',
+        MotherTongue: parseInt(formData.motherTongue) || 0,
+        Category: formData.category || '',
+        SubCategory: formData.subCategory || '',
+        Minority: formData.minority || '',
+        Religion: parseInt(formData.religion) || 0,
+        BloodGroup: formData.bloodGroup || '',
+        AadharCardNumber: formData.adharCardNumber || '',
+        Domicile: formData.domicile || '',
+        PanNo: formData.panNo || ''
+      }
+      
+      const response = await updateStudentDetails(payload)
+      setSuccess(`✅ ${response.message || 'Student details updated successfully!'}`)
+      setTimeout(() => { setActiveTab('parentGuardian'); setSuccess('') }, 2000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to update student details.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleParentSubmit = async (e) => {
     e.preventDefault()
     
@@ -344,14 +549,13 @@ const RegistrationForm = () => {
     setSuccess('')
     
     try {
-      // Prepare parent details payload
       const payload = {
-        StudentID: studentId,
+        StudentId: studentId,
         FatherName: formData.fatherName || '',
-        FatherMobileAdmission: formData.fatherMobileAdmission || '',
+        FatherMobile_Admission: formData.fatherMobileAdmission || '',
         FatherContactNo: formData.fatherContactNo || '',
         FatherEmailId: formData.fatherEmailId || '',
-        FatherAdharNo: formData.fatherAdharNo || '',
+        FatherAadharNo: formData.fatherAdharNo || '',
         FatherQualification: formData.fatherQualification || '',
         FatherProfession: formData.fatherProfession || '',
         FatherCompanyName: formData.fatherCompanyName || '',
@@ -359,49 +563,257 @@ const RegistrationForm = () => {
         FatherDesignation: formData.fatherDesignation || '',
         FamilyIncome: parseFloat(formData.familyIncome) || 0,
         MotherName: formData.motherName || '',
-        MotherContactNumber: formData.motherContactNumber || '',
-        MotherMobileAdmission: formData.motherMobileAdmission || '',
+        MotherContactNo: formData.motherContactNumber || '',
+        MotherMobile_Admission: formData.motherMobileAdmission || '',
         MotherEmailId: formData.motherEmailId || '',
         MotherQualification: formData.motherQualification || '',
         MotherProfession: formData.motherProfession || '',
         MotherOfficeAddress: formData.motherOfficeAddress || '',
         GuardianName: formData.guardianName || '',
-        GuardianMobileAdmission: formData.guardianMobileAdmission || '',
+        GuardianMobile_Admission: formData.guardianMobileAdmission || '',
         GuardianMobileNo: formData.guardianMobileNo || '',
         GuardianEmailId: formData.guardianEmailId || '',
         RelationWithStudent: formData.relationWithStudent || '',
-        SpouseName: formData.spouseName || ''
+        SpouseName: formData.spouseName || '',
+        SpouseContactNo: formData.spouseContactNo || '',
+        SpouseMObile_Admission: formData.spouseMobileAdmission || '',
+        SpouseEmailId: formData.spouseEmailId || '',
+        SpouseQualification: formData.spouseQualification || '',
+        SpouseProfession: formData.spouseProfession || '',
+        SpouseOfficeAddress: formData.spouseOfficeAddress || ''
       }
       
-      console.log('Submitting Parent Details:', payload)
-      
-      // Call API
       const response = await insertParentDetails(payload)
-      
-      console.log('Parent API Response:', response)
-      
-      // Display success message
-      if (response) {
-        const successMsg = `
-          ✅ ${response.Message || 'Parent & Guardian details submitted successfully!'}
-          
-          📋 Student ID: ${studentId}
-          
-          ➡️ You can now proceed to fill other details.
-        `
-        setSuccess(successMsg)
-        
-        // Auto-navigate to next tab
-        setTimeout(() => {
-          setActiveTab('loginDetails')
-        }, 2000)
-        
-        setTimeout(() => setSuccess(''), 10000)
+      setSuccess(`✅ ${response.message || 'Parent details saved successfully!'}`)
+      setTimeout(() => { setActiveTab('loginDetails'); setSuccess('') }, 2000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to submit parent details.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddressSubmit = async () => {
+    if (!studentId) {
+      setError('Please submit Administration details first.')
+      return
+    }
+    
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      const payload = {
+        StudentId: studentId,
+        P_Country: parseInt(formData.pCountry) || 0,
+        P_State: parseInt(formData.pState) || 0,
+        P_District: parseInt(formData.pDistrict) || 0,
+        P_Area: parseInt(formData.pArea) || 0,
+        P_Pincode: formData.pPincode || '',
+        P_Address: formData.pAddress || '',
+        C_Country: parseInt(formData.cCountry) || 0,
+        C_State: parseInt(formData.cState) || 0,
+        C_District: parseInt(formData.cDistrict) || 0,
+        C_Area: parseInt(formData.cArea) || 0,
+        C_Pincode: formData.cPincode || '',
+        C_Address: formData.cAddress || '',
+        G_Country: parseInt(formData.gCountry) || 0,
+        G_State: parseInt(formData.gState) || 0,
+        G_District: parseInt(formData.gDistrict) || 0,
+        G_Area: parseInt(formData.gArea) || 0,
+        G_Pincode: formData.gPincode || '',
+        G_Address: formData.gAddress || ''
       }
       
+      const response = await submitAddressDetails(payload)
+      setSuccess(`✅ ${response.message || 'Address saved successfully!'}`)
+      setTimeout(() => { setActiveTab('lastSchool'); setSuccess('') }, 2000)
     } catch (err) {
-      console.error('Error submitting parent details:', err)
-      setError(err.response?.data?.message || err.message || 'Failed to submit parent details. Please try again.')
+      setError(err.response?.data?.message || err.message || 'Failed to submit address.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLastSchoolSubmit = async () => {
+    if (!studentId) {
+      setError('Please submit Administration details first.')
+      return
+    }
+    
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      const payload = {
+        StudentId: studentId,
+        SchoolID: parseInt(formData.schoolCollege) || 0,
+        SchoolCollegeName: schools.find(s => s.SchoolID == formData.schoolCollege)?.SchoolCollegeName || '',
+        PrincipalName: formData.schoolPrincipalName || '',
+        PrincipalMobile: formData.schoolMobileNo || '',
+        PrincipalEmail: formData.schoolEmailId || '',
+        BestSchoolTeacherName: formData.bestSchoolTeacherName || '',
+        BestSchoolTeacherMobile: formData.bestSchoolTeacherMobile || '',
+        BestSchoolTeacherEmail: formData.bestSchoolTeacherEmail || '',
+        BestCoachingTeacherName: formData.bestCoachingTeacherName || '',
+        BestCoachingTeacherMobile: formData.bestCoachingTeacherMobile || '',
+        BestCoachingTeacherEmail: formData.bestCoachingTeacherEmail || ''
+      }
+      
+      const response = await insertLastSchoolDetails(payload)
+      setSuccess(`✅ ${response.message || 'Last school details inserted successfully!'}`)
+      setTimeout(() => { setActiveTab('previousSchool'); setSuccess('') }, 2000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to submit last school details.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePreviousSchoolSubmit = async () => {
+    if (!studentId) {
+      setError('Please submit Administration details first.')
+      return
+    }
+    
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      const payload = {
+        StudentId: studentId,
+        SchoolName: formData.prevSchoolCollegeName || '',
+        EducationBoard: formData.educationBoard || '',
+        MediumOfInstruction: formData.mediumOfInstruction || '',
+        TCNumber: formData.tcNumber || '',
+        RollNumber: formData.rollNumber || '',
+        PassingYear: parseInt(formData.passingYear) || 0,
+        LastClassPassed: formData.lastClassPassed || '',
+        TotalMarks: parseInt(formData.totalMarks) || 0,
+        ObtainedMarks: parseInt(formData.obtainedMarks) || 0,
+        PercentageOrCGPA: formData.percentageCgpa || '',
+        ReasonForChange: formData.reasonForSchoolChange || ''
+      }
+      
+      const response = await insertPreviousSchoolDetails(payload)
+      setSuccess(`✅ ${response.message || 'Previous school details inserted successfully!'}`)
+      setTimeout(() => { setActiveTab('sibling'); setSuccess('') }, 2000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to submit previous school details.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSiblingSubmit = async () => {
+    if (!studentId) {
+      setError('Please submit Administration details first.')
+      return
+    }
+    
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      const payload = {
+        StudentId: studentId,
+        SiblingStudentId: parseInt(formData.siblingId) || 0,
+        Relationship: 'Sibling'
+      }
+      
+      const response = await addSibling(payload)
+      setSuccess(`✅ ${response.message || 'Sibling added successfully!'}`)
+      setTimeout(() => { setActiveTab('bestFriend'); setSuccess('') }, 2000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to add sibling.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBestFriendSubmit = async () => {
+    if (!studentId) {
+      setError('Please submit Administration details first.')
+      return
+    }
+    
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      const payload = {
+        StudentId: studentId,
+        FriendId: parseInt(formData.friendId) || 0,
+        Best_F_Name1: formData.bestFName1 || '',
+        Best_F_Mobile1: formData.bestFMobile1 || ''
+      }
+      
+      const response = await addBestFriend(payload)
+      setSuccess(`✅ ${response.message || 'Best Friend added successfully!'}`)
+      setTimeout(() => { setActiveTab('medical'); setSuccess('') }, 2000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to add best friend.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleMedicalSubmit = async () => {
+    if (!studentId) {
+      setError('Please submit Administration details first.')
+      return
+    }
+    
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      const payload = {
+        StudentId: studentId,
+        Height: formData.height || '',
+        Weight: formData.weight || '',
+        BloodGroup: formData.medicalBloodGroup || ''
+      }
+      
+      const response = await insertMedicalRecord(payload)
+      setSuccess(`✅ ${response.message || 'Medical record inserted successfully!'}`)
+      setTimeout(() => { setActiveTab('transport'); setSuccess('') }, 2000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to submit medical record.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTransportSubmit = async () => {
+    if (!studentId) {
+      setError('Please submit Administration details first.')
+      return
+    }
+    
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    
+    try {
+      const payload = {
+        StudentId: studentId,
+        Transport_Yes_No: formData.transportYesNo === 'Yes',
+        RouteId: parseInt(formData.routeId) || 0,
+        StopId: parseInt(formData.stopId) || 0
+      }
+      
+      const response = await insertTransportDetails(payload)
+      setSuccess(`✅ ${response.message || 'Transport details saved successfully!'}`)
+      setTimeout(() => setSuccess(''), 5000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to submit transport details.')
     } finally {
       setLoading(false)
     }
@@ -420,7 +832,9 @@ const RegistrationForm = () => {
         fatherCompanyName: '', fatherOfficeAddress: '', fatherDesignation: '', familyIncome: '', motherName: '',
         motherContactNumber: '', motherMobileAdmission: '', motherEmailId: '', motherQualification: '',
         motherProfession: '', motherOfficeAddress: '', guardianName: '', guardianMobileAdmission: '',
-        guardianMobileNo: '', guardianEmailId: '', relationWithStudent: '', spouseName: '', studentUserId: '',
+        guardianMobileNo: '', guardianEmailId: '', relationWithStudent: '', 
+        spouseName: '', spouseContactNo: '', spouseMobileAdmission: '', spouseEmailId: '', spouseQualification: '',
+        spouseProfession: '', spouseOfficeAddress: '', studentUserId: '',
         studentPassword: '', parentLoginId: '', parentPassword: '', pCountry: '', pState: '', pDistrict: '',
         pArea: '', pPincode: '', pAddress: '', cCountry: '', cState: '', cDistrict: '', cArea: '', cPincode: '',
         cAddress: '', gCountry: '', gState: '', gDistrict: '', gArea: '', gPincode: '', gAddress: '',
@@ -844,6 +1258,13 @@ const RegistrationForm = () => {
                       <CFormLabel>PAN No.</CFormLabel>
                       <CFormInput name="panNo" value={formData.panNo} onChange={handleChange} placeholder="Enter PAN number" maxLength="10" />
                     </CCol>
+                    
+                    <CCol xs={12} className="mt-4">
+                      <CButton type="button" color="success" onClick={handleStudentDetailsSubmit} disabled={loading || !studentId}>
+                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Student Details</>}
+                      </CButton>
+                      {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
+                    </CCol>
                   </CRow>
                 </CTabPane>
 
@@ -878,7 +1299,15 @@ const RegistrationForm = () => {
                     <CCol md={4}><CFormLabel>Guardian Mobile No</CFormLabel><CFormInput name="guardianMobileNo" value={formData.guardianMobileNo} onChange={handleChange} placeholder="Enter mobile" /></CCol>
                     <CCol md={4}><CFormLabel>Guardian Email ID</CFormLabel><CFormInput type="email" name="guardianEmailId" value={formData.guardianEmailId} onChange={handleChange} placeholder="Enter email" /></CCol>
                     <CCol md={4}><CFormLabel>Relation with Student</CFormLabel><CFormInput name="relationWithStudent" value={formData.relationWithStudent} onChange={handleChange} placeholder="Enter relation" /></CCol>
+                    
+                    <CCol xs={12}><h6 className="text-primary mt-3">Spouse Details</h6></CCol>
                     <CCol md={4}><CFormLabel>Spouse Name</CFormLabel><CFormInput name="spouseName" value={formData.spouseName} onChange={handleChange} placeholder="Enter spouse name" /></CCol>
+                    <CCol md={4}><CFormLabel>Spouse Contact No</CFormLabel><CFormInput name="spouseContactNo" value={formData.spouseContactNo} onChange={handleChange} placeholder="Enter contact" /></CCol>
+                    <CCol md={4}><CFormLabel>Spouse Mobile (Admission)</CFormLabel><CFormInput name="spouseMobileAdmission" value={formData.spouseMobileAdmission} onChange={handleChange} placeholder="Enter mobile" /></CCol>
+                    <CCol md={4}><CFormLabel>Spouse Email ID</CFormLabel><CFormInput type="email" name="spouseEmailId" value={formData.spouseEmailId} onChange={handleChange} placeholder="Enter email" /></CCol>
+                    <CCol md={4}><CFormLabel>Spouse Qualification</CFormLabel><CFormInput name="spouseQualification" value={formData.spouseQualification} onChange={handleChange} placeholder="Enter qualification" /></CCol>
+                    <CCol md={4}><CFormLabel>Spouse Profession</CFormLabel><CFormInput name="spouseProfession" value={formData.spouseProfession} onChange={handleChange} placeholder="Enter profession" /></CCol>
+                    <CCol md={4}><CFormLabel>Spouse Office Address</CFormLabel><CFormInput name="spouseOfficeAddress" value={formData.spouseOfficeAddress} onChange={handleChange} placeholder="Enter office address" /></CCol>
                     
                     <CCol xs={12} className="mt-4">
                       <CButton 
@@ -939,44 +1368,182 @@ const RegistrationForm = () => {
                 <CTabPane visible={activeTab === 'address'}>
                   <CRow className="g-3">
                     <CCol xs={12}><h6 className="text-primary">Permanent Address</h6></CCol>
-                    <CCol md={3}><CFormLabel>P_Country</CFormLabel><CFormSelect name="pCountry" value={formData.pCountry} onChange={handleChange}><option value="">Select</option><option>India</option></CFormSelect></CCol>
-                    <CCol md={3}><CFormLabel>P_State</CFormLabel><CFormSelect name="pState" value={formData.pState} onChange={handleChange}><option value="">Select</option><option>State 1</option></CFormSelect></CCol>
-                    <CCol md={3}><CFormLabel>P_District</CFormLabel><CFormSelect name="pDistrict" value={formData.pDistrict} onChange={handleChange}><option value="">Select</option><option>District 1</option></CFormSelect></CCol>
-                    <CCol md={3}><CFormLabel>P_Area</CFormLabel><CFormInput name="pArea" value={formData.pArea} onChange={handleChange} placeholder="Enter area" /></CCol>
-                    <CCol md={3}><CFormLabel>P_Pincode</CFormLabel><CFormInput name="pPincode" value={formData.pPincode} onChange={handleChange} placeholder="Enter pincode" /></CCol>
-                    <CCol md={9}><CFormLabel>P_Address</CFormLabel><CFormTextarea name="pAddress" value={formData.pAddress} onChange={handleChange} rows={2} placeholder="Enter address" /></CCol>
+                    <CCol md={3}>
+                      <CFormLabel>Country *</CFormLabel>
+                      <CFormSelect name="pCountry" value={formData.pCountry} onChange={handleChange} required>
+                        <option value="">Select Country</option>
+                        {countries.map(country => (
+                          <option key={country.Id} value={country.Id}>{country.Country}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>State *</CFormLabel>
+                      <CFormSelect name="pState" value={formData.pState} onChange={handleChange} disabled={!formData.pCountry} required>
+                        <option value="">Select State</option>
+                        {pStates.map(state => (
+                          <option key={state.StateId} value={state.StateId}>{state.StateName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>District *</CFormLabel>
+                      <CFormSelect name="pDistrict" value={formData.pDistrict} onChange={handleChange} disabled={!formData.pState} required>
+                        <option value="">Select District</option>
+                        {pDistricts.map(district => (
+                          <option key={district.DistrictId} value={district.DistrictId}>{district.DistrictName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>Area/Tehsil</CFormLabel>
+                      <CFormSelect name="pArea" value={formData.pArea} onChange={handleChange} disabled={!formData.pDistrict}>
+                        <option value="">Select Area</option>
+                        {pAreas.map(area => (
+                          <option key={area.TehsilId} value={area.TehsilId}>{area.TehsilName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}><CFormLabel>Pincode</CFormLabel><CFormInput name="pPincode" value={formData.pPincode} onChange={handleChange} placeholder="Enter pincode" /></CCol>
+                    <CCol md={9}><CFormLabel>Address</CFormLabel><CFormTextarea name="pAddress" value={formData.pAddress} onChange={handleChange} rows={2} placeholder="Enter complete address" /></CCol>
                     
-                    <CCol xs={12}><h6 className="text-primary mt-3">Current Address</h6></CCol>
-                    <CCol md={3}><CFormLabel>C_Country</CFormLabel><CFormSelect name="cCountry" value={formData.cCountry} onChange={handleChange}><option value="">Select</option><option>India</option></CFormSelect></CCol>
-                    <CCol md={3}><CFormLabel>C_State</CFormLabel><CFormSelect name="cState" value={formData.cState} onChange={handleChange}><option value="">Select</option><option>State 1</option></CFormSelect></CCol>
-                    <CCol md={3}><CFormLabel>C_District</CFormLabel><CFormSelect name="cDistrict" value={formData.cDistrict} onChange={handleChange}><option value="">Select</option><option>District 1</option></CFormSelect></CCol>
-                    <CCol md={3}><CFormLabel>C_Area</CFormLabel><CFormInput name="cArea" value={formData.cArea} onChange={handleChange} placeholder="Enter area" /></CCol>
-                    <CCol md={3}><CFormLabel>C_Pincode</CFormLabel><CFormInput name="cPincode" value={formData.cPincode} onChange={handleChange} placeholder="Enter pincode" /></CCol>
-                    <CCol md={9}><CFormLabel>C_Address</CFormLabel><CFormTextarea name="cAddress" value={formData.cAddress} onChange={handleChange} rows={2} placeholder="Enter address" /></CCol>
+                    <CCol xs={12} className="mt-3">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <h6 className="text-primary mb-0">Correspondence Address</h6>
+                        <CFormCheck 
+                          id="sameAsPermanent"
+                          label="Same as Permanent Address" 
+                          checked={sameAsPermanent}
+                          onChange={handleSameAsPermanent}
+                        />
+                      </div>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>Country *</CFormLabel>
+                      <CFormSelect name="cCountry" value={formData.cCountry} onChange={handleChange} disabled={sameAsPermanent} required>
+                        <option value="">Select Country</option>
+                        {countries.map(country => (
+                          <option key={country.Id} value={country.Id}>{country.Country}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>State *</CFormLabel>
+                      <CFormSelect name="cState" value={formData.cState} onChange={handleChange} disabled={sameAsPermanent || !formData.cCountry} required>
+                        <option value="">Select State</option>
+                        {cStates.map(state => (
+                          <option key={state.StateId} value={state.StateId}>{state.StateName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>District *</CFormLabel>
+                      <CFormSelect name="cDistrict" value={formData.cDistrict} onChange={handleChange} disabled={sameAsPermanent || !formData.cState} required>
+                        <option value="">Select District</option>
+                        {cDistricts.map(district => (
+                          <option key={district.DistrictId} value={district.DistrictId}>{district.DistrictName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>Area/Tehsil</CFormLabel>
+                      <CFormSelect name="cArea" value={formData.cArea} onChange={handleChange} disabled={sameAsPermanent || !formData.cDistrict}>
+                        <option value="">Select Area</option>
+                        {cAreas.map(area => (
+                          <option key={area.TehsilId} value={area.TehsilId}>{area.TehsilName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}><CFormLabel>Pincode</CFormLabel><CFormInput name="cPincode" value={formData.cPincode} onChange={handleChange} disabled={sameAsPermanent} placeholder="Enter pincode" /></CCol>
+                    <CCol md={9}><CFormLabel>Address</CFormLabel><CFormTextarea name="cAddress" value={formData.cAddress} onChange={handleChange} disabled={sameAsPermanent} rows={2} placeholder="Enter complete address" /></CCol>
                     
-                    <CCol xs={12}><h6 className="text-primary mt-3">Guardian Address</h6></CCol>
-                    <CCol md={3}><CFormLabel>G_Country</CFormLabel><CFormSelect name="gCountry" value={formData.gCountry} onChange={handleChange}><option value="">Select</option><option>India</option></CFormSelect></CCol>
-                    <CCol md={3}><CFormLabel>G_State</CFormLabel><CFormSelect name="gState" value={formData.gState} onChange={handleChange}><option value="">Select</option><option>State 1</option></CFormSelect></CCol>
-                    <CCol md={3}><CFormLabel>G_District</CFormLabel><CFormSelect name="gDistrict" value={formData.gDistrict} onChange={handleChange}><option value="">Select</option><option>District 1</option></CFormSelect></CCol>
-                    <CCol md={3}><CFormLabel>G_Area</CFormLabel><CFormInput name="gArea" value={formData.gArea} onChange={handleChange} placeholder="Enter area" /></CCol>
-                    <CCol md={3}><CFormLabel>G_Pincode</CFormLabel><CFormInput name="gPincode" value={formData.gPincode} onChange={handleChange} placeholder="Enter pincode" /></CCol>
-                    <CCol md={9}><CFormLabel>G_Address</CFormLabel><CFormTextarea name="gAddress" value={formData.gAddress} onChange={handleChange} rows={2} placeholder="Enter address" /></CCol>
+                    <CCol xs={12} className="mt-3">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <h6 className="text-primary mb-0">Guardian Address</h6>
+                        <CFormCheck 
+                          id="guardianSameAsPermanent"
+                          label="Same as Permanent Address" 
+                          checked={guardianSameAsPermanent}
+                          onChange={handleGuardianSameAsPermanent}
+                        />
+                      </div>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>Country *</CFormLabel>
+                      <CFormSelect name="gCountry" value={formData.gCountry} onChange={handleChange} disabled={guardianSameAsPermanent} required>
+                        <option value="">Select Country</option>
+                        {countries.map(country => (
+                          <option key={country.Id} value={country.Id}>{country.Country}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>State *</CFormLabel>
+                      <CFormSelect name="gState" value={formData.gState} onChange={handleChange} disabled={guardianSameAsPermanent || !formData.gCountry} required>
+                        <option value="">Select State</option>
+                        {gStates.map(state => (
+                          <option key={state.StateId} value={state.StateId}>{state.StateName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>District *</CFormLabel>
+                      <CFormSelect name="gDistrict" value={formData.gDistrict} onChange={handleChange} disabled={guardianSameAsPermanent || !formData.gState} required>
+                        <option value="">Select District</option>
+                        {gDistricts.map(district => (
+                          <option key={district.DistrictId} value={district.DistrictId}>{district.DistrictName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>Area/Tehsil</CFormLabel>
+                      <CFormSelect name="gArea" value={formData.gArea} onChange={handleChange} disabled={guardianSameAsPermanent || !formData.gDistrict}>
+                        <option value="">Select Area</option>
+                        {gAreas.map(area => (
+                          <option key={area.TehsilId} value={area.TehsilId}>{area.TehsilName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3}><CFormLabel>Pincode</CFormLabel><CFormInput name="gPincode" value={formData.gPincode} onChange={handleChange} disabled={guardianSameAsPermanent} placeholder="Enter pincode" /></CCol>
+                    <CCol md={9}><CFormLabel>Address</CFormLabel><CFormTextarea name="gAddress" value={formData.gAddress} onChange={handleChange} disabled={guardianSameAsPermanent} rows={2} placeholder="Enter complete address" /></CCol>
+                    
+                    <CCol xs={12} className="mt-4">
+                      <CButton type="button" color="success" onClick={handleAddressSubmit} disabled={loading || !studentId}>
+                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Address Details</>}
+                      </CButton>
+                      {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
+                    </CCol>
                   </CRow>
                 </CTabPane>
 
                 {/* Last School Tab */}
                 <CTabPane visible={activeTab === 'lastSchool'}>
                   <CRow className="g-3">
-                    <CCol md={6}><CFormLabel>School/College</CFormLabel><CFormInput name="schoolCollege" value={formData.schoolCollege} onChange={handleChange} placeholder="Enter school/college" /></CCol>
+                    <CCol md={6}>
+                      <CFormLabel>School/College *</CFormLabel>
+                      <CFormSelect name="schoolCollege" value={formData.schoolCollege} onChange={handleChange} required>
+                        <option value="">Select School/College</option>
+                        {schools.map(school => (
+                          <option key={school.SchoolID} value={school.SchoolID}>{school.SchoolCollegeName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
                     <CCol md={6}><CFormLabel>School Principal Name</CFormLabel><CFormInput name="schoolPrincipalName" value={formData.schoolPrincipalName} onChange={handleChange} placeholder="Enter principal name" /></CCol>
-                    <CCol md={4}><CFormLabel>Mobile No.</CFormLabel><CFormInput name="schoolMobileNo" value={formData.schoolMobileNo} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={4}><CFormLabel>Email ID</CFormLabel><CFormInput type="email" name="schoolEmailId" value={formData.schoolEmailId} onChange={handleChange} placeholder="Enter email" /></CCol>
+                    <CCol md={4}><CFormLabel>Principal Mobile No.</CFormLabel><CFormInput name="schoolMobileNo" value={formData.schoolMobileNo} onChange={handleChange} placeholder="Enter mobile" /></CCol>
+                    <CCol md={4}><CFormLabel>Principal Email ID</CFormLabel><CFormInput type="email" name="schoolEmailId" value={formData.schoolEmailId} onChange={handleChange} placeholder="Enter email" /></CCol>
                     <CCol md={4}><CFormLabel>Best School Teacher Name</CFormLabel><CFormInput name="bestSchoolTeacherName" value={formData.bestSchoolTeacherName} onChange={handleChange} placeholder="Enter teacher name" /></CCol>
-                    <CCol md={4}><CFormLabel>Mobile Number</CFormLabel><CFormInput name="bestSchoolTeacherMobile" value={formData.bestSchoolTeacherMobile} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={4}><CFormLabel>Email ID</CFormLabel><CFormInput type="email" name="bestSchoolTeacherEmail" value={formData.bestSchoolTeacherEmail} onChange={handleChange} placeholder="Enter email" /></CCol>
+                    <CCol md={4}><CFormLabel>Teacher Mobile Number</CFormLabel><CFormInput name="bestSchoolTeacherMobile" value={formData.bestSchoolTeacherMobile} onChange={handleChange} placeholder="Enter mobile" /></CCol>
+                    <CCol md={4}><CFormLabel>Teacher Email ID</CFormLabel><CFormInput type="email" name="bestSchoolTeacherEmail" value={formData.bestSchoolTeacherEmail} onChange={handleChange} placeholder="Enter email" /></CCol>
                     <CCol md={4}><CFormLabel>Best Coaching Teacher Name</CFormLabel><CFormInput name="bestCoachingTeacherName" value={formData.bestCoachingTeacherName} onChange={handleChange} placeholder="Enter teacher name" /></CCol>
-                    <CCol md={4}><CFormLabel>Mobile Number</CFormLabel><CFormInput name="bestCoachingTeacherMobile" value={formData.bestCoachingTeacherMobile} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={4}><CFormLabel>Email ID</CFormLabel><CFormInput type="email" name="bestCoachingTeacherEmail" value={formData.bestCoachingTeacherEmail} onChange={handleChange} placeholder="Enter email" /></CCol>
+                    <CCol md={4}><CFormLabel>Coaching Teacher Mobile</CFormLabel><CFormInput name="bestCoachingTeacherMobile" value={formData.bestCoachingTeacherMobile} onChange={handleChange} placeholder="Enter mobile" /></CCol>
+                    <CCol md={4}><CFormLabel>Coaching Teacher Email</CFormLabel><CFormInput type="email" name="bestCoachingTeacherEmail" value={formData.bestCoachingTeacherEmail} onChange={handleChange} placeholder="Enter email" /></CCol>
+                    
+                    <CCol xs={12} className="mt-4">
+                      <CButton type="button" color="success" onClick={handleLastSchoolSubmit} disabled={loading || !studentId}>
+                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Last School Details</>}
+                      </CButton>
+                      {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
+                    </CCol>
                   </CRow>
                 </CTabPane>
 

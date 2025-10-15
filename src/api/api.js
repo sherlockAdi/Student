@@ -259,6 +259,126 @@ export async function insertParentDetails(parentData) {
   return data;
 }
 
+// 📝 Update Student Details
+export async function updateStudentDetails(studentDetails) {
+  const { data } = await api.post('/studentapi/update-details', studentDetails);
+  return data;
+}
+
+// 🏠 Submit Address Details
+export async function submitAddressDetails(addressData) {
+  const { data } = await api.post('/studentapi/submitaddressdetailsforguardian', addressData);
+  return data;
+}
+
+// 🏫 Insert Last School Details
+export async function insertLastSchoolDetails(schoolData) {
+  const { data } = await api.post('/studentapi/student/insertlastschooldetails', schoolData);
+  return data;
+}
+
+// 🏫 Get School Master Dropdown
+export async function getSchoolMasterDropdown() {
+  const { data } = await api.get('/studentapi/schoolmaster/dropdown');
+  return data;
+}
+
+// 📚 Get Previous School Details
+export async function getPreviousSchoolDetails(studentId) {
+  const { data } = await api.get(`/studentapi/student/previousschooldetails/${studentId}`);
+  return data;
+}
+
+// 📚 Insert Previous School Details
+export async function insertPreviousSchoolDetails(schoolData) {
+  const { data } = await api.post('/studentapi/student/insertpreviousschooldetails', schoolData);
+  return data;
+}
+
+// 👨‍👩‍👧‍👦 Add Sibling
+export async function addSibling(siblingData) {
+  const { data } = await api.post('/studentapi/sibling/add', siblingData);
+  return data;
+}
+
+// 👨‍👩‍👧‍👦 Get Siblings
+export async function getSiblings(studentId) {
+  const { data } = await api.get(`/studentapi/sibling/${studentId}`);
+  return data;
+}
+
+// 👥 Add Best Friend
+export async function addBestFriend(friendData) {
+  const { data } = await api.post('/studentapi/bestfriend/add', friendData);
+  return data;
+}
+
+// 👥 Get Best Friend
+export async function getBestFriend(studentId) {
+  const { data } = await api.get(`/studentapi/bestfriend/${studentId}`);
+  return data;
+}
+
+// 🏥 Insert Medical Record
+export async function insertMedicalRecord(medicalData) {
+  const { data } = await api.post('/studentapi/medical/insert', medicalData);
+  return data;
+}
+
+// 🏥 Get Medical Record
+export async function getMedicalRecord(studentId) {
+  const { data } = await api.get(`/studentapi/medical/${studentId}`);
+  return data;
+}
+
+// 🚌 Insert Transport Details
+export async function insertTransportDetails(transportData) {
+  const { data } = await api.post('/studentapi/transport/insert', transportData);
+  return data;
+}
+
+// 🚌 Get Transport Routes
+export async function getTransportRoutes() {
+  const { data } = await api.get('/studentapi/transport/routes');
+  return data;
+}
+
+// 🚌 Get Transport Stops by Route
+export async function getTransportStops(routeId) {
+  const { data } = await api.get(`/studentapi/transport/stops/${routeId}`);
+  return data;
+}
+
+// 🌍 Get Countries
+export async function getCountries() {
+  const { data } = await api.get('/studentapi/country/list');
+  return data;
+}
+
+// 🌍 Get States by Country
+export async function getStatesByCountry(countryId) {
+  const { data } = await api.get('/studentapi/state/by-country', {
+    params: { conid: countryId }
+  });
+  return data;
+}
+
+// 🌍 Get Districts by State
+export async function getDistrictsByState(stateId) {
+  const { data } = await api.get('/studentapi/district/by-state', {
+    params: { stateid: stateId }
+  });
+  return data;
+}
+
+// 🌍 Get Areas (Tehsils) by District
+export async function getAreasByDistrict(districtCode) {
+  const { data } = await api.get('/studentapi/tehsil/by-district', {
+    params: { district_code: districtCode }
+  });
+  return data;
+}
+
 // 🏢 Get Organization Names
 export async function getOrganizations() {
   const { data } = await api.get('/studentapi/organization-names');
