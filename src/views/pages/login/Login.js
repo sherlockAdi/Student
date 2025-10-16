@@ -61,6 +61,10 @@ const Login = () => {
       }
       else if(data.RoleId === "2"){
         loginAs('student')
+        // Store student ID (userid) in localStorage
+        if (data.userid) {
+          localStorage.setItem('studentId', data.userid)
+        }
         // Store student data in localStorage for later use
         if (data.StudentData) {
           localStorage.setItem('studentData', JSON.stringify(data.StudentData))

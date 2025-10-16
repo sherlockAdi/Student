@@ -2,8 +2,9 @@ import axios from 'axios'
 
 const api = axios.create({
   // Leave baseURL blank to allow Vite proxy in development
-  baseURL: 'http://localhost:62623/',
-  // baseURL: 'http://61.246.33.108:8069/',
+  // baseURL: 'http://localhost:62623/',
+  baseURL: 'http://61.246.33.108:8069/',
+  timeout: 10000, // 10 second timeout to prevent hanging requests
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -162,6 +163,162 @@ export async function getStudentProfile(admissionNo) {
   return data;
 }
 
+// Get Complete Student Details by Student ID
+export async function getStudentDetailsByStudentId(studentId) {
+  const { data } = await api.get('/studentapi/student/details', {
+    params: {
+      studentId,
+    },
+  });
+  return data;
+}
+
+// Get Student Administration Details by Student ID
+export async function getAdministrationDetails(studentId) {
+  const { data } = await api.get(`/studentapi/administrationdetails/${studentId}`);
+  return data;
+}
+
+// Get Student Personal Details by Student ID
+export async function getStudentDetails(studentId) {
+  const { data } = await api.get(`/studentapi/studentdetails/${studentId}`);
+  return data;
+}
+
+// Get Parent Details by Student ID
+export async function getParentDetails(studentId) {
+  try {
+    const { data } = await api.get(`/studentapi/parent-details/${studentId}`);
+    return data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.log('Parent details not found (404) - returning null');
+      return null;
+    }
+    console.error('Error fetching parent details:', error);
+    return null;
+  }
+}
+
+// Get Address Details by Student ID
+export async function getAddressDetails(studentId) {
+  try {
+    const { data } = await api.get(`/studentapi/address-details/${studentId}`);
+    return data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.log('Address details not found (404) - returning null');
+      return null;
+    }
+    console.error('Error fetching address details:', error);
+    return null;
+  }
+}
+
+// Get Last School Details
+export async function getLastSchoolDetails(studentId) {
+  try {
+    const { data } = await api.get(`/studentapi/student/lastschooldetails/${studentId}`);
+    return data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.log('Last school details not found (404) - returning null');
+      return null;
+    }
+    console.error('Error fetching last school details:', error);
+    return null;
+  }
+}
+
+// Get School Master Dropdown (already exists but ensuring it's here)
+// export async function getSchoolMasterDropdown() {
+//   const { data } = await api.get('/studentapi/schoolmaster/dropdown');
+//   return data;
+// }
+
+// Insert New School
+export async function insertSchoolDetails(schoolData) {
+  const { data } = await api.post('/studentapi/schoolmaster/insertschoolDetails', schoolData);
+  return data;
+}
+
+// Get Previous School Details by Student ID
+export async function getPreviousSchoolDetails(studentId) {
+  try {
+    const { data } = await api.get(`/studentapi/student/previousschooldetails/${studentId}`);
+    return data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.log('Previous school details not found (404) - returning empty array');
+      return [];
+    }
+    console.error('Error fetching previous school details:', error);
+    return [];
+  }
+}
+
+// Insert Previous School Details
+export async function insertPreviousSchoolDetails(schoolData) {
+  const { data } = await api.post('/studentapi/student/insertpreviousschooldetails', schoolData);
+  return data;
+}
+
+// Get Medical Details by Student ID
+export async function getMedicalDetails(studentId) {
+  try {
+    const { data } = await api.get(`/studentapi/medical/${studentId}`);
+    return data;
+  } catch (error) {
+    // Return null for 404 or any error - don't throw
+    if (error.response?.status === 404) {
+      console.log('Medical details not found (404) - returning null');
+      return null;
+    }
+    console.error('Error fetching medical details:', error);
+    return null;
+  }
+}
+
+// Insert Medical Details
+export async function insertMedicalDetails(medicalData) {
+  const { data } = await api.post('/studentapi/medical/insert', medicalData);
+  return data;
+}
+
+// Update Medical Details
+export async function updateMedicalDetails(medicalData) {
+  const { data } = await api.post('/studentapi/medical/insert', medicalData);
+  return data;
+}
+
+// Get Transport Details by Student ID
+export async function getTransportDetails(studentId) {
+  try {
+    const { data } = await api.get(`/studentapi/transport/${studentId}`);
+    return data;
+  } catch (error) {
+    // Return null for 404 or any error - don't throw
+    if (error.response?.status === 404) {
+      console.log('Transport details not found (404) - returning null');
+      return null;
+    }
+    console.error('Error fetching transport details:', error);
+    return null;
+  }
+}
+
+// Insert Transport Details
+export async function insertTransportDetails(transportData) {
+  const { data } = await api.post('/studentapi/transport/insert', transportData);
+  return data;
+}
+
+// Update Transport Details
+export async function updateTransportDetails(transportData) {
+  const { data } = await api.post('/studentapi/transport/insert', transportData);
+  return data;
+}
+
 // Submit Offline Payment
 export async function submitOfflinePayment(paymentData) {
   const { data } = await api.post('/studentapi/studentfee/submit', paymentData);
@@ -283,18 +440,6 @@ export async function getSchoolMasterDropdown() {
   return data;
 }
 
-// 📚 Get Previous School Details
-export async function getPreviousSchoolDetails(studentId) {
-  const { data } = await api.get(`/studentapi/student/previousschooldetails/${studentId}`);
-  return data;
-}
-
-// 📚 Insert Previous School Details
-export async function insertPreviousSchoolDetails(schoolData) {
-  const { data } = await api.post('/studentapi/student/insertpreviousschooldetails', schoolData);
-  return data;
-}
-
 // 👨‍👩‍👧‍👦 Add Sibling
 export async function addSibling(siblingData) {
   const { data } = await api.post('/studentapi/sibling/add', siblingData);
@@ -303,8 +448,17 @@ export async function addSibling(siblingData) {
 
 // 👨‍👩‍👧‍👦 Get Siblings
 export async function getSiblings(studentId) {
-  const { data } = await api.get(`/studentapi/sibling/${studentId}`);
-  return data;
+  try {
+    const { data } = await api.get(`/studentapi/sibling/${studentId}`);
+    return data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.log('Siblings not found (404) - returning empty array');
+      return [];
+    }
+    console.error('Error fetching siblings:', error);
+    return [];
+  }
 }
 
 // 👥 Add Best Friend
@@ -315,8 +469,17 @@ export async function addBestFriend(friendData) {
 
 // 👥 Get Best Friend
 export async function getBestFriend(studentId) {
-  const { data } = await api.get(`/studentapi/bestfriend/${studentId}`);
-  return data;
+  try {
+    const { data } = await api.get(`/studentapi/bestfriend/${studentId}`);
+    return data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.log('Best friends not found (404) - returning empty array');
+      return [];
+    }
+    console.error('Error fetching best friends:', error);
+    return [];
+  }
 }
 
 // 🏥 Insert Medical Record
@@ -328,12 +491,6 @@ export async function insertMedicalRecord(medicalData) {
 // 🏥 Get Medical Record
 export async function getMedicalRecord(studentId) {
   const { data } = await api.get(`/studentapi/medical/${studentId}`);
-  return data;
-}
-
-// 🚌 Insert Transport Details
-export async function insertTransportDetails(transportData) {
-  const { data } = await api.post('/studentapi/transport/insert', transportData);
   return data;
 }
 
