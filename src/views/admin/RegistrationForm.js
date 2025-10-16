@@ -1132,7 +1132,7 @@ const RegistrationForm = () => {
                           ) : (
                             <>
                               <CIcon icon={cilSave} className="me-1" />
-                              Submit & Reset
+                              Submit 
                             </>
                           )}
                         </CButton>
@@ -1150,7 +1150,7 @@ const RegistrationForm = () => {
                           ) : (
                             <>
                               <CIcon icon={cilSave} className="me-1" />
-                              Submit & Next
+                              Save & Next
                             </>
                           )}
                         </CButton>
