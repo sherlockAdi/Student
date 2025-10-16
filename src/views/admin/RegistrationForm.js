@@ -1561,6 +1561,13 @@ const RegistrationForm = () => {
                     <CCol md={4}><CFormLabel>Obtained Marks</CFormLabel><CFormInput type="number" name="obtainedMarks" value={formData.obtainedMarks} onChange={handleChange} placeholder="Enter obtained marks" /></CCol>
                     <CCol md={4}><CFormLabel>%/CGPA</CFormLabel><CFormInput name="percentageCgpa" value={formData.percentageCgpa} onChange={handleChange} placeholder="Enter percentage/CGPA" /></CCol>
                     <CCol md={12}><CFormLabel>Reason For School Change</CFormLabel><CFormInput name="reasonForSchoolChange" value={formData.reasonForSchoolChange} onChange={handleChange} placeholder="Enter reason" /></CCol>
+                    
+                    <CCol xs={12} className="mt-4">
+                      <CButton type="button" color="success" onClick={handlePreviousSchoolSubmit} disabled={loading || !studentId}>
+                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Previous School Details</>}
+                      </CButton>
+                      {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
+                    </CCol>
                   </CRow>
                 </CTabPane>
 
@@ -1596,24 +1603,71 @@ const RegistrationForm = () => {
                     <CCol md={6}><CFormLabel>Best Friend Mobile 4</CFormLabel><CFormInput name="bestFMobile4" value={formData.bestFMobile4} onChange={handleChange} placeholder="Enter mobile" /></CCol>
                     <CCol md={6}><CFormLabel>Best Friend Name 5</CFormLabel><CFormInput name="bestFName5" value={formData.bestFName5} onChange={handleChange} placeholder="Enter name" /></CCol>
                     <CCol md={6}><CFormLabel>Best Friend Mobile 5</CFormLabel><CFormInput name="bestFMobile5" value={formData.bestFMobile5} onChange={handleChange} placeholder="Enter mobile" /></CCol>
+                    
+                    <CCol xs={12} className="mt-4">
+                      <CButton type="button" color="success" onClick={handleSiblingSubmit} disabled={loading || !studentId} className="me-2">
+                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Sibling</>}
+                      </CButton>
+                      <CButton type="button" color="success" onClick={handleBestFriendSubmit} disabled={loading || !studentId}>
+                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Best Friend</>}
+                      </CButton>
+                      {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
+                    </CCol>
                   </CRow>
                 </CTabPane>
 
                 {/* Medical Records Tab */}
                 <CTabPane visible={activeTab === 'medical'}>
                   <CRow className="g-3">
-                    <CCol md={4}><CFormLabel>Height</CFormLabel><CFormInput name="height" value={formData.height} onChange={handleChange} placeholder="Enter height" /></CCol>
-                    <CCol md={4}><CFormLabel>Weight</CFormLabel><CFormInput name="weight" value={formData.weight} onChange={handleChange} placeholder="Enter weight" /></CCol>
+                    <CCol md={4}><CFormLabel>Height</CFormLabel><CFormInput name="height" value={formData.height} onChange={handleChange} placeholder="Enter height (cm)" /></CCol>
+                    <CCol md={4}><CFormLabel>Weight</CFormLabel><CFormInput name="weight" value={formData.weight} onChange={handleChange} placeholder="Enter weight (kg)" /></CCol>
                     <CCol md={4}><CFormLabel>Blood Group</CFormLabel><CFormSelect name="medicalBloodGroup" value={formData.medicalBloodGroup} onChange={handleChange}><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></CFormSelect></CCol>
+                    
+                    <CCol xs={12} className="mt-4">
+                      <CButton type="button" color="success" onClick={handleMedicalSubmit} disabled={loading || !studentId}>
+                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Medical Record</>}
+                      </CButton>
+                      {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
+                    </CCol>
                   </CRow>
                 </CTabPane>
 
                 {/* Transport Tab */}
                 <CTabPane visible={activeTab === 'transport'}>
                   <CRow className="g-3">
-                    <CCol md={4}><CFormLabel>Transport (Yes/No)</CFormLabel><CFormSelect name="transportYesNo" value={formData.transportYesNo} onChange={handleChange}><option value="">Select</option><option>Yes</option><option>No</option></CFormSelect></CCol>
-                    <CCol md={4}><CFormLabel>Route ID</CFormLabel><CFormSelect name="routeId" value={formData.routeId} onChange={handleChange}><option value="">Select</option><option>Route 1</option><option>Route 2</option></CFormSelect></CCol>
-                    <CCol md={4}><CFormLabel>Stop ID</CFormLabel><CFormSelect name="stopId" value={formData.stopId} onChange={handleChange}><option value="">Select</option><option>Stop 1</option><option>Stop 2</option></CFormSelect></CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Transport Required</CFormLabel>
+                      <CFormSelect name="transportYesNo" value={formData.transportYesNo} onChange={handleChange}>
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Route</CFormLabel>
+                      <CFormSelect name="routeId" value={formData.routeId} onChange={handleChange} disabled={formData.transportYesNo !== 'Yes'}>
+                        <option value="">Select Route</option>
+                        {routes.map(route => (
+                          <option key={route.RouteId} value={route.RouteId}>{route.RouteName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Stop</CFormLabel>
+                      <CFormSelect name="stopId" value={formData.stopId} onChange={handleChange} disabled={!formData.routeId}>
+                        <option value="">Select Stop</option>
+                        {stops.map(stop => (
+                          <option key={stop.StopId} value={stop.StopId}>{stop.StopName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    
+                    <CCol xs={12} className="mt-4">
+                      <CButton type="button" color="success" onClick={handleTransportSubmit} disabled={loading || !studentId}>
+                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Transport Details</>}
+                      </CButton>
+                      {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
+                    </CCol>
                   </CRow>
                 </CTabPane>
               </CTabContent>
