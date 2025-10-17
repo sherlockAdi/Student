@@ -55,6 +55,7 @@ const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 const AdminStudentList = React.lazy(() => import('./views/admin/StudentList'))
 const AdminStudentAdd = React.lazy(() => import('./views/admin/StudentAdd'))
 const AdminRegistration = React.lazy(() => import('./views/admin/RegistrationForm'))
+const AdminUpdateStudent = React.lazy(() => import('./views/admin/UpdateStudent'))
 const StudentProfile = React.lazy(() => import('./views/student/MyProfile'))
 const StudentFeePayment = React.lazy(() => import('./views/student/StudentFeePayment'))
 const StudentStudyPortal = React.lazy(() => import('./views/student/StudyPortal'))
@@ -73,6 +74,7 @@ const routes = [
   { path: '/admin/students/add', name: 'Add Student', element: AdminStudentAdd, roles: ['admin'] },
   { path: '/admin/students/:id/view', name: 'Student View', element: AdminStudentView, roles: ['admin'] },
   { path: '/admin/students/:id/edit', name: 'Student Edit', element: AdminStudentEdit, roles: ['admin'] },
+  { path: '/admin/update-student', name: 'Update Student', element: AdminUpdateStudent, roles: ['admin'] },
   { path: '/admin/registration', name: 'Registration', element: AdminRegistration, roles: ['admin'] },
   // Student
   { path: '/student/profile', name: 'My Profile', element: StudentProfile, roles: ['student'] },
