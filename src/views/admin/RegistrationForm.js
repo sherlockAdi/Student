@@ -79,9 +79,18 @@ const RegistrationForm = () => {
     mobileNumber3: ''
   })
 
+  // Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   const [formData, setFormData] = useState({
     // Administration Details
-    dateOfAdmission: '', feeCategory: '', organizationName: '', collegeName: '', branch: '',
+    dateOfAdmission: getTodayDate(), feeCategory: '', organizationName: '', collegeName: '', branch: '',
     courseType: '', university: '', financialYear: '', course: '', batchId: '', section: '',
     studentName: '', mobileNumber1: '', studentRegistrationNumber: '', studentUniversityNumber: '',
     mobileNumber2: '', mobileNumber3: '',
@@ -1139,7 +1148,7 @@ const RegistrationForm = () => {
   const handleReset = (skipConfirm = false) => {
     if (skipConfirm || window.confirm('Reset all fields?')) {
       setFormData({
-        dateOfAdmission: '', feeCategory: '', organizationName: '', collegeName: '', branch: '',
+        dateOfAdmission: getTodayDate(), feeCategory: '', organizationName: '', collegeName: '', branch: '',
         courseType: '', university: '', financialYear: '', course: '', batchId: '', section: '',
         studentName: '', mobileNumber1: '', studentRegistrationNumber: '', studentUniversityNumber: '',
         mobileNumber2: '', mobileNumber3: '', emailId: '', gender: '', dateOfBirth: '', nationality: '',
