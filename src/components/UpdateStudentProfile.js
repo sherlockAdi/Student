@@ -499,16 +499,22 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
   }, [studentIdProp])
 
   // Load sub-categories when category changes
-  useEffect(() => {
-    if (formData.category) {
-      getSubCategories(formData.category)
-        .then(data => setSubCategories(data || []))
-        .catch(err => console.error('Error loading sub-categories:', err))
-    } else {
-      setSubCategories([])
-    }
-  }, [formData.category])
+  // useEffect(() => {
+  //   if (formData.category) {
+  //     getSubCategories(formData.category)
+  //       .then(data => setSubCategories(data || []))
+  //       .catch(err => console.error('Error loading sub-categories:', err))
+  //   } else {
+  //     setSubCategories([])
+  //   }
+  // }, [formData.category])
 
+  const handleLoadSubCategories = () => {
+  getSubCategories() 
+    .then(data => setSubCategories(data || []))
+    .catch(err => console.error('Error loading sub-categories:', err));
+};
+``
   // Load Permanent Address cascading dropdowns
   useEffect(() => {
     if (addressFormData.pCountry) {

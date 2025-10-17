@@ -250,14 +250,12 @@ const RegistrationForm = () => {
 
   // Load sub-categories when category changes
   useEffect(() => {
-    if (formData.category) {
-      getSubCategories(formData.category)
+    
+      getSubCategories()
         .then(data => setSubCategories(data || []))
         .catch(err => console.error('Error loading sub-categories:', err))
-    } else {
-      setSubCategories([])
-    }
-  }, [formData.category])
+    
+  }, [])
 
   // Auto-generate SRN when all required fields are filled
   useEffect(() => {
@@ -1568,7 +1566,7 @@ const RegistrationForm = () => {
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel>Sub-Category</CFormLabel>
-                      <CFormSelect name="subCategory" value={formData.subCategory} onChange={handleChange} disabled={!formData.category}>
+                      <CFormSelect name="subCategory" value={formData.subCategory} onChange={handleChange} >
                         <option value="">Select Sub-Category</option>
                         {subCategories.map(sub => (
                           <option key={sub.Id} value={sub.Id}>{sub.SubCategoryName}</option>
@@ -1592,7 +1590,7 @@ const RegistrationForm = () => {
                         ))}
                       </CFormSelect>
                     </CCol>
-                    <CCol md={4}>
+                    {/* <CCol md={4}>
                       <CFormLabel>Blood Group</CFormLabel>
                       <CFormSelect name="bloodGroup" value={formData.bloodGroup} onChange={handleChange}>
                         <option value="">Select</option>
@@ -1605,7 +1603,7 @@ const RegistrationForm = () => {
                         <option>AB+</option>
                         <option>AB-</option>
                       </CFormSelect>
-                    </CCol>
+                    </CCol> */}
                     <CCol md={4}>
                       <CFormLabel>Adhar Card Number</CFormLabel>
                       <CFormInput name="adharCardNumber" value={formData.adharCardNumber} onChange={handleChange} placeholder="Enter Adhar number" maxLength="12" />
