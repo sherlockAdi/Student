@@ -73,6 +73,11 @@ const RegistrationForm = () => {
   const [previousSchoolsList, setPreviousSchoolsList] = useState([])
   const [siblingsList, setSiblingsList] = useState([])
   const [bestFriendsList, setBestFriendsList] = useState([])
+  const [mobileErrors, setMobileErrors] = useState({
+    mobileNumber1: '',
+    mobileNumber2: '',
+    mobileNumber3: ''
+  })
 
   const [formData, setFormData] = useState({
     // Administration Details
@@ -380,9 +385,40 @@ const RegistrationForm = () => {
     }
   }, [formData.gDistrict])
 
+  // Validate mobile number
+  const validateMobileNumber = (value) => {
+    if (!value) return '' // Empty is okay for optional fields
+    
+    // Remove any spaces or special characters
+    const cleanValue = value.replace(/\s|-/g, '')
+    
+    // Check if it's numeric
+    if (!/^\d+$/.test(cleanValue)) {
+      return 'Mobile number must contain only digits'
+    }
+    
+    // Check length
+    if (cleanValue.length !== 10) {
+      return 'Mobile number must be exactly 10 digits'
+    }
+    
+    // Check if it starts with 6-9
+    if (!/^[6-9]/.test(cleanValue)) {
+      return 'Mobile number must start with 6, 7, 8, or 9'
+    }
+    
+    return '' // Valid
+  }
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    
+    // Validate mobile numbers
+    if (name === 'mobileNumber1' || name === 'mobileNumber2' || name === 'mobileNumber3') {
+      const error = validateMobileNumber(value)
+      setMobileErrors(prev => ({ ...prev, [name]: error }))
+    }
   }
 
   // Handle "Same as Permanent Address" for Correspondence
@@ -423,6 +459,36 @@ const RegistrationForm = () => {
 
   const handleSubmit = async (e, action = 'next') => {
     e.preventDefault()
+    
+    // Validate all mobile numbers before submitting
+    const mobile1Error = validateMobileNumber(formData.mobileNumber1)
+    const mobile2Error = validateMobileNumber(formData.mobileNumber2)
+    const mobile3Error = validateMobileNumber(formData.mobileNumber3)
+    
+    // Check if mobileNumber1 is required and valid
+    if (!formData.mobileNumber1) {
+      setError('Mobile Number 1 is required')
+      return
+    }
+    
+    if (mobile1Error) {
+      setError(`Mobile Number 1: ${mobile1Error}`)
+      setMobileErrors(prev => ({ ...prev, mobileNumber1: mobile1Error }))
+      return
+    }
+    
+    if (mobile2Error) {
+      setError(`Mobile Number 2: ${mobile2Error}`)
+      setMobileErrors(prev => ({ ...prev, mobileNumber2: mobile2Error }))
+      return
+    }
+    
+    if (mobile3Error) {
+      setError(`Mobile Number 3: ${mobile3Error}`)
+      setMobileErrors(prev => ({ ...prev, mobileNumber3: mobile3Error }))
+      return
+    }
+    
     setLoading(true)
     setError('')
     setSuccess('')
@@ -1098,6 +1164,11 @@ const RegistrationForm = () => {
         siblingId: '', siblingRelationship: '', friendId: '', friendName: '', friendMobile: '', height: '',
         weight: '', medicalBloodGroup: '', transportYesNo: '', routeId: '', stopId: '',
       })
+      setMobileErrors({
+        mobileNumber1: '',
+        mobileNumber2: '',
+        mobileNumber3: ''
+      })
       setStudentId(null) // Reset StudentID
       setActiveTab('administration') // Go back to first tab
     }
@@ -1341,15 +1412,50 @@ const RegistrationForm = () => {
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel>Mobile Number 1 *</CFormLabel>
-                      <CFormInput name="mobileNumber1" value={formData.mobileNumber1} onChange={handleChange} placeholder="Enter mobile" required />
+                      <CFormInput 
+                        name="mobileNumber1" 
+                        value={formData.mobileNumber1} 
+                        onChange={handleChange} 
+                        placeholder="Enter 10-digit mobile" 
+                        required
+                        className={mobileErrors.mobileNumber1 ? 'is-invalid' : ''}
+                      />
+                      {mobileErrors.mobileNumber1 && (
+                        <div className="invalid-feedback d-block">
+                          {mobileErrors.mobileNumber1}
+                        </div>
+                      )}
+                      <small className="text-muted">Must be 10 digits, starting with 6-9</small>
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel>Mobile Number 2</CFormLabel>
-                      <CFormInput name="mobileNumber2" value={formData.mobileNumber2} onChange={handleChange} placeholder="Enter mobile" />
+                      <CFormInput 
+                        name="mobileNumber2" 
+                        value={formData.mobileNumber2} 
+                        onChange={handleChange} 
+                        placeholder="Enter 10-digit mobile"
+                        className={mobileErrors.mobileNumber2 ? 'is-invalid' : ''}
+                      />
+                      {mobileErrors.mobileNumber2 && (
+                        <div className="invalid-feedback d-block">
+                          {mobileErrors.mobileNumber2}
+                        </div>
+                      )}
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel>Mobile Number 3</CFormLabel>
-                      <CFormInput name="mobileNumber3" value={formData.mobileNumber3} onChange={handleChange} placeholder="Enter mobile" />
+                      <CFormInput 
+                        name="mobileNumber3" 
+                        value={formData.mobileNumber3} 
+                        onChange={handleChange} 
+                        placeholder="Enter 10-digit mobile"
+                        className={mobileErrors.mobileNumber3 ? 'is-invalid' : ''}
+                      />
+                      {mobileErrors.mobileNumber3 && (
+                        <div className="invalid-feedback d-block">
+                          {mobileErrors.mobileNumber3}
+                        </div>
+                      )}
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel>Student University Number</CFormLabel>
