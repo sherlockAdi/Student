@@ -4,6 +4,7 @@ import {
   CCard, CCardBody, CCardHeader, CCol, CRow, CNav, CNavItem, CNavLink,
   CTabContent, CTabPane, CButton, CForm, CFormInput, CFormSelect,
   CFormLabel, CFormTextarea, CAlert, CSpinner, CFormCheck,
+  CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilSave, cilArrowLeft, cilX } from '@coreui/icons'
@@ -16,7 +17,7 @@ import {
   submitAddressDetails, insertLastSchoolDetails, getSchoolMasterDropdown,
   insertPreviousSchoolDetails, addSibling, addBestFriend, insertMedicalRecord,
   insertTransportDetails, getTransportRoutes, getTransportStops, getCountries,
-  getStatesByCountry, getDistrictsByState, getAreasByDistrict
+  getStatesByCountry, getDistrictsByState, getAreasByDistrict, insertSchoolDetails
 } from '../../api/api'
 
 const RegistrationForm = () => {
@@ -28,6 +29,19 @@ const RegistrationForm = () => {
   const [studentId, setStudentId] = useState(null) // Store StudentID after administration submission
   const [sameAsPermanent, setSameAsPermanent] = useState(false) // Correspondence same as permanent
   const [guardianSameAsPermanent, setGuardianSameAsPermanent] = useState(false) // Guardian same as permanent
+  const [showAddSchoolModal, setShowAddSchoolModal] = useState(false)
+  const [schoolModalSource, setSchoolModalSource] = useState('lastSchool') // Track which field opened the modal
+  const [newSchoolData, setNewSchoolData] = useState({
+    schoolName: '',
+    schoolCountry: '',
+    schoolState: '',
+    schoolDistrict: '',
+    schoolArea: '',
+    schoolPincode: '',
+    schoolContactNo: '',
+    schoolEmailId: '',
+    schoolWebsite: ''
+  })
   
   // Dropdown data states
   const [organizations, setOrganizations] = useState([])
@@ -56,6 +70,9 @@ const RegistrationForm = () => {
   const [gStates, setGStates] = useState([])
   const [gDistricts, setGDistricts] = useState([])
   const [gAreas, setGAreas] = useState([])
+  const [previousSchoolsList, setPreviousSchoolsList] = useState([])
+  const [siblingsList, setSiblingsList] = useState([])
+  const [bestFriendsList, setBestFriendsList] = useState([])
 
   const [formData, setFormData] = useState({
     // Administration Details
@@ -101,8 +118,7 @@ const RegistrationForm = () => {
     schoolPincode: '', schoolContactNo: '', schoolEmailId: '', schoolWebsite: '',
     
     // Sibling & Best Friend
-    siblingId: '', friendId: '', bestFName1: '', bestFName2: '', bestFName3: '', bestFName4: '', bestFName5: '',
-    bestFMobile1: '', bestFMobile2: '', bestFMobile3: '', bestFMobile4: '', bestFMobile5: '',
+    siblingId: '', siblingRelationship: '', friendId: '', friendName: '', friendMobile: '',
     
     // Medical Records
     height: '', weight: '', medicalBloodGroup: '',
@@ -585,7 +601,7 @@ const RegistrationForm = () => {
       
       const response = await insertParentDetails(payload)
       setSuccess(`✅ ${response.message || 'Parent details saved successfully!'}`)
-      setTimeout(() => { setActiveTab('loginDetails'); setSuccess('') }, 2000)
+      setTimeout(() => { setActiveTab('address'); setSuccess('') }, 2000)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to submit parent details.')
     } finally {
@@ -672,9 +688,63 @@ const RegistrationForm = () => {
     }
   }
 
+  const handleAddPreviousSchoolToList = () => {
+    if (!formData.prevSchoolCollegeName) {
+      setError('Please select a school/college')
+      return
+    }
+    
+    const newRecord = {
+      schoolId: formData.prevSchoolCollegeName,
+      schoolName: schools.find(s => s.SchoolID == formData.prevSchoolCollegeName)?.SchoolCollegeName || formData.prevSchoolCollegeName,
+      educationBoard: formData.educationBoard || '',
+      mediumOfInstruction: formData.mediumOfInstruction || '',
+      tcNumber: formData.tcNumber || '',
+      rollNumber: formData.rollNumber || '',
+      passingYear: formData.passingYear || '',
+      lastClassPassed: formData.lastClassPassed || '',
+      totalMarks: formData.totalMarks || '',
+      obtainedMarks: formData.obtainedMarks || '',
+      percentageCgpa: formData.percentageCgpa || '',
+      reasonForSchoolChange: formData.reasonForSchoolChange || ''
+    }
+    
+    setPreviousSchoolsList(prev => [...prev, newRecord])
+    setSuccess('✅ Previous school record added to list!')
+    
+    // Clear previous school fields
+    setFormData(prev => ({
+      ...prev,
+      prevSchoolCollegeName: '',
+      educationBoard: '',
+      mediumOfInstruction: '',
+      tcNumber: '',
+      rollNumber: '',
+      passingYear: '',
+      lastClassPassed: '',
+      totalMarks: '',
+      obtainedMarks: '',
+      percentageCgpa: '',
+      reasonForSchoolChange: ''
+    }))
+    
+    setTimeout(() => setSuccess(''), 2000)
+  }
+
+  const handleRemovePreviousSchool = (index) => {
+    setPreviousSchoolsList(prev => prev.filter((_, i) => i !== index))
+    setSuccess('✅ Record removed from list')
+    setTimeout(() => setSuccess(''), 2000)
+  }
+
   const handlePreviousSchoolSubmit = async () => {
     if (!studentId) {
       setError('Please submit Administration details first.')
+      return
+    }
+    
+    if (previousSchoolsList.length === 0) {
+      setError('Please add at least one previous school record to the list')
       return
     }
     
@@ -683,23 +753,28 @@ const RegistrationForm = () => {
     setSuccess('')
     
     try {
-      const payload = {
-        StudentId: studentId,
-        SchoolName: formData.prevSchoolCollegeName || '',
-        EducationBoard: formData.educationBoard || '',
-        MediumOfInstruction: formData.mediumOfInstruction || '',
-        TCNumber: formData.tcNumber || '',
-        RollNumber: formData.rollNumber || '',
-        PassingYear: parseInt(formData.passingYear) || 0,
-        LastClassPassed: formData.lastClassPassed || '',
-        TotalMarks: parseInt(formData.totalMarks) || 0,
-        ObtainedMarks: parseInt(formData.obtainedMarks) || 0,
-        PercentageOrCGPA: formData.percentageCgpa || '',
-        ReasonForChange: formData.reasonForSchoolChange || ''
+      // Submit each previous school record
+      for (const school of previousSchoolsList) {
+        const payload = {
+          StudentId: studentId,
+          SchoolName: school.schoolId || '',
+          EducationBoard: school.educationBoard || '',
+          MediumOfInstruction: school.mediumOfInstruction || '',
+          TCNumber: school.tcNumber || '',
+          RollNumber: school.rollNumber || '',
+          PassingYear: parseInt(school.passingYear) || 0,
+          LastClassPassed: school.lastClassPassed || '',
+          TotalMarks: parseInt(school.totalMarks) || 0,
+          ObtainedMarks: parseInt(school.obtainedMarks) || 0,
+          PercentageOrCGPA: school.percentageCgpa || '',
+          ReasonForChange: school.reasonForSchoolChange || ''
+        }
+        
+        await insertPreviousSchoolDetails(payload)
       }
       
-      const response = await insertPreviousSchoolDetails(payload)
-      setSuccess(`✅ ${response.message || 'Previous school details inserted successfully!'}`)
+      setSuccess(`✅ All ${previousSchoolsList.length} previous school record(s) saved successfully!`)
+      setPreviousSchoolsList([]) // Clear the list after successful submit
       setTimeout(() => { setActiveTab('sibling'); setSuccess('') }, 2000)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to submit previous school details.')
@@ -708,9 +783,49 @@ const RegistrationForm = () => {
     }
   }
 
+  const handleAddSiblingToList = () => {
+    if (!formData.siblingId) {
+      setError('Please enter Sibling Student ID')
+      return
+    }
+    
+    if (!formData.siblingRelationship) {
+      setError('Please select Relationship')
+      return
+    }
+    
+    const newSibling = {
+      siblingStudentId: formData.siblingId,
+      relationship: formData.siblingRelationship
+    }
+    
+    setSiblingsList(prev => [...prev, newSibling])
+    setSuccess('✅ Sibling added to list!')
+    
+    // Clear sibling fields
+    setFormData(prev => ({
+      ...prev,
+      siblingId: '',
+      siblingRelationship: ''
+    }))
+    
+    setTimeout(() => setSuccess(''), 2000)
+  }
+
+  const handleRemoveSibling = (index) => {
+    setSiblingsList(prev => prev.filter((_, i) => i !== index))
+    setSuccess('✅ Sibling removed from list')
+    setTimeout(() => setSuccess(''), 2000)
+  }
+
   const handleSiblingSubmit = async () => {
     if (!studentId) {
       setError('Please submit Administration details first.')
+      return
+    }
+    
+    if (siblingsList.length === 0) {
+      setError('Please add at least one sibling to the list')
       return
     }
     
@@ -719,14 +834,19 @@ const RegistrationForm = () => {
     setSuccess('')
     
     try {
-      const payload = {
-        StudentId: studentId,
-        SiblingStudentId: parseInt(formData.siblingId) || 0,
-        Relationship: 'Sibling'
+      // Submit each sibling record
+      for (const sibling of siblingsList) {
+        const payload = {
+          StudentId: studentId,
+          SiblingStudentId: parseInt(sibling.siblingStudentId) || 0,
+          Relationship: sibling.relationship
+        }
+        
+        await addSibling(payload)
       }
       
-      const response = await addSibling(payload)
-      setSuccess(`✅ ${response.message || 'Sibling added successfully!'}`)
+      setSuccess(`✅ All ${siblingsList.length} sibling(s) saved successfully!`)
+      setSiblingsList([]) // Clear the list after successful submit
       setTimeout(() => { setActiveTab('bestFriend'); setSuccess('') }, 2000)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to add sibling.')
@@ -735,9 +855,56 @@ const RegistrationForm = () => {
     }
   }
 
+  const handleAddBestFriendToList = () => {
+    if (!formData.friendId) {
+      setError('Please enter Friend ID')
+      return
+    }
+    
+    if (!formData.friendName) {
+      setError('Please enter Friend Name')
+      return
+    }
+    
+    if (!formData.friendMobile) {
+      setError('Please enter Friend Mobile')
+      return
+    }
+    
+    const newBestFriend = {
+      friendId: formData.friendId,
+      friendName: formData.friendName,
+      friendMobile: formData.friendMobile
+    }
+    
+    setBestFriendsList(prev => [...prev, newBestFriend])
+    setSuccess('✅ Best friend added to list!')
+    
+    // Clear best friend fields
+    setFormData(prev => ({
+      ...prev,
+      friendId: '',
+      friendName: '',
+      friendMobile: ''
+    }))
+    
+    setTimeout(() => setSuccess(''), 2000)
+  }
+
+  const handleRemoveBestFriend = (index) => {
+    setBestFriendsList(prev => prev.filter((_, i) => i !== index))
+    setSuccess('✅ Best friend removed from list')
+    setTimeout(() => setSuccess(''), 2000)
+  }
+
   const handleBestFriendSubmit = async () => {
     if (!studentId) {
       setError('Please submit Administration details first.')
+      return
+    }
+    
+    if (bestFriendsList.length === 0) {
+      setError('Please add at least one best friend to the list')
       return
     }
     
@@ -746,15 +913,20 @@ const RegistrationForm = () => {
     setSuccess('')
     
     try {
-      const payload = {
-        StudentId: studentId,
-        FriendId: parseInt(formData.friendId) || 0,
-        Best_F_Name1: formData.bestFName1 || '',
-        Best_F_Mobile1: formData.bestFMobile1 || ''
+      // Submit each best friend record
+      for (const friend of bestFriendsList) {
+        const payload = {
+          StudentId: studentId,
+          FriendId: parseInt(friend.friendId) || 0,
+          Best_F_Name1: friend.friendName || '',
+          Best_F_Mobile1: friend.friendMobile || ''
+        }
+        
+        await addBestFriend(payload)
       }
       
-      const response = await addBestFriend(payload)
-      setSuccess(`✅ ${response.message || 'Best Friend added successfully!'}`)
+      setSuccess(`✅ All ${bestFriendsList.length} best friend(s) saved successfully!`)
+      setBestFriendsList([]) // Clear the list after successful submit
       setTimeout(() => { setActiveTab('medical'); setSuccess('') }, 2000)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to add best friend.')
@@ -819,6 +991,85 @@ const RegistrationForm = () => {
     }
   }
 
+  const handleSchoolChange = (e) => {
+    const { value } = e.target
+    if (value === 'add_new') {
+      setSchoolModalSource('lastSchool')
+      setShowAddSchoolModal(true)
+    } else {
+      setFormData(prev => ({ ...prev, schoolCollege: value }))
+    }
+  }
+
+  const handlePrevSchoolSelectChange = (e) => {
+    const { value } = e.target
+    if (value === 'add_new') {
+      setSchoolModalSource('previousSchool')
+      setShowAddSchoolModal(true)
+    } else {
+      setFormData(prev => ({ ...prev, prevSchoolCollegeName: value }))
+    }
+  }
+
+  const handleNewSchoolChange = (e) => {
+    const { name, value } = e.target
+    setNewSchoolData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleAddNewSchool = async () => {
+    setLoading(true)
+    setError('')
+    
+    try {
+      const payload = {
+        SchoolCollegeName: newSchoolData.schoolName,
+        Country: newSchoolData.schoolCountry,
+        State: newSchoolData.schoolState,
+        District: newSchoolData.schoolDistrict,
+        Area: newSchoolData.schoolArea,
+        Pincode: newSchoolData.schoolPincode,
+        ContactNo: newSchoolData.schoolContactNo,
+        EmailId: newSchoolData.schoolEmailId,
+        Website: newSchoolData.schoolWebsite
+      }
+      
+      const response = await insertSchoolDetails(payload)
+      setSuccess(`✅ ${response.message || 'School added successfully!'}`)
+      
+      // Refresh schools dropdown
+      const schoolsData = await getSchoolMasterDropdown()
+      setSchools(schoolsData || [])
+      
+      // Set the newly added school as selected in the correct field
+      if (response.SchoolID) {
+        if (schoolModalSource === 'lastSchool') {
+          setFormData(prev => ({ ...prev, schoolCollege: response.SchoolID }))
+        } else if (schoolModalSource === 'previousSchool') {
+          setFormData(prev => ({ ...prev, prevSchoolCollegeName: response.SchoolID }))
+        }
+      }
+      
+      // Reset and close modal
+      setNewSchoolData({
+        schoolName: '',
+        schoolCountry: '',
+        schoolState: '',
+        schoolDistrict: '',
+        schoolArea: '',
+        schoolPincode: '',
+        schoolContactNo: '',
+        schoolEmailId: '',
+        schoolWebsite: ''
+      })
+      setShowAddSchoolModal(false)
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to add school.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleReset = (skipConfirm = false) => {
     if (skipConfirm || window.confirm('Reset all fields?')) {
       setFormData({
@@ -844,8 +1095,7 @@ const RegistrationForm = () => {
         tcNumber: '', rollNumber: '', passingYear: '', lastClassPassed: '', totalMarks: '', obtainedMarks: '',
         percentageCgpa: '', reasonForSchoolChange: '', schoolMasterName: '', schoolCountry: '', schoolState: '',
         schoolDistrict: '', schoolArea: '', schoolPincode: '', schoolContactNo: '', schoolEmailId: '', schoolWebsite: '',
-        siblingId: '', friendId: '', bestFName1: '', bestFName2: '', bestFName3: '', bestFName4: '', bestFName5: '',
-        bestFMobile1: '', bestFMobile2: '', bestFMobile3: '', bestFMobile4: '', bestFMobile5: '', height: '',
+        siblingId: '', siblingRelationship: '', friendId: '', friendName: '', friendMobile: '', height: '',
         weight: '', medicalBloodGroup: '', transportYesNo: '', routeId: '', stopId: '',
       })
       setStudentId(null) // Reset StudentID
@@ -942,12 +1192,7 @@ const RegistrationForm = () => {
                 </CNavItem>
                 <CNavItem>
                   <CNavLink active={activeTab === 'parentGuardian'} onClick={() => setActiveTab('parentGuardian')}>
-                    Parent & Guardian
-                  </CNavLink>
-                </CNavItem>
-                <CNavItem>
-                  <CNavLink active={activeTab === 'loginDetails'} onClick={() => setActiveTab('loginDetails')}>
-                    Login Details
+                    Family Info
                   </CNavLink>
                 </CNavItem>
                 <CNavItem>
@@ -966,8 +1211,8 @@ const RegistrationForm = () => {
                   </CNavLink>
                 </CNavItem>
                 <CNavItem>
-                  <CNavLink active={activeTab === 'schoolList'} onClick={() => setActiveTab('schoolList')}>
-                    School List
+                  <CNavLink active={activeTab === 'sibling'} onClick={() => setActiveTab('sibling')}>
+                    Sibling
                   </CNavLink>
                 </CNavItem>
                 <CNavItem>
@@ -1337,33 +1582,6 @@ const RegistrationForm = () => {
                   </CRow>
                 </CTabPane>
 
-                {/* Login Details Tab */}
-                <CTabPane visible={activeTab === 'loginDetails'}>
-                  <CRow className="g-3">
-                    <CCol xs={12}><h6 className="text-primary">Student Login</h6></CCol>
-                    <CCol md={6}>
-                      <CFormLabel>Student User ID (College Email)</CFormLabel>
-                      <CFormInput name="studentUserId" value={formData.emailId} readOnly className="bg-light" placeholder="Auto-generated" />
-                      <small className="text-muted">Uses college email as login ID</small>
-                    </CCol>
-                    <CCol md={6}>
-                      <CFormLabel>Default Password (SRN)</CFormLabel>
-                      <CFormInput type="text" name="studentPassword" value={formData.studentPassword} readOnly className="bg-light" placeholder="Auto-generated" />
-                      <small className="text-muted">Default password is the SRN number</small>
-                    </CCol>
-                    
-                    <CCol xs={12}><h6 className="text-primary mt-3">Parent Login</h6></CCol>
-                    <CCol md={6}>
-                      <CFormLabel>Parent Login ID</CFormLabel>
-                      <CFormInput name="parentLoginId" value={formData.parentLoginId} onChange={handleChange} placeholder="Enter login ID" />
-                    </CCol>
-                    <CCol md={6}>
-                      <CFormLabel>Password</CFormLabel>
-                      <CFormInput type="password" name="parentPassword" value={formData.parentPassword} onChange={handleChange} placeholder="Enter password" />
-                    </CCol>
-                  </CRow>
-                </CTabPane>
-
                 {/* Address Details Tab */}
                 <CTabPane visible={activeTab === 'address'}>
                   <CRow className="g-3">
@@ -1521,11 +1739,14 @@ const RegistrationForm = () => {
                   <CRow className="g-3">
                     <CCol md={6}>
                       <CFormLabel>School/College *</CFormLabel>
-                      <CFormSelect name="schoolCollege" value={formData.schoolCollege} onChange={handleChange} required>
+                      <CFormSelect name="schoolCollege" value={formData.schoolCollege} onChange={handleSchoolChange} required>
                         <option value="">Select School/College</option>
                         {schools.map(school => (
                           <option key={school.SchoolID} value={school.SchoolID}>{school.SchoolCollegeName}</option>
                         ))}
+                        <option value="add_new" style={{fontWeight: 'bold', color: '#0d6efd'}}>
+                          ➕ Add New School/College
+                        </option>
                       </CFormSelect>
                     </CCol>
                     <CCol md={6}><CFormLabel>School Principal Name</CFormLabel><CFormInput name="schoolPrincipalName" value={formData.schoolPrincipalName} onChange={handleChange} placeholder="Enter principal name" /></CCol>
@@ -1550,7 +1771,20 @@ const RegistrationForm = () => {
                 {/* Previous School Details Tab */}
                 <CTabPane visible={activeTab === 'previousSchool'}>
                   <CRow className="g-3">
-                    <CCol md={6}><CFormLabel>College/School Name</CFormLabel><CFormInput name="prevSchoolCollegeName" value={formData.prevSchoolCollegeName} onChange={handleChange} placeholder="Enter school/college name" /></CCol>
+                    <CCol md={6}>
+                      <CFormLabel>College/School Name</CFormLabel>
+                      <CFormSelect name="prevSchoolCollegeName" value={formData.prevSchoolCollegeName} onChange={handlePrevSchoolSelectChange}>
+                        <option value="">Select School/College</option>
+                        {schools.map(school => (
+                          <option key={school.SchoolID} value={school.SchoolID}>
+                            {school.SchoolCollegeName}
+                          </option>
+                        ))}
+                        <option value="add_new" style={{fontWeight: 'bold', color: '#0d6efd'}}>
+                          ➕ Add New School/College
+                        </option>
+                      </CFormSelect>
+                    </CCol>
                     <CCol md={6}><CFormLabel>Education Board</CFormLabel><CFormInput name="educationBoard" value={formData.educationBoard} onChange={handleChange} placeholder="Enter board" /></CCol>
                     <CCol md={4}><CFormLabel>Medium of Instruction</CFormLabel><CFormInput name="mediumOfInstruction" value={formData.mediumOfInstruction} onChange={handleChange} placeholder="Enter medium" /></CCol>
                     <CCol md={4}><CFormLabel>TC Number</CFormLabel><CFormInput name="tcNumber" value={formData.tcNumber} onChange={handleChange} placeholder="Enter TC number" /></CCol>
@@ -1563,54 +1797,290 @@ const RegistrationForm = () => {
                     <CCol md={12}><CFormLabel>Reason For School Change</CFormLabel><CFormInput name="reasonForSchoolChange" value={formData.reasonForSchoolChange} onChange={handleChange} placeholder="Enter reason" /></CCol>
                     
                     <CCol xs={12} className="mt-4">
-                      <CButton type="button" color="success" onClick={handlePreviousSchoolSubmit} disabled={loading || !studentId}>
-                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Previous School Details</>}
+                      <CButton 
+                        type="button" 
+                        color="primary" 
+                        onClick={handleAddPreviousSchoolToList}
+                        disabled={!formData.prevSchoolCollegeName}
+                      >
+                        ➕ Add to List
                       </CButton>
                       {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
                     </CCol>
+
+                    {/* Display List of Previous Schools */}
+                    {previousSchoolsList.length > 0 && (
+                      <CCol xs={12} className="mt-4">
+                        <h6 className="text-primary mb-3">📋 Previous Schools List ({previousSchoolsList.length} record(s))</h6>
+                        <div className="table-responsive">
+                          <table className="table table-bordered table-hover table-sm">
+                            <thead className="table-light">
+                              <tr>
+                                <th>#</th>
+                                <th>School Name</th>
+                                <th>Board</th>
+                                <th>Passing Year</th>
+                                <th>Last Class</th>
+                                <th>Marks</th>
+                                <th>%/CGPA</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {previousSchoolsList.map((school, index) => (
+                                <tr key={index}>
+                                  <td>{index + 1}</td>
+                                  <td>{school.schoolName}</td>
+                                  <td>{school.educationBoard || 'N/A'}</td>
+                                  <td>{school.passingYear || 'N/A'}</td>
+                                  <td>{school.lastClassPassed || 'N/A'}</td>
+                                  <td>{school.obtainedMarks}/{school.totalMarks}</td>
+                                  <td>{school.percentageCgpa || 'N/A'}</td>
+                                  <td>
+                                    <CButton 
+                                      color="danger" 
+                                      size="sm" 
+                                      onClick={() => handleRemovePreviousSchool(index)}
+                                    >
+                                      <CIcon icon={cilX} />
+                                    </CButton>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <CButton 
+                          type="button" 
+                          color="success" 
+                          onClick={handlePreviousSchoolSubmit} 
+                          disabled={loading || !studentId}
+                          className="mt-2"
+                        >
+                          {loading ? (
+                            <>
+                              <CSpinner size="sm" className="me-1" />
+                              Saving All Records...
+                            </>
+                          ) : (
+                            <>
+                              <CIcon icon={cilSave} className="me-1" />
+                              Save All {previousSchoolsList.length} Record(s) to Database
+                            </>
+                          )}
+                        </CButton>
+                      </CCol>
+                    )}
                   </CRow>
                 </CTabPane>
 
-                {/* School List / School Master Tab */}
-                <CTabPane visible={activeTab === 'schoolList'}>
+                {/* Sibling Tab */}
+                <CTabPane visible={activeTab === 'sibling'}>
                   <CRow className="g-3">
-                    <CCol md={6}><CFormLabel>School/College Name</CFormLabel><CFormInput name="schoolMasterName" value={formData.schoolMasterName} onChange={handleChange} placeholder="Enter school/college name" /></CCol>
-                    <CCol md={3}><CFormLabel>Country</CFormLabel><CFormSelect name="schoolCountry" value={formData.schoolCountry} onChange={handleChange}><option value="">Select</option><option>India</option></CFormSelect></CCol>
-                    <CCol md={3}><CFormLabel>State</CFormLabel><CFormSelect name="schoolState" value={formData.schoolState} onChange={handleChange}><option value="">Select</option><option>State 1</option></CFormSelect></CCol>
-                    <CCol md={4}><CFormLabel>District</CFormLabel><CFormSelect name="schoolDistrict" value={formData.schoolDistrict} onChange={handleChange}><option value="">Select</option><option>District 1</option></CFormSelect></CCol>
-                    <CCol md={4}><CFormLabel>Area</CFormLabel><CFormInput name="schoolArea" value={formData.schoolArea} onChange={handleChange} placeholder="Enter area" /></CCol>
-                    <CCol md={4}><CFormLabel>Pincode</CFormLabel><CFormInput name="schoolPincode" value={formData.schoolPincode} onChange={handleChange} placeholder="Enter pincode" /></CCol>
-                    <CCol md={4}><CFormLabel>School/College Contact No</CFormLabel><CFormInput name="schoolContactNo" value={formData.schoolContactNo} onChange={handleChange} placeholder="Enter contact" /></CCol>
-                    <CCol md={4}><CFormLabel>Email ID</CFormLabel><CFormInput type="email" name="schoolEmailId" value={formData.schoolEmailId} onChange={handleChange} placeholder="Enter email" /></CCol>
-                    <CCol md={4}><CFormLabel>Website</CFormLabel><CFormInput name="schoolWebsite" value={formData.schoolWebsite} onChange={handleChange} placeholder="Enter website" /></CCol>
+                    <CCol xs={12}><h6 className="text-primary">👨‍👩‍👧‍👦 Sibling Information</h6></CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Sibling Student ID *</CFormLabel>
+                      <CFormInput 
+                        type="number"
+                        name="siblingId" 
+                        value={formData.siblingId} 
+                        onChange={handleChange} 
+                        placeholder="Enter sibling student ID" 
+                      />
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Relationship *</CFormLabel>
+                      <CFormSelect
+                        name="siblingRelationship"
+                        value={formData.siblingRelationship}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select Relationship</option>
+                        <option value="Brother">Brother</option>
+                        <option value="Sister">Sister</option>
+                        <option value="Half-Brother">Half-Brother</option>
+                        <option value="Half-Sister">Half-Sister</option>
+                        <option value="Step-Brother">Step-Brother</option>
+                        <option value="Step-Sister">Step-Sister</option>
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={4} className="d-flex align-items-end">
+                      <CButton 
+                        type="button" 
+                        color="primary" 
+                        onClick={handleAddSiblingToList}
+                        disabled={!formData.siblingId || !formData.siblingRelationship}
+                      >
+                        ➕ Add Sibling to List
+                      </CButton>
+                    </CCol>
+
+                    {/* Display List of Siblings */}
+                    {siblingsList.length > 0 && (
+                      <CCol xs={12} className="mt-3">
+                        <h6 className="text-primary mb-3">📋 Siblings List ({siblingsList.length} sibling(s))</h6>
+                        <div className="table-responsive">
+                          <table className="table table-bordered table-hover table-sm">
+                            <thead className="table-light">
+                              <tr>
+                                <th>#</th>
+                                <th>Sibling Student ID</th>
+                                <th>Relationship</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {siblingsList.map((sibling, index) => (
+                                <tr key={index}>
+                                  <td>{index + 1}</td>
+                                  <td>{sibling.siblingStudentId}</td>
+                                  <td>{sibling.relationship}</td>
+                                  <td>
+                                    <CButton 
+                                      color="danger" 
+                                      size="sm" 
+                                      onClick={() => handleRemoveSibling(index)}
+                                    >
+                                      <CIcon icon={cilX} />
+                                    </CButton>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </CCol>
+                    )}
+
+                    <CCol xs={12} className="mt-4">
+                      {siblingsList.length > 0 && (
+                        <CButton 
+                          type="button" 
+                          color="success" 
+                          onClick={handleSiblingSubmit} 
+                          disabled={loading || !studentId}
+                        >
+                          {loading ? (
+                            <>
+                              <CSpinner size="sm" className="me-1" />
+                              Saving Siblings...
+                            </>
+                          ) : (
+                            <>
+                              <CIcon icon={cilSave} className="me-1" />
+                              Save All {siblingsList.length} Sibling(s) to Database
+                            </>
+                          )}
+                        </CButton>
+                      )}
+                      {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
+                    </CCol>
                   </CRow>
                 </CTabPane>
 
                 {/* Best Friend Tab */}
                 <CTabPane visible={activeTab === 'bestFriend'}>
                   <CRow className="g-3">
-                    <CCol md={6}><CFormLabel>Sibling ID</CFormLabel><CFormInput name="siblingId" value={formData.siblingId} onChange={handleChange} placeholder="Enter sibling ID" /></CCol>
-                    <CCol md={6}><CFormLabel>Friend ID</CFormLabel><CFormInput name="friendId" value={formData.friendId} onChange={handleChange} placeholder="Enter friend ID" /></CCol>
-                    
-                    <CCol xs={12}><h6 className="text-primary mt-3">Best Friends</h6></CCol>
-                    <CCol md={6}><CFormLabel>Best Friend Name 1</CFormLabel><CFormInput name="bestFName1" value={formData.bestFName1} onChange={handleChange} placeholder="Enter name" /></CCol>
-                    <CCol md={6}><CFormLabel>Best Friend Mobile 1</CFormLabel><CFormInput name="bestFMobile1" value={formData.bestFMobile1} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={6}><CFormLabel>Best Friend Name 2</CFormLabel><CFormInput name="bestFName2" value={formData.bestFName2} onChange={handleChange} placeholder="Enter name" /></CCol>
-                    <CCol md={6}><CFormLabel>Best Friend Mobile 2</CFormLabel><CFormInput name="bestFMobile2" value={formData.bestFMobile2} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={6}><CFormLabel>Best Friend Name 3</CFormLabel><CFormInput name="bestFName3" value={formData.bestFName3} onChange={handleChange} placeholder="Enter name" /></CCol>
-                    <CCol md={6}><CFormLabel>Best Friend Mobile 3</CFormLabel><CFormInput name="bestFMobile3" value={formData.bestFMobile3} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={6}><CFormLabel>Best Friend Name 4</CFormLabel><CFormInput name="bestFName4" value={formData.bestFName4} onChange={handleChange} placeholder="Enter name" /></CCol>
-                    <CCol md={6}><CFormLabel>Best Friend Mobile 4</CFormLabel><CFormInput name="bestFMobile4" value={formData.bestFMobile4} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={6}><CFormLabel>Best Friend Name 5</CFormLabel><CFormInput name="bestFName5" value={formData.bestFName5} onChange={handleChange} placeholder="Enter name" /></CCol>
-                    <CCol md={6}><CFormLabel>Best Friend Mobile 5</CFormLabel><CFormInput name="bestFMobile5" value={formData.bestFMobile5} onChange={handleChange} placeholder="Enter mobile" /></CCol>
+                    <CCol xs={12}><h6 className="text-primary">👥 Best Friends</h6></CCol>
+                    <CCol md={3}>
+                      <CFormLabel>Friend ID *</CFormLabel>
+                      <CFormInput 
+                        type="number"
+                        name="friendId" 
+                        value={formData.friendId} 
+                        onChange={handleChange} 
+                        placeholder="Enter friend ID" 
+                      />
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>Friend Name *</CFormLabel>
+                      <CFormInput 
+                        name="friendName" 
+                        value={formData.friendName} 
+                        onChange={handleChange} 
+                        placeholder="Enter friend name" 
+                      />
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>Friend Mobile *</CFormLabel>
+                      <CFormInput 
+                        name="friendMobile" 
+                        value={formData.friendMobile} 
+                        onChange={handleChange} 
+                        placeholder="Enter friend mobile" 
+                      />
+                    </CCol>
+                    <CCol md={3} className="d-flex align-items-end">
+                      <CButton 
+                        type="button" 
+                        color="primary" 
+                        onClick={handleAddBestFriendToList}
+                        disabled={!formData.friendId || !formData.friendName || !formData.friendMobile}
+                      >
+                        ➕ Add Friend to List
+                      </CButton>
+                    </CCol>
+
+                    {/* Display List of Best Friends */}
+                    {bestFriendsList.length > 0 && (
+                      <CCol xs={12} className="mt-3">
+                        <h6 className="text-primary mb-3">📋 Best Friends List ({bestFriendsList.length} friend(s))</h6>
+                        <div className="table-responsive">
+                          <table className="table table-bordered table-hover table-sm">
+                            <thead className="table-light">
+                              <tr>
+                                <th>#</th>
+                                <th>Friend ID</th>
+                                <th>Friend Name</th>
+                                <th>Friend Mobile</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {bestFriendsList.map((friend, index) => (
+                                <tr key={index}>
+                                  <td>{index + 1}</td>
+                                  <td>{friend.friendId}</td>
+                                  <td>{friend.friendName}</td>
+                                  <td>{friend.friendMobile}</td>
+                                  <td>
+                                    <CButton 
+                                      color="danger" 
+                                      size="sm" 
+                                      onClick={() => handleRemoveBestFriend(index)}
+                                    >
+                                      <CIcon icon={cilX} />
+                                    </CButton>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </CCol>
+                    )}
                     
                     <CCol xs={12} className="mt-4">
-                      <CButton type="button" color="success" onClick={handleSiblingSubmit} disabled={loading || !studentId} className="me-2">
-                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Sibling</>}
-                      </CButton>
-                      <CButton type="button" color="success" onClick={handleBestFriendSubmit} disabled={loading || !studentId}>
-                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Best Friend</>}
-                      </CButton>
+                      {bestFriendsList.length > 0 && (
+                        <CButton 
+                          type="button" 
+                          color="success" 
+                          onClick={handleBestFriendSubmit} 
+                          disabled={loading || !studentId}
+                        >
+                          {loading ? (
+                            <>
+                              <CSpinner size="sm" className="me-1" />
+                              Saving Best Friends...
+                            </>
+                          ) : (
+                            <>
+                              <CIcon icon={cilSave} className="me-1" />
+                              Save All {bestFriendsList.length} Best Friend(s) to Database
+                            </>
+                          )}
+                        </CButton>
+                      )}
                       {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
                     </CCol>
                   </CRow>
@@ -1675,6 +2145,124 @@ const RegistrationForm = () => {
           </CCardBody>
         </CCard>
       </CCol>
+
+      {/* Add New School Modal */}
+      <CModal visible={showAddSchoolModal} onClose={() => setShowAddSchoolModal(false)} size="lg">
+        <CModalHeader>
+          <CModalTitle>➕ Add New School/College</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <CRow className="g-3">
+            <CCol md={12}>
+              <CFormLabel>School/College Name *</CFormLabel>
+              <CFormInput 
+                name="schoolName" 
+                value={newSchoolData.schoolName} 
+                onChange={handleNewSchoolChange} 
+                placeholder="Enter school/college name"
+                required
+              />
+            </CCol>
+            <CCol md={6}>
+              <CFormLabel>Country</CFormLabel>
+              <CFormInput 
+                name="schoolCountry" 
+                value={newSchoolData.schoolCountry} 
+                onChange={handleNewSchoolChange} 
+                placeholder="Enter country"
+              />
+            </CCol>
+            <CCol md={6}>
+              <CFormLabel>State</CFormLabel>
+              <CFormInput 
+                name="schoolState" 
+                value={newSchoolData.schoolState} 
+                onChange={handleNewSchoolChange} 
+                placeholder="Enter state"
+              />
+            </CCol>
+            <CCol md={6}>
+              <CFormLabel>District</CFormLabel>
+              <CFormInput 
+                name="schoolDistrict" 
+                value={newSchoolData.schoolDistrict} 
+                onChange={handleNewSchoolChange} 
+                placeholder="Enter district"
+              />
+            </CCol>
+            <CCol md={6}>
+              <CFormLabel>Area</CFormLabel>
+              <CFormInput 
+                name="schoolArea" 
+                value={newSchoolData.schoolArea} 
+                onChange={handleNewSchoolChange} 
+                placeholder="Enter area"
+              />
+            </CCol>
+            <CCol md={4}>
+              <CFormLabel>Pincode</CFormLabel>
+              <CFormInput 
+                name="schoolPincode" 
+                value={newSchoolData.schoolPincode} 
+                onChange={handleNewSchoolChange} 
+                placeholder="Enter pincode"
+                maxLength="6"
+              />
+            </CCol>
+            <CCol md={4}>
+              <CFormLabel>Contact Number</CFormLabel>
+              <CFormInput 
+                name="schoolContactNo" 
+                value={newSchoolData.schoolContactNo} 
+                onChange={handleNewSchoolChange} 
+                placeholder="Enter contact number"
+              />
+            </CCol>
+            <CCol md={4}>
+              <CFormLabel>Email ID</CFormLabel>
+              <CFormInput 
+                type="email"
+                name="schoolEmailId" 
+                value={newSchoolData.schoolEmailId} 
+                onChange={handleNewSchoolChange} 
+                placeholder="Enter email"
+              />
+            </CCol>
+            <CCol md={12}>
+              <CFormLabel>Website</CFormLabel>
+              <CFormInput 
+                name="schoolWebsite" 
+                value={newSchoolData.schoolWebsite} 
+                onChange={handleNewSchoolChange} 
+                placeholder="Enter website URL"
+              />
+            </CCol>
+          </CRow>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setShowAddSchoolModal(false)}>
+            <CIcon icon={cilX} className="me-1" />
+            Cancel
+          </CButton>
+          <CButton 
+            color="success" 
+            onClick={handleAddNewSchool} 
+            disabled={loading || !newSchoolData.schoolName}
+          >
+            {loading ? (
+              <>
+                <CSpinner size="sm" className="me-1" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <CIcon icon={cilSave} className="me-1" />
+                Add School
+              </>
+            )}
+          </CButton>
+        </CModalFooter>
+      </CModal>
     </CRow>
   )
 }
