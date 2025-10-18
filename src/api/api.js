@@ -632,4 +632,13 @@ export async function getReligions() {
   return data;
 }
 
+export async function searchStudentByText(searchText) {
+  const { data } = await api.get('/studentapi/search', {
+    params: {
+      searchText,
+    },
+  })
+  return data
+}
+
 export default api
