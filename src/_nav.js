@@ -14,6 +14,18 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Registration',
+    to: '/admin/registration',
+    roles: ['admin'],
+  },
+  {
+    component: CNavItem,
+    name: 'Update Student',
+    to: '/admin/update-student',
+    roles: ['admin'],
+  },
+  {
+    component: CNavItem,
     name: 'Fees',
     to: '/admin/fees',
     roles: ['admin'],
