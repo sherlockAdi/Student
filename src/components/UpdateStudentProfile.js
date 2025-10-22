@@ -19,7 +19,8 @@ import {
   getSiblings, addSibling, getBestFriend, addBestFriend,
   getMedicalDetails, insertMedicalDetails, updateMedicalDetails,
   getTransportDetails, insertTransportDetails, updateTransportDetails,
-  getTransportRoutes, getTransportStops
+  getTransportRoutes, getTransportStops, getFeeCategories, getDesignations,
+  getProfessions, getIncomeRanges
 } from '../api/api'
 
 const UpdateStudentProfile = ({ studentIdProp }) => {
@@ -57,6 +58,10 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
   const [schools, setSchools] = useState([])
   
   // Dropdown data
+  const [feeCategories, setFeeCategories] = useState([])
+  const [designations, setDesignations] = useState([])
+  const [professions, setProfessions] = useState([])
+  const [incomeRanges, setIncomeRanges] = useState([])
   const [nationalities, setNationalities] = useState([])
   const [motherTongues, setMotherTongues] = useState([])
   const [categories, setCategories] = useState([])
@@ -363,7 +368,11 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
 
         // Fetch dropdowns
         try {
-        const [nationalitiesData, motherTonguesData, categoriesData, religionsData, countriesData, schoolsData, routesData] = await Promise.all([
+        const [feeCatsData, desgsData, profsData, incomesData, nationalitiesData, motherTonguesData, categoriesData, religionsData, countriesData, schoolsData, routesData] = await Promise.all([
+          getFeeCategories().catch(err => { console.error('Error loading fee categories:', err); return []; }),
+          getDesignations().catch(err => { console.error('Error loading designations:', err); return []; }),
+          getProfessions().catch(err => { console.error('Error loading professions:', err); return []; }),
+          getIncomeRanges().catch(err => { console.error('Error loading income ranges:', err); return []; }),
           getNationalities().catch(err => { console.error('Error loading nationalities:', err); return []; }),
           getMotherTongues().catch(err => { console.error('Error loading mother tongues:', err); return []; }),
           getCasteCategories().catch(err => { console.error('Error loading categories:', err); return []; }),
@@ -373,6 +382,10 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
           getTransportRoutes().catch(err => { console.error('Error loading transport routes:', err); return []; })
         ])
         
+        setFeeCategories(feeCatsData || [])
+        setDesignations(desgsData || [])
+        setProfessions(profsData || [])
+        setIncomeRanges(incomesData || [])
         setNationalities(nationalitiesData || [])
         setMotherTongues(motherTonguesData || [])
         setCategories(categoriesData || [])
@@ -2055,7 +2068,12 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
                       </CCol>
                       <CCol md={4}>
                         <CFormLabel>Father's Profession</CFormLabel>
-                        <CFormInput name="fatherProfession" value={parentFormData.fatherProfession} onChange={handleParentChange} placeholder="Enter profession" disabled={!isEditingParent} />
+                        <CFormSelect name="fatherProfession" value={parentFormData.fatherProfession} onChange={handleParentChange} disabled={!isEditingParent}>
+                          <option value="">Select Profession</option>
+                          {professions.map(prof => (
+                            <option key={prof.Id} value={prof.Id}>{prof.ProfessionName}</option>
+                          ))}
+                        </CFormSelect>
                       </CCol>
                       <CCol md={4}>
                         <CFormLabel>Father Company Name</CFormLabel>
@@ -2067,11 +2085,21 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
                       </CCol>
                       <CCol md={4}>
                         <CFormLabel>Father Designation</CFormLabel>
-                        <CFormInput name="fatherDesignation" value={parentFormData.fatherDesignation} onChange={handleParentChange} placeholder="Enter designation" disabled={!isEditingParent} />
+                        <CFormSelect name="fatherDesignation" value={parentFormData.fatherDesignation} onChange={handleParentChange} disabled={!isEditingParent}>
+                          <option value="">Select Designation</option>
+                          {designations.map(desg => (
+                            <option key={desg.Id} value={desg.Id}>{desg.Desgname}</option>
+                          ))}
+                        </CFormSelect>
                       </CCol>
                       <CCol md={4}>
                         <CFormLabel>Family Income</CFormLabel>
-                        <CFormInput type="number" name="familyIncome" value={parentFormData.familyIncome} onChange={handleParentChange} placeholder="Enter income" disabled={!isEditingParent} />
+                        <CFormSelect name="familyIncome" value={parentFormData.familyIncome} onChange={handleParentChange} disabled={!isEditingParent}>
+                          <option value="">Select Income Range</option>
+                          {incomeRanges.map(income => (
+                            <option key={income.IncomeId} value={income.IncomeId}>{income.RangeValue}</option>
+                          ))}
+                        </CFormSelect>
                       </CCol>
                       
                       <CCol xs={12}><h6 className="text-primary mt-3">Mother Details</h6></CCol>
@@ -2097,7 +2125,12 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
                       </CCol>
                       <CCol md={4}>
                         <CFormLabel>Mother Profession</CFormLabel>
-                        <CFormInput name="motherProfession" value={parentFormData.motherProfession} onChange={handleParentChange} placeholder="Enter profession" disabled={!isEditingParent} />
+                        <CFormSelect name="motherProfession" value={parentFormData.motherProfession} onChange={handleParentChange} disabled={!isEditingParent}>
+                          <option value="">Select Profession</option>
+                          {professions.map(prof => (
+                            <option key={prof.Id} value={prof.Id}>{prof.ProfessionName}</option>
+                          ))}
+                        </CFormSelect>
                       </CCol>
                       <CCol md={4}>
                         <CFormLabel>Mother Office Address</CFormLabel>

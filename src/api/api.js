@@ -391,6 +391,30 @@ export async function getAllStudents(params = {}) {
   return data; // { isSuccess, message, totalRecords, data: [...] }
 }
 
+// 💰 Get Fee Categories
+export async function getFeeCategories() {
+  const { data } = await api.get('/studentapi/feecategory/all');
+  return data; // [{ Id: 1, FeeCategoryName: "Govt (GEN/OBC)", Status: true, Archive: false }]
+}
+
+// 👔 Get Designations
+export async function getDesignations() {
+  const { data } = await api.get('/studentapi/designation');
+  return data; // [{ Id: 10215, Desgid: 121, Desgname: "Finance Head", Shortname: "Finance Head", ... }]
+}
+
+// 💼 Get Professions
+export async function getProfessions() {
+  const { data } = await api.get('/studentapi/profession');
+  return data; // [{ Id: 1, ProfessionCode: 101, ProfessionName: "Doctor", ShortName: "Dr", ... }]
+}
+
+// 💰 Get Income Ranges
+export async function getIncomeRanges() {
+  const { data } = await api.get('/studentapi/income');
+  return data; // [{ IncomeId: 1, StartRange: 0, EndRange: 200000, RangeValue: "Rs 0 to 200000", ... }]
+}
+
 // 🔢 Get SRN (Student Registration Number)
 export async function getSRN({ collegeId, courseTypeId, universityId, batchId }) {
   const { data } = await api.get('/studentapi/getsrn', {

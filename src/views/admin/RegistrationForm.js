@@ -17,7 +17,8 @@ import {
   submitAddressDetails, insertLastSchoolDetails, getSchoolMasterDropdown,
   insertPreviousSchoolDetails, addSibling, addBestFriend, insertMedicalRecord,
   insertTransportDetails, getTransportRoutes, getTransportStops, getCountries,
-  getStatesByCountry, getDistrictsByState, getAreasByDistrict, insertSchoolDetails
+  getStatesByCountry, getDistrictsByState, getAreasByDistrict, insertSchoolDetails,
+  getFeeCategories, getDesignations, getProfessions, getIncomeRanges
 } from '../../api/api'
 
 const RegistrationForm = () => {
@@ -44,6 +45,7 @@ const RegistrationForm = () => {
   })
   
   // Dropdown data states
+  const [feeCategories, setFeeCategories] = useState([])
   const [organizations, setOrganizations] = useState([])
   const [colleges, setColleges] = useState([])
   const [branches, setBranches] = useState([])
@@ -61,6 +63,9 @@ const RegistrationForm = () => {
   const [routes, setRoutes] = useState([])
   const [stops, setStops] = useState([])
   const [countries, setCountries] = useState([])
+  const [designations, setDesignations] = useState([])
+  const [professions, setProfessions] = useState([])
+  const [incomeRanges, setIncomeRanges] = useState([])
   const [pStates, setPStates] = useState([])
   const [pDistricts, setPDistricts] = useState([])
   const [pAreas, setPAreas] = useState([])
@@ -93,7 +98,8 @@ const RegistrationForm = () => {
     dateOfAdmission: getTodayDate(), feeCategory: '', organizationName: '', collegeName: '', branch: '',
     courseType: '', university: '', financialYear: '', course: '', batchId: '', section: '',
     studentName: '', mobileNumber1: '', studentRegistrationNumber: '', studentUniversityNumber: '',
-    mobileNumber2: '', mobileNumber3: '',
+    mobileNumber2: '', mobileNumber3: '', admissionNo: '', studentId: '', referenceId: '',
+    adminFatherName: '', adminMotherName: '',
     
     // Student Details
     emailId: '', gender: '', dateOfBirth: '', nationality: '', birthplace: '', motherTongue: '',
@@ -141,11 +147,20 @@ const RegistrationForm = () => {
     transportYesNo: '', routeId: '', stopId: '',
   })
 
-  // Load initial master data
+  // Load initial master data and set reference ID from login
   useEffect(() => {
     const loadMasterData = async () => {
       try {
-        const [orgsData, natsData, tonguesData, catsData, relsData, schoolsData, routesData, countriesData] = await Promise.all([
+        // Get logged-in user ID and set it to referenceId
+        const loggedInUser = JSON.parse(localStorage.getItem('user') || '{}')
+        const userId = loggedInUser.userId || loggedInUser.id || 0
+        
+        if (userId) {
+          setFormData(prev => ({ ...prev, referenceId: userId }))
+        }
+        
+        const [feeCatsData, orgsData, natsData, tonguesData, catsData, relsData, schoolsData, routesData, countriesData, desgsData, profsData, incomesData] = await Promise.all([
+          getFeeCategories(),
           getOrganizations(),
           getNationalities(),
           getMotherTongues(),
@@ -153,8 +168,12 @@ const RegistrationForm = () => {
           getReligions(),
           getSchoolMasterDropdown(),
           getTransportRoutes(),
-          getCountries()
+          getCountries(),
+          getDesignations(),
+          getProfessions(),
+          getIncomeRanges()
         ])
+        setFeeCategories(feeCatsData || [])
         setOrganizations(orgsData || [])
         setNationalities(natsData || [])
         setMotherTongues(tonguesData || [])
@@ -163,6 +182,9 @@ const RegistrationForm = () => {
         setSchools(schoolsData || [])
         setRoutes(routesData || [])
         setCountries(countriesData || [])
+        setDesignations(desgsData || [])
+        setProfessions(profsData || [])
+        setIncomeRanges(incomesData || [])
       } catch (err) {
         console.error('Error loading master data:', err)
         setError('Failed to load master data')
@@ -507,6 +529,13 @@ const RegistrationForm = () => {
       const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : ''
       const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : ''
       
+      // Get logged-in user ID from localStorage
+      const loggedInUser = JSON.parse(localStorage.getItem('user') || '{}')
+      const userId = loggedInUser.userId || loggedInUser.id || 0
+      
+      // Get client IP address (will be handled by backend)
+      const ipAddress = ''
+      
       // Prepare payload for API
       const payload = {
         DateOfAdmission: formData.dateOfAdmission,
@@ -526,8 +555,12 @@ const RegistrationForm = () => {
         MobileNo1: formData.mobileNumber1,
         MobileNo2: formData.mobileNumber2 || '',
         MobileNo3: formData.mobileNumber3 || '',
-        AdmissionNo: formData.studentRegistrationNumber,
-        StudentId: formData.studentUniversityNumber || ''
+        AdmissionNo: parseInt(formData.admissionNo) || 0,
+        StudentId: formData.studentId || '',
+        IPAddress: ipAddress,
+        ReferenceId: userId,
+        FatherName: formData.adminFatherName || '',
+        MotherName: formData.adminMotherName || ''
       }
       
       console.log('Submitting Administration Data:', payload)
@@ -1149,7 +1182,8 @@ const RegistrationForm = () => {
         dateOfAdmission: getTodayDate(), feeCategory: '', organizationName: '', collegeName: '', branch: '',
         courseType: '', university: '', financialYear: '', course: '', batchId: '', section: '',
         studentName: '', mobileNumber1: '', studentRegistrationNumber: '', studentUniversityNumber: '',
-        mobileNumber2: '', mobileNumber3: '', emailId: '', gender: '', dateOfBirth: '', nationality: '',
+        mobileNumber2: '', mobileNumber3: '', admissionNo: '', studentId: '', referenceId: '',
+        adminFatherName: '', adminMotherName: '', emailId: '', gender: '', dateOfBirth: '', nationality: '',
         birthplace: '', motherTongue: '', category: '', subCategory: '', minority: '', religion: '',
         bloodGroup: '', adharCardNumber: '', domicile: '', panNo: '', fatherName: '', fatherMobileAdmission: '',
         fatherContactNo: '', fatherEmailId: '', fatherAdharNo: '', fatherQualification: '', fatherProfession: '',
@@ -1321,11 +1355,12 @@ const RegistrationForm = () => {
                       <CFormInput type="date" name="dateOfAdmission" value={formData.dateOfAdmission} onChange={handleChange} required />
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Fee Category</CFormLabel>
-                      <CFormSelect name="feeCategory" value={formData.feeCategory} onChange={handleChange}>
-                        <option value="">Select</option>
-                        <option>Regular</option>
-                        <option>Management Quota</option>
+                      <CFormLabel>Fee Category *</CFormLabel>
+                      <CFormSelect name="feeCategory" value={formData.feeCategory} onChange={handleChange} required>
+                        <option value="">Select Fee Category</option>
+                        {feeCategories.map(category => (
+                          <option key={category.Id} value={category.Id}>{category.FeeCategoryName}</option>
+                        ))}
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
@@ -1467,6 +1502,27 @@ const RegistrationForm = () => {
                     <CCol md={4}>
                       <CFormLabel>Student University Number</CFormLabel>
                       <CFormInput name="studentUniversityNumber" value={formData.studentUniversityNumber} onChange={handleChange} placeholder="Enter university number" />
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Admission Number</CFormLabel>
+                      <CFormInput type="number" name="admissionNo" value={formData.admissionNo} onChange={handleChange} placeholder="Enter admission number" />
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Student ID</CFormLabel>
+                      <CFormInput name="studentId" value={formData.studentId} onChange={handleChange} placeholder="Enter student ID" />
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Reference ID</CFormLabel>
+                      <CFormInput type="number" name="referenceId" value={formData.referenceId} onChange={handleChange} placeholder="Auto-filled from login" readOnly className="bg-light" />
+                      <small className="text-muted">Logged-in user ID</small>
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Father Name</CFormLabel>
+                      <CFormInput name="adminFatherName" value={formData.adminFatherName} onChange={handleChange} placeholder="Enter father name" />
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Mother Name</CFormLabel>
+                      <CFormInput name="adminMotherName" value={formData.adminMotherName} onChange={handleChange} placeholder="Enter mother name" />
                     </CCol>
                     <CCol md={6}>
                       <CFormLabel>College Email *</CFormLabel>
@@ -1636,11 +1692,35 @@ const RegistrationForm = () => {
                     <CCol md={4}><CFormLabel>Father Email ID</CFormLabel><CFormInput type="email" name="fatherEmailId" value={formData.fatherEmailId} onChange={handleChange} placeholder="Enter email" /></CCol>
                     <CCol md={4}><CFormLabel>Father Adhar No.</CFormLabel><CFormInput name="fatherAdharNo" value={formData.fatherAdharNo} onChange={handleChange} placeholder="Enter Adhar" /></CCol>
                     <CCol md={4}><CFormLabel>Father Qualification</CFormLabel><CFormInput name="fatherQualification" value={formData.fatherQualification} onChange={handleChange} placeholder="Enter qualification" /></CCol>
-                    <CCol md={4}><CFormLabel>Father's Profession</CFormLabel><CFormInput name="fatherProfession" value={formData.fatherProfession} onChange={handleChange} placeholder="Enter profession" /></CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Father's Profession</CFormLabel>
+                      <CFormSelect name="fatherProfession" value={formData.fatherProfession} onChange={handleChange}>
+                        <option value="">Select Profession</option>
+                        {professions.map(prof => (
+                          <option key={prof.Id} value={prof.Id}>{prof.ProfessionName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
                     <CCol md={4}><CFormLabel>Father Company Name</CFormLabel><CFormInput name="fatherCompanyName" value={formData.fatherCompanyName} onChange={handleChange} placeholder="Enter company" /></CCol>
                     <CCol md={4}><CFormLabel>Father Office Address</CFormLabel><CFormInput name="fatherOfficeAddress" value={formData.fatherOfficeAddress} onChange={handleChange} placeholder="Enter address" /></CCol>
-                    <CCol md={4}><CFormLabel>Father Designation</CFormLabel><CFormInput name="fatherDesignation" value={formData.fatherDesignation} onChange={handleChange} placeholder="Enter designation" /></CCol>
-                    <CCol md={4}><CFormLabel>Family Income</CFormLabel><CFormInput type="number" name="familyIncome" value={formData.familyIncome} onChange={handleChange} placeholder="Enter income" /></CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Father Designation</CFormLabel>
+                      <CFormSelect name="fatherDesignation" value={formData.fatherDesignation} onChange={handleChange}>
+                        <option value="">Select Designation</option>
+                        {designations.map(desg => (
+                          <option key={desg.Id} value={desg.Id}>{desg.Desgname}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Family Income</CFormLabel>
+                      <CFormSelect name="familyIncome" value={formData.familyIncome} onChange={handleChange}>
+                        <option value="">Select Income Range</option>
+                        {incomeRanges.map(income => (
+                          <option key={income.IncomeId} value={income.IncomeId}>{income.RangeValue}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
                     
                     <CCol xs={12}><h6 className="text-primary mt-3">Mother Details</h6></CCol>
                     <CCol md={4}><CFormLabel>Mother Name</CFormLabel><CFormInput name="motherName" value={formData.motherName} onChange={handleChange} placeholder="Enter mother name" /></CCol>
@@ -1648,7 +1728,15 @@ const RegistrationForm = () => {
                     <CCol md={4}><CFormLabel>Mother Mobile (Admission)</CFormLabel><CFormInput name="motherMobileAdmission" value={formData.motherMobileAdmission} onChange={handleChange} placeholder="Enter mobile" /></CCol>
                     <CCol md={4}><CFormLabel>Mother Email ID</CFormLabel><CFormInput type="email" name="motherEmailId" value={formData.motherEmailId} onChange={handleChange} placeholder="Enter email" /></CCol>
                     <CCol md={4}><CFormLabel>Mother Qualification</CFormLabel><CFormInput name="motherQualification" value={formData.motherQualification} onChange={handleChange} placeholder="Enter qualification" /></CCol>
-                    <CCol md={4}><CFormLabel>Mother Profession</CFormLabel><CFormInput name="motherProfession" value={formData.motherProfession} onChange={handleChange} placeholder="Enter profession" /></CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Mother Profession</CFormLabel>
+                      <CFormSelect name="motherProfession" value={formData.motherProfession} onChange={handleChange}>
+                        <option value="">Select Profession</option>
+                        {professions.map(prof => (
+                          <option key={prof.Id} value={prof.Id}>{prof.ProfessionName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
                     <CCol md={4}><CFormLabel>Mother Office Address</CFormLabel><CFormInput name="motherOfficeAddress" value={formData.motherOfficeAddress} onChange={handleChange} placeholder="Enter address" /></CCol>
                     
                     <CCol xs={12}><h6 className="text-primary mt-3">Guardian Details</h6></CCol>
