@@ -2,8 +2,8 @@ import axios from 'axios'
 
 const api = axios.create({
   // Leave baseURL blank to allow Vite proxy in development
-  baseURL: 'http://localhost:62623/',
-  // baseURL: 'http://61.246.33.108:8069/',
+  // baseURL: 'http://localhost:62623/',
+  baseURL: 'http://61.246.33.108:8069/',
   timeout: 10000, // 10 second timeout to prevent hanging requests
   headers: {
     'Content-Type': 'application/json',
@@ -655,14 +655,36 @@ export async function getReligions() {
   const { data } = await api.get('/studentapi/master/religions');
   return data;
 }
-
 export async function searchStudentByText(searchText) {
   const { data } = await api.get('/studentapi/search', {
     params: {
       searchText,
     },
-  })
-  return data
+  });
+  return data;
+}
+// 💰 Insert Income Range
+export async function insertIncomeRange(incomeData) {
+  const { data } = await api.post('/studentapi/income/insert', incomeData);
+  return data;
+}
+
+// 💼 Insert Profession
+export async function insertProfession(professionData) {
+  const { data } = await api.post('/studentapi/profession/insert', professionData);
+  return data;
+}
+
+// 👔 Insert Designation
+export async function insertDesignation(designationData) {
+  const { data } = await api.post('/studentapi/designation/insert', designationData);
+  return data;
+}
+
+// 🏫 Insert School Master
+export async function insertSchoolMaster(schoolData) {
+  const { data } = await api.post('/studentapi/schoolmaster/insert', schoolData);
+  return data;
 }
 
 export default api

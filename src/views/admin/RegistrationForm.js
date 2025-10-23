@@ -18,7 +18,10 @@ import {
   insertPreviousSchoolDetails, addSibling, addBestFriend, insertMedicalRecord,
   insertTransportDetails, getTransportRoutes, getTransportStops, getCountries,
   getStatesByCountry, getDistrictsByState, getAreasByDistrict, insertSchoolDetails,
-  getFeeCategories, getDesignations, getProfessions, getIncomeRanges
+  getFeeCategories, getDesignations, getProfessions, getIncomeRanges,
+  insertProfession,
+  insertDesignation,
+  insertIncomeRange
 } from '../../api/api'
 
 const RegistrationForm = () => {
@@ -43,7 +46,18 @@ const RegistrationForm = () => {
     schoolEmailId: '',
     schoolWebsite: ''
   })
-  
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [modalSource, setModalSource] = useState('profession') // Track which field opened the modal: profession, designation, income
+  const [newModalData, setNewModalData] = useState({
+    professionName: '',
+    professionShortName: '',
+    designationName: '',
+    designationShortName: '',
+    departmentId: '',
+    startRange: '',
+    endRange: '',
+    rangeDescription: ''
+  })
   // Dropdown data states
   const [feeCategories, setFeeCategories] = useState([])
   const [organizations, setOrganizations] = useState([])
@@ -1125,7 +1139,7 @@ const RegistrationForm = () => {
   const handleAddNewSchool = async () => {
     setLoading(true)
     setError('')
-    
+    setSuccess('')
     try {
       const payload = {
         SchoolCollegeName: newSchoolData.schoolName,
@@ -1135,27 +1149,29 @@ const RegistrationForm = () => {
         Area: newSchoolData.schoolArea,
         Pincode: newSchoolData.schoolPincode,
         ContactNo: newSchoolData.schoolContactNo,
-        EmailId: newSchoolData.schoolEmailId,
-        Website: newSchoolData.schoolWebsite
+        EmailID: newSchoolData.schoolEmailId,
+        Website: newSchoolData.schoolWebsite,
+        IsActive: true
       }
-      
       const response = await insertSchoolDetails(payload)
       setSuccess(`✅ ${response.message || 'School added successfully!'}`)
-      
-      // Refresh schools dropdown
-      const schoolsData = await getSchoolMasterDropdown()
-      setSchools(schoolsData || [])
-      
-      // Set the newly added school as selected in the correct field
-      if (response.SchoolID) {
+
+      // Refresh schools list
+      const updatedSchools = await getSchoolMasterDropdown()
+      setSchools(updatedSchools || [])
+
+      // Set the newly added school in the appropriate field
+      const newSchool = updatedSchools?.find(s => s.SchoolCollegeName === newSchoolData.schoolName)
+      if (newSchool) {
         if (schoolModalSource === 'lastSchool') {
-          setFormData(prev => ({ ...prev, schoolCollege: response.SchoolID }))
+          setFormData(prev => ({ ...prev, schoolCollege: String(newSchool.SchoolID) }))
         } else if (schoolModalSource === 'previousSchool') {
-          setFormData(prev => ({ ...prev, prevSchoolCollegeName: response.SchoolID }))
+          setFormData(prev => ({ ...prev, prevSchoolCollegeName: String(newSchool.SchoolID) }))
         }
       }
-      
-      // Reset and close modal
+
+      // Close and reset modal
+      setShowAddSchoolModal(false)
       setNewSchoolData({
         schoolName: '',
         schoolCountry: '',
@@ -1167,10 +1183,109 @@ const RegistrationForm = () => {
         schoolEmailId: '',
         schoolWebsite: ''
       })
-      setShowAddSchoolModal(false)
-      setTimeout(() => setSuccess(''), 3000)
+
+      setTimeout(() => setSuccess(''), 2000)
     } catch (err) {
+      console.error('Error adding school:', err)
       setError(err.response?.data?.message || err.message || 'Failed to add school.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleNewModalChange = (e) => {
+    const { name, value } = e.target
+    setNewModalData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleAddNewModal = async () => {
+    setLoading(true)
+    setError('')
+
+    try {
+      let response
+      let successMessage = ''
+
+      if (modalSource === 'profession') {
+        const payload = {
+          ProfessionId: 0,
+          ProfessionName: newModalData.professionName,
+          Status: 1,
+          Archive: 0
+        }
+        response = await insertProfession(payload)
+        successMessage = 'Profession added successfully!'
+
+        // Refresh professions dropdown
+        const professionsData = await getProfessions()
+        setProfessions(professionsData || [])
+
+        // Set the newly added profession as selected
+        if (response && response.Id) {
+          setFormData(prev => ({ ...prev, fatherProfession: String(response.Id) }))
+        }
+
+      } else if (modalSource === 'designation') {
+        const payload = {
+          Desgid: 0,
+          Desgname: newModalData.designationName,
+          Shortname: newModalData.designationShortName,
+          DepartmentId: parseInt(newModalData.departmentId) || 0,
+          Status: 1,
+          Archive: 0,
+          GradeId: 1,
+          Designation_Type: 'StudentPanel'
+        }
+        response = await insertDesignation(payload)
+        successMessage = 'Designation added successfully!'
+
+        // Refresh designations dropdown
+        const designationsData = await getDesignations()
+        setDesignations(designationsData || [])
+
+        // Set the newly added designation as selected
+        if (response && response.Id) {
+          setFormData(prev => ({ ...prev, fatherDesignation: String(response.Id) }))
+        }
+
+      } else if (modalSource === 'income') {
+        const payload = {
+          IncomeId: 0,
+          StartRange: parseFloat(newModalData.startRange) || 0,
+          EndRange: parseFloat(newModalData.endRange) || 0,
+          RangeDescription: newModalData.rangeDescription
+        }
+        response = await insertIncomeRange(payload)
+        successMessage = 'Income range added successfully!'
+
+        // Refresh income ranges dropdown
+        const incomeData = await getIncomeRanges()
+        setIncomeRanges(incomeData || [])
+
+        // Set the newly added income range as selected
+        if (response && response.IncomeId) {
+          setFormData(prev => ({ ...prev, familyIncome: String(response.IncomeId) }))
+        }
+      }
+
+      setSuccess(`✅ ${successMessage}`)
+
+      // Reset and close modal
+      setNewModalData({
+        professionName: '',
+        professionShortName: '',
+        designationName: '',
+        designationShortName: '',
+        departmentId: '',
+        startRange: '',
+        endRange: '',
+        rangeDescription: ''
+      })
+      setShowAddModal(false)
+      setTimeout(() => setSuccess(''), 3000)
+
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to add record.')
     } finally {
       setLoading(false)
     }
@@ -1694,31 +1809,64 @@ const RegistrationForm = () => {
                     <CCol md={4}><CFormLabel>Father Qualification</CFormLabel><CFormInput name="fatherQualification" value={formData.fatherQualification} onChange={handleChange} placeholder="Enter qualification" /></CCol>
                     <CCol md={4}>
                       <CFormLabel>Father's Profession</CFormLabel>
-                      <CFormSelect name="fatherProfession" value={formData.fatherProfession} onChange={handleChange}>
+                      <CFormSelect name="fatherProfession" value={formData.fatherProfession} onChange={(e) => {
+                        const value = e.target.value
+                        if (value === 'add_new') {
+                          setModalSource('profession')
+                          setShowAddModal(true)
+                        } else {
+                          handleChange(e)
+                        }
+                      }}>
                         <option value="">Select Profession</option>
                         {professions.map(prof => (
-                          <option key={prof.Id} value={prof.Id}>{prof.ProfessionName}</option>
+                          <option key={prof.Id} value={String(prof.Id)}>{prof.ProfessionName || 'Unknown'}</option>
                         ))}
+                        <option value="add_new" style={{fontWeight: 'bold', color: '#0d6efd'}}>
+                          ➕ Add New Profession
+                        </option>
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}><CFormLabel>Father Company Name</CFormLabel><CFormInput name="fatherCompanyName" value={formData.fatherCompanyName} onChange={handleChange} placeholder="Enter company" /></CCol>
                     <CCol md={4}><CFormLabel>Father Office Address</CFormLabel><CFormInput name="fatherOfficeAddress" value={formData.fatherOfficeAddress} onChange={handleChange} placeholder="Enter address" /></CCol>
                     <CCol md={4}>
                       <CFormLabel>Father Designation</CFormLabel>
-                      <CFormSelect name="fatherDesignation" value={formData.fatherDesignation} onChange={handleChange}>
+                      <CFormSelect name="fatherDesignation" value={formData.fatherDesignation} onChange={(e) => {
+                        const value = e.target.value
+                        if (value === 'add_new') {
+                          setModalSource('designation')
+                          setShowAddModal(true)
+                        } else {
+                          handleChange(e)
+                        }
+                      }}>
                         <option value="">Select Designation</option>
                         {designations.map(desg => (
-                          <option key={desg.Id} value={desg.Id}>{desg.Desgname}</option>
+                          <option key={desg.Id} value={String(desg.Id)}>{desg.Desgname || 'Unknown'}</option>
                         ))}
+                        <option value="add_new" style={{fontWeight: 'bold', color: '#0d6efd'}}>
+                          ➕ Add New Designation
+                        </option>
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel>Family Income</CFormLabel>
-                      <CFormSelect name="familyIncome" value={formData.familyIncome} onChange={handleChange}>
+                      <CFormSelect name="familyIncome" value={formData.familyIncome} onChange={(e) => {
+                        const value = e.target.value
+                        if (value === 'add_new') {
+                          setModalSource('income')
+                          setShowAddModal(true)
+                        } else {
+                          handleChange(e)
+                        }
+                      }}>
                         <option value="">Select Income Range</option>
                         {incomeRanges.map(income => (
-                          <option key={income.IncomeId} value={income.IncomeId}>{income.RangeValue}</option>
+                          <option key={income.IncomeId} value={String(income.IncomeId)}>{income.RangeValue || 'Unknown'}</option>
                         ))}
+                        <option value="add_new" style={{fontWeight: 'bold', color: '#0d6efd'}}>
+                          ➕ Add New Income Range
+                        </option>
                       </CFormSelect>
                     </CCol>
                     
@@ -1733,7 +1881,7 @@ const RegistrationForm = () => {
                       <CFormSelect name="motherProfession" value={formData.motherProfession} onChange={handleChange}>
                         <option value="">Select Profession</option>
                         {professions.map(prof => (
-                          <option key={prof.Id} value={prof.Id}>{prof.ProfessionName}</option>
+                          <option key={prof.Id} value={String(prof.Id)}>{prof.ProfessionName || 'Unknown'}</option>
                         ))}
                       </CFormSelect>
                     </CCol>
@@ -2464,8 +2612,137 @@ const RegistrationForm = () => {
           </CButton>
         </CModalFooter>
       </CModal>
+
+      {/* Add New Modal for Profession/Designation/Income */}
+      <CModal visible={showAddModal} onClose={() => setShowAddModal(false)} size="lg">
+        <CModalHeader>
+          <CModalTitle>
+            ➕ Add New{' '}
+            {modalSource === 'profession' && 'Profession'}
+            {modalSource === 'designation' && 'Designation'}
+            {modalSource === 'income' && 'Income Range'}
+          </CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <CRow className="g-3">
+            {modalSource === 'profession' && (
+              <>
+                <CCol md={12}>
+                  <CFormLabel>Profession Name *</CFormLabel>
+                  <CFormInput
+                    name="professionName"
+                    value={newModalData.professionName}
+                    onChange={handleNewModalChange}
+                    placeholder="Enter profession name"
+                    required
+                  />
+                </CCol>
+              </>
+            )}
+
+            {modalSource === 'designation' && (
+              <>
+                <CCol md={6}>
+                  <CFormLabel>Designation Name *</CFormLabel>
+                  <CFormInput
+                    name="designationName"
+                    value={newModalData.designationName}
+                    onChange={handleNewModalChange}
+                    placeholder="Enter designation name"
+                    required
+                  />
+                </CCol>
+                <CCol md={6}>
+                  <CFormLabel>Short Name</CFormLabel>
+                  <CFormInput
+                    name="designationShortName"
+                    value={newModalData.designationShortName}
+                    onChange={handleNewModalChange}
+                    placeholder="Enter short name"
+                  />
+                </CCol>
+                <CCol md={6}>
+                  <CFormLabel>Department ID</CFormLabel>
+                  <CFormInput
+                    type="number"
+                    name="departmentId"
+                    value={newModalData.departmentId}
+                    onChange={handleNewModalChange}
+                    placeholder="Enter department ID"
+                  />
+                </CCol>
+              </>
+            )}
+
+            {modalSource === 'income' && (
+              <>
+                <CCol md={4}>
+                  <CFormLabel>Start Range *</CFormLabel>
+                  <CFormInput
+                    type="number"
+                    name="startRange"
+                    value={newModalData.startRange}
+                    onChange={handleNewModalChange}
+                    placeholder="Enter start range"
+                    required
+                  />
+                </CCol>
+                <CCol md={4}>
+                  <CFormLabel>End Range *</CFormLabel>
+                  <CFormInput
+                    type="number"
+                    name="endRange"
+                    value={newModalData.endRange}
+                    onChange={handleNewModalChange}
+                    placeholder="Enter end range"
+                    required
+                  />
+                </CCol>
+                <CCol md={4}>
+                  <CFormLabel>Range Description</CFormLabel>
+                  <CFormInput
+                    name="rangeDescription"
+                    value={newModalData.rangeDescription}
+                    onChange={handleNewModalChange}
+                    placeholder="e.g., Rs 5-10L"
+                  />
+                </CCol>
+              </>
+            )}
+          </CRow>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setShowAddModal(false)}>
+            <CIcon icon={cilX} className="me-1" />
+            Cancel
+          </CButton>
+          <CButton
+            color="success"
+            onClick={handleAddNewModal}
+            disabled={loading || (
+              modalSource === 'profession' ? !newModalData.professionName :
+              modalSource === 'designation' ? !newModalData.designationName :
+              modalSource === 'income' ? (!newModalData.startRange || !newModalData.endRange) :
+              false
+            )}
+          >
+            {loading ? (
+              <>
+                <CSpinner size="sm" className="me-1" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <CIcon icon={cilSave} className="me-1" />
+                Add {modalSource === 'profession' ? 'Profession' : modalSource === 'designation' ? 'Designation' : 'Income Range'}
+              </>
+            )}
+          </CButton>
+        </CModalFooter>
+      </CModal>
     </CRow>
   )
 }
 
 export default RegistrationForm
+
