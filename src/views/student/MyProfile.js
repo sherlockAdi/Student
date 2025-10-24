@@ -317,42 +317,42 @@ const MyProfile = () => {
         setAddressDetails(addressData)
         if (addressData) {
           setAddressFormData({
-            // Permanent Address
-            permanentCountry: addressData.PermanentCountry || '',
-            permanentState: addressData.PermanentState || '',
-            permanentDistrict: addressData.PermanentDistrict || '',
-            permanentArea: addressData.PermanentArea || '',
-            permanentPincode: addressData.PermanentPincode || '',
-            permanentAddress: addressData.PermanentAddress || '',
+            // Permanent Address (keys used by the form)
+            pCountry: addressData.P_Country || '',
+            pState: addressData.P_State || '',
+            pDistrict: addressData.P_District || '',
+            pArea: addressData.P_Area || '',
+            pPincode: addressData.P_Pincode || '',
+            pAddress: addressData.P_Address || '',
             // Correspondence Address
-            correspondenceCountry: addressData.CorrespondenceCountry || '',
-            correspondenceState: addressData.CorrespondenceState || '',
-            correspondenceDistrict: addressData.CorrespondenceDistrict || '',
-            correspondenceArea: addressData.CorrespondenceArea || '',
-            correspondencePincode: addressData.CorrespondencePincode || '',
-            correspondenceAddress: addressData.CorrespondenceAddress || '',
+            cCountry: addressData.C_Country || '',
+            cState: addressData.C_State || '',
+            cDistrict: addressData.C_District || '',
+            cArea: addressData.C_Area || '',
+            cPincode: addressData.C_Pincode || '',
+            cAddress: addressData.C_Address || '',
             // Guardian Address
-            guardianCountry: addressData.GuardianCountry || '',
-            guardianState: addressData.GuardianState || '',
-            guardianDistrict: addressData.GuardianDistrict || '',
-            guardianArea: addressData.GuardianArea || '',
-            guardianPincode: addressData.GuardianPincode || '',
-            guardianAddress: addressData.GuardianAddress || ''
+            gCountry: addressData.G_Country || '',
+            gState: addressData.G_State || '',
+            gDistrict: addressData.G_District || '',
+            gArea: addressData.G_Area || '',
+            gPincode: addressData.G_Pincode || '',
+            gAddress: addressData.G_Address || ''
           })
 
           // Load states for each address type if countries are selected
-          if (addressData.PermanentCountry) {
-            getStatesByCountry(addressData.PermanentCountry)
+          if (addressData.P_Country) {
+            getStatesByCountry(addressData.P_Country)
               .then(data => setPStates(data || []))
               .catch(err => console.error('Error loading permanent states:', err))
           }
-          if (addressData.CorrespondenceCountry) {
-            getStatesByCountry(addressData.CorrespondenceCountry)
+          if (addressData.C_Country) {
+            getStatesByCountry(addressData.C_Country)
               .then(data => setCStates(data || []))
               .catch(err => console.error('Error loading correspondence states:', err))
           }
-          if (addressData.GuardianCountry) {
-            getStatesByCountry(addressData.GuardianCountry)
+          if (addressData.G_Country) {
+            getStatesByCountry(addressData.G_Country)
               .then(data => setGStates(data || []))
               .catch(err => console.error('Error loading guardian states:', err))
           }
@@ -1909,7 +1909,7 @@ const MyProfile = () => {
                         </CFormSelect>
                       </CCol>
                       
-                      <CCol md={4}>
+                      {/* <CCol md={4}>
                         <CFormLabel>Blood Group</CFormLabel>
                         <CFormSelect name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} disabled={!isEditing}>
                           <option value="">Select</option>
@@ -1923,7 +1923,7 @@ const MyProfile = () => {
                           <option value="8">AB-</option>
                         </CFormSelect>
                       </CCol>
-                      
+                       */}
                       <CCol md={4}>
                         <CFormLabel>Aadhar Card Number</CFormLabel>
                         <CFormInput 
@@ -2223,7 +2223,7 @@ const MyProfile = () => {
                         <CFormSelect name="pCountry" value={addressFormData.pCountry} onChange={handleAddressChange} disabled={!isEditingAddress}>
                           <option value="">Select Country</option>
                           {countries.map(country => (
-                            <option key={country.Id} value={country.Id}>{country.Country}</option>
+                            <option key={country.Id} value={String(country.Id)}>{country.Country}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2232,7 +2232,7 @@ const MyProfile = () => {
                         <CFormSelect name="pState" value={addressFormData.pState} onChange={handleAddressChange} disabled={!isEditingAddress || !addressFormData.pCountry}>
                           <option value="">Select State</option>
                           {pStates.map(state => (
-                            <option key={state.StateId} value={state.StateId}>{state.StateName}</option>
+                            <option key={state.StateId} value={String(state.StateId)}>{state.StateName}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2241,7 +2241,7 @@ const MyProfile = () => {
                         <CFormSelect name="pDistrict" value={addressFormData.pDistrict} onChange={handleAddressChange} disabled={!isEditingAddress || !addressFormData.pState}>
                           <option value="">Select District</option>
                           {pDistricts.map(district => (
-                            <option key={district.DistrictId} value={district.DistrictId}>{district.DistrictName}</option>
+                            <option key={district.DistrictId} value={String(district.DistrictId)}>{district.DistrictName}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2250,7 +2250,7 @@ const MyProfile = () => {
                         <CFormSelect name="pArea" value={addressFormData.pArea} onChange={handleAddressChange} disabled={!isEditingAddress || !addressFormData.pDistrict}>
                           <option value="">Select Area</option>
                           {pAreas.map(area => (
-                            <option key={area.TehsilId} value={area.TehsilId}>{area.TehsilName}</option>
+                            <option key={area.TehsilId} value={String(area.TehsilId)}>{area.TehsilName}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2269,7 +2269,7 @@ const MyProfile = () => {
                         <CFormSelect name="cCountry" value={addressFormData.cCountry} onChange={handleAddressChange} disabled={!isEditingAddress}>
                           <option value="">Select Country</option>
                           {countries.map(country => (
-                            <option key={country.Id} value={country.Id}>{country.Country}</option>
+                            <option key={country.Id} value={String(country.Id)}>{country.Country}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2278,7 +2278,7 @@ const MyProfile = () => {
                         <CFormSelect name="cState" value={addressFormData.cState} onChange={handleAddressChange} disabled={!isEditingAddress || !addressFormData.cCountry}>
                           <option value="">Select State</option>
                           {cStates.map(state => (
-                            <option key={state.StateId} value={state.StateId}>{state.StateName}</option>
+                            <option key={state.StateId} value={String(state.StateId)}>{state.StateName}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2287,7 +2287,7 @@ const MyProfile = () => {
                         <CFormSelect name="cDistrict" value={addressFormData.cDistrict} onChange={handleAddressChange} disabled={!isEditingAddress || !addressFormData.cState}>
                           <option value="">Select District</option>
                           {cDistricts.map(district => (
-                            <option key={district.DistrictId} value={district.DistrictId}>{district.DistrictName}</option>
+                            <option key={district.DistrictId} value={String(district.DistrictId)}>{district.DistrictName}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2296,7 +2296,7 @@ const MyProfile = () => {
                         <CFormSelect name="cArea" value={addressFormData.cArea} onChange={handleAddressChange} disabled={!isEditingAddress || !addressFormData.cDistrict}>
                           <option value="">Select Area</option>
                           {cAreas.map(area => (
-                            <option key={area.TehsilId} value={area.TehsilId}>{area.TehsilName}</option>
+                            <option key={area.TehsilId} value={String(area.TehsilId)}>{area.TehsilName}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2315,7 +2315,7 @@ const MyProfile = () => {
                         <CFormSelect name="gCountry" value={addressFormData.gCountry} onChange={handleAddressChange} disabled={!isEditingAddress}>
                           <option value="">Select Country</option>
                           {countries.map(country => (
-                            <option key={country.Id} value={country.Id}>{country.Country}</option>
+                            <option key={country.Id} value={String(country.Id)}>{country.Country}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2324,7 +2324,7 @@ const MyProfile = () => {
                         <CFormSelect name="gState" value={addressFormData.gState} onChange={handleAddressChange} disabled={!isEditingAddress || !addressFormData.gCountry}>
                           <option value="">Select State</option>
                           {gStates.map(state => (
-                            <option key={state.StateId} value={state.StateId}>{state.StateName}</option>
+                            <option key={state.StateId} value={String(state.StateId)}>{state.StateName}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2333,7 +2333,7 @@ const MyProfile = () => {
                         <CFormSelect name="gDistrict" value={addressFormData.gDistrict} onChange={handleAddressChange} disabled={!isEditingAddress || !addressFormData.gState}>
                           <option value="">Select District</option>
                           {gDistricts.map(district => (
-                            <option key={district.DistrictId} value={district.DistrictId}>{district.DistrictName}</option>
+                            <option key={district.DistrictId} value={String(district.DistrictId)}>{district.DistrictName}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
@@ -2342,7 +2342,7 @@ const MyProfile = () => {
                         <CFormSelect name="gArea" value={addressFormData.gArea} onChange={handleAddressChange} disabled={!isEditingAddress || !addressFormData.gDistrict}>
                           <option value="">Select Area</option>
                           {gAreas.map(area => (
-                            <option key={area.TehsilId} value={area.TehsilId}>{area.TehsilName}</option>
+                            <option key={area.TehsilId} value={String(area.TehsilId)}>{area.TehsilName}</option>
                           ))}
                         </CFormSelect>
                       </CCol>
