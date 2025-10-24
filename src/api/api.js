@@ -415,6 +415,12 @@ export async function getIncomeRanges() {
   return data; // [{ IncomeId: 1, StartRange: 0, EndRange: 200000, RangeValue: "Rs 0 to 200000", ... }]
 }
 
+// 📅 Get Financial Years
+export async function getFinancialYears() {
+  const { data } = await api.get('/studentapi/financialyear/all');
+  return data; // [{ Id: 8, FinancialYear: "2004-05", Status: true, Archive: false }, ...]
+}
+
 // 🔢 Get SRN (Student Registration Number)
 export async function getSRN({ collegeId, courseTypeId, universityId, batchId }) {
   const { data } = await api.get('/studentapi/getsrn', {

@@ -19,6 +19,7 @@ import {
   insertTransportDetails, getTransportRoutes, getTransportStops, getCountries,
   getStatesByCountry, getDistrictsByState, getAreasByDistrict, insertSchoolDetails,
   getFeeCategories, getDesignations, getProfessions, getIncomeRanges,
+  getFinancialYears,
   insertProfession,
   insertDesignation,
   insertIncomeRange
@@ -68,6 +69,7 @@ const RegistrationForm = () => {
   const [batches, setBatches] = useState([])
   const [courses, setCourses] = useState([])
   const [sections, setSections] = useState([])
+  const [financialYears, setFinancialYears] = useState([])
   const [nationalities, setNationalities] = useState([])
   const [motherTongues, setMotherTongues] = useState([])
   const [categories, setCategories] = useState([])
@@ -173,7 +175,7 @@ const RegistrationForm = () => {
           setFormData(prev => ({ ...prev, referenceId: userId }))
         }
         
-        const [feeCatsData, orgsData, natsData, tonguesData, catsData, relsData, schoolsData, routesData, countriesData, desgsData, profsData, incomesData] = await Promise.all([
+        const [feeCatsData, orgsData, natsData, tonguesData, catsData, relsData, schoolsData, routesData, countriesData, desgsData, profsData, incomesData, finYearsData] = await Promise.all([
           getFeeCategories(),
           getOrganizations(),
           getNationalities(),
@@ -185,7 +187,8 @@ const RegistrationForm = () => {
           getCountries(),
           getDesignations(),
           getProfessions(),
-          getIncomeRanges()
+          getIncomeRanges(),
+          getFinancialYears()
         ])
         setFeeCategories(feeCatsData || [])
         setOrganizations(orgsData || [])
@@ -199,6 +202,7 @@ const RegistrationForm = () => {
         setDesignations(desgsData || [])
         setProfessions(profsData || [])
         setIncomeRanges(incomesData || [])
+        setFinancialYears(finYearsData || [])
       } catch (err) {
         console.error('Error loading master data:', err)
         setError('Failed to load master data')
@@ -1554,8 +1558,9 @@ const RegistrationForm = () => {
                       <CFormLabel>Financial Year</CFormLabel>
                       <CFormSelect name="financialYear" value={formData.financialYear} onChange={handleChange}>
                         <option value="">Select</option>
-                        <option>2024-25</option>
-                        <option>2025-26</option>
+                        {financialYears.map(fy => (
+                          <option key={fy.Id} value={String(fy.Id)}>{fy.FinancialYear}</option>
+                        ))}
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
