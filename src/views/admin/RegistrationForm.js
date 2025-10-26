@@ -1782,7 +1782,7 @@ const RegistrationForm = () => {
                     </CCol> */}
                     <CCol md={4}>
                       <CFormLabel>Adhar Card Number</CFormLabel>
-                      <CFormInput name="adharCardNumber" value={formData.adharCardNumber} onChange={handleChange} placeholder="Enter Adhar number" maxLength="12" />
+                      <CFormInput name="adharCardNumber" value={formData.adharCardNumber} onChange={handleChange} placeholder="Enter Adhar number" maxLength="12" required pattern="^[0-9]{12}$" inputMode="numeric" />
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel>Domicile</CFormLabel>
