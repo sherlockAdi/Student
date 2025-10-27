@@ -2,8 +2,8 @@ import axios from 'axios'
 
 const api = axios.create({
   // Leave baseURL blank to allow Vite proxy in development
-  // baseURL: 'http://localhost:62623/',
-  baseURL: 'http://61.246.33.108:8069/',
+  baseURL: 'http://localhost:62623/',
+  // baseURL: 'http://61.246.33.108:8069/',
   timeout: 10000, // 10 second timeout to prevent hanging requests
   headers: {
     'Content-Type': 'application/json',

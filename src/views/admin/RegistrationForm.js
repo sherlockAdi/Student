@@ -99,6 +99,8 @@ const RegistrationForm = () => {
     mobileNumber2: '',
     mobileNumber3: ''
   })
+  const [guardianMobileErr, setGuardianMobileErr] = useState('');
+
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -116,49 +118,49 @@ const RegistrationForm = () => {
     studentName: '', mobileNumber1: '', studentRegistrationNumber: '', studentUniversityNumber: '',
     mobileNumber2: '', mobileNumber3: '', admissionNo: '', studentId: '', referenceId: '',
     adminFatherName: '', adminMotherName: '',
-    
+
     // Student Details
     emailId: '', gender: '', dateOfBirth: '', nationality: '', birthplace: '', motherTongue: '',
     category: '', subCategory: '', minority: '', religion: '', bloodGroup: '', adharCardNumber: '',
     domicile: '', panNo: '',
-    
+
     // Parent and Guardian Details
     fatherName: '', fatherMobileAdmission: '', fatherContactNo: '', fatherEmailId: '', fatherAdharNo: '',
     fatherQualification: '', fatherProfession: '', fatherCompanyName: '', fatherOfficeAddress: '',
     fatherDesignation: '', familyIncome: '', motherName: '', motherContactNumber: '', motherMobileAdmission: '',
     motherEmailId: '', motherQualification: '', motherProfession: '', motherOfficeAddress: '', guardianName: '',
-    guardianMobileAdmission: '', guardianMobileNo: '', guardianEmailId: '', relationWithStudent: '', 
+    guardianMobileAdmission: '', guardianMobileNo: '', guardianEmailId: '', relationWithStudent: '',
     spouseName: '', spouseContactNo: '', spouseMobileAdmission: '', spouseEmailId: '', spouseQualification: '',
     spouseProfession: '', spouseOfficeAddress: '',
-    
+
     // Login Details
     studentUserId: '', studentPassword: '', parentLoginId: '', parentPassword: '',
-    
+
     // Address Details
     pCountry: '', pState: '', pDistrict: '', pArea: '', pPincode: '', pAddress: '',
     cCountry: '', cState: '', cDistrict: '', cArea: '', cPincode: '', cAddress: '',
     gCountry: '', gState: '', gDistrict: '', gArea: '', gPincode: '', gAddress: '',
-    
+
     // Last School
     schoolCollege: '', schoolPrincipalName: '', schoolMobileNo: '', schoolEmailId: '',
     bestSchoolTeacherName: '', bestSchoolTeacherMobile: '', bestSchoolTeacherEmail: '',
     bestCoachingTeacherName: '', bestCoachingTeacherMobile: '', bestCoachingTeacherEmail: '',
-    
+
     // Previous School Details
     prevSchoolCollegeName: '', educationBoard: '', mediumOfInstruction: '', tcNumber: '',
     rollNumber: '', passingYear: '', lastClassPassed: '', totalMarks: '', obtainedMarks: '',
     percentageCgpa: '', reasonForSchoolChange: '',
-    
+
     // School List / School Master
     schoolMasterName: '', schoolCountry: '', schoolState: '', schoolDistrict: '', schoolArea: '',
     schoolPincode: '', schoolContactNo: '', schoolEmailId: '', schoolWebsite: '',
-    
+
     // Sibling & Best Friend
     siblingId: '', siblingRelationship: '', friendId: '', friendName: '', friendMobile: '',
-    
+
     // Medical Records
     height: '', weight: '', medicalBloodGroup: '',
-    
+
     // Transport
     transportYesNo: '', routeId: '', stopId: '',
   })
@@ -170,11 +172,11 @@ const RegistrationForm = () => {
         // Get logged-in user ID and set it to referenceId
         const loggedInUser = JSON.parse(localStorage.getItem('user') || '{}')
         const userId = loggedInUser.userId || loggedInUser.id || 0
-        
+
         if (userId) {
           setFormData(prev => ({ ...prev, referenceId: userId }))
         }
-        
+
         const [feeCatsData, orgsData, natsData, tonguesData, catsData, relsData, schoolsData, routesData, countriesData, desgsData, profsData, incomesData, finYearsData] = await Promise.all([
           getFeeCategories(),
           getOrganizations(),
@@ -290,11 +292,11 @@ const RegistrationForm = () => {
 
   // Load sub-categories when category changes
   useEffect(() => {
-    
-      getSubCategories()
-        .then(data => setSubCategories(data || []))
-        .catch(err => console.error('Error loading sub-categories:', err))
-    
+
+    getSubCategories()
+      .then(data => setSubCategories(data || []))
+      .catch(err => console.error('Error loading sub-categories:', err))
+
   }, [])
 
   // Auto-generate SRN when all required fields are filled
@@ -308,8 +310,8 @@ const RegistrationForm = () => {
       })
         .then(data => {
           if (data?.srn) {
-            setFormData(prev => ({ 
-              ...prev, 
+            setFormData(prev => ({
+              ...prev,
               studentRegistrationNumber: data.srn,
               studentPassword: data.srn // Set password as SRN
             }))
@@ -435,32 +437,32 @@ const RegistrationForm = () => {
   // Validate mobile number
   const validateMobileNumber = (value) => {
     if (!value) return '' // Empty is okay for optional fields
-    
+
     // Remove any spaces or special characters
     const cleanValue = value.replace(/\s|-/g, '')
-    
+
     // Check if it's numeric
     if (!/^\d+$/.test(cleanValue)) {
       return 'Mobile number must contain only digits'
     }
-    
+
     // Check length
     if (cleanValue.length !== 10) {
       return 'Mobile number must be exactly 10 digits'
     }
-    
+
     // Check if it starts with 6-9
     if (!/^[6-9]/.test(cleanValue)) {
       return 'Mobile number must start with 6, 7, 8, or 9'
     }
-    
+
     return '' // Valid
   }
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    
+
     // Validate mobile numbers
     if (name === 'mobileNumber1' || name === 'mobileNumber2' || name === 'mobileNumber3') {
       const error = validateMobileNumber(value)
@@ -472,7 +474,7 @@ const RegistrationForm = () => {
   const handleSameAsPermanent = (e) => {
     const checked = e.target.checked
     setSameAsPermanent(checked)
-    
+
     if (checked) {
       setFormData(prev => ({
         ...prev,
@@ -490,7 +492,7 @@ const RegistrationForm = () => {
   const handleGuardianSameAsPermanent = (e) => {
     const checked = e.target.checked
     setGuardianSameAsPermanent(checked)
-    
+
     if (checked) {
       setFormData(prev => ({
         ...prev,
@@ -506,54 +508,54 @@ const RegistrationForm = () => {
 
   const handleSubmit = async (e, action = 'next') => {
     e.preventDefault()
-    
+
     // Validate all mobile numbers before submitting
     const mobile1Error = validateMobileNumber(formData.mobileNumber1)
     const mobile2Error = validateMobileNumber(formData.mobileNumber2)
     const mobile3Error = validateMobileNumber(formData.mobileNumber3)
-    
+
     // Check if mobileNumber1 is required and valid
     if (!formData.mobileNumber1) {
       setError('Mobile Number 1 is required')
       return
     }
-    
+
     if (mobile1Error) {
       setError(`Mobile Number 1: ${mobile1Error}`)
       setMobileErrors(prev => ({ ...prev, mobileNumber1: mobile1Error }))
       return
     }
-    
+
     if (mobile2Error) {
       setError(`Mobile Number 2: ${mobile2Error}`)
       setMobileErrors(prev => ({ ...prev, mobileNumber2: mobile2Error }))
       return
     }
-    
+
     if (mobile3Error) {
       setError(`Mobile Number 3: ${mobile3Error}`)
       setMobileErrors(prev => ({ ...prev, mobileNumber3: mobile3Error }))
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       // Split student name into first, middle, last
       const nameParts = formData.studentName.trim().split(' ')
       const firstName = nameParts[0] || ''
       const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : ''
       const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : ''
-      
+
       // Get logged-in user ID from localStorage
       const loggedInUser = JSON.parse(localStorage.getItem('user') || '{}')
       const userId = loggedInUser.userId || loggedInUser.id || 0
-      
+
       // Get client IP address (will be handled by backend)
       const ipAddress = ''
-      
+
       // Prepare payload for API
       const payload = {
         DateOfAdmission: formData.dateOfAdmission,
@@ -573,28 +575,28 @@ const RegistrationForm = () => {
         MobileNo1: formData.mobileNumber1,
         MobileNo2: formData.mobileNumber2 || '',
         MobileNo3: formData.mobileNumber3 || '',
-        AdmissionNo: parseInt(formData.admissionNo) || 0,
-        StudentId: formData.studentId || '',
+        AdmissionNo: parseInt(formData.studentRegistrationNumber) || 0,
+        StudentId: formData.studentRegistrationNumber || '',
         IPAddress: ipAddress,
         ReferenceId: userId,
         FatherName: formData.adminFatherName || '',
         MotherName: formData.adminMotherName || ''
       }
-      
+
       console.log('Submitting Administration Data:', payload)
-      
+
       // Call API
       const response = await insertStudentAdministration(payload)
-      
+
       console.log('API Response:', response)
-      
+
       // Display success message with returned data
       if (response) {
         // Store StudentID for parent details submission
         if (response.StudentID) {
           setStudentId(response.StudentID)
         }
-        
+
         const successMsg = `
           ✅ ${response.Message || 'Student administration details submitted successfully!'}
           
@@ -607,12 +609,12 @@ const RegistrationForm = () => {
           ${action === 'submit' ? '🔄 Form will be reset for new entry.' : '➡️ Moving to next tab...'}
         `
         setSuccess(successMsg)
-        
+
         // Update form with returned data if available
         if (response.CollegeEmail) {
           setFormData(prev => ({ ...prev, emailId: response.CollegeEmail }))
         }
-        
+
         // Handle action based on button clicked
         if (action === 'submit') {
           // Reset form after 2 seconds
@@ -628,7 +630,7 @@ const RegistrationForm = () => {
           }, 2000)
         }
       }
-      
+
     } catch (err) {
       console.error('Error submitting registration:', err)
       setError(err.response?.data?.message || err.message || 'Failed to submit registration. Please try again.')
@@ -642,11 +644,11 @@ const RegistrationForm = () => {
       setError('Please submit Administration details first.')
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       const payload = {
         StudentId: studentId,
@@ -665,7 +667,7 @@ const RegistrationForm = () => {
         Domicile: formData.domicile || '',
         PanNo: formData.panNo || ''
       }
-      
+
       const response = await updateStudentDetails(payload)
       setSuccess(`✅ ${response.message || 'Student details updated successfully!'}`)
       setTimeout(() => { setActiveTab('parentGuardian'); setSuccess('') }, 2000)
@@ -678,16 +680,16 @@ const RegistrationForm = () => {
 
   const handleParentSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!studentId) {
       setError('Please submit Administration details first to get Student ID.')
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       const payload = {
         StudentId: studentId,
@@ -722,7 +724,7 @@ const RegistrationForm = () => {
         SpouseProfession: formData.spouseProfession || '',
         SpouseOfficeAddress: formData.spouseOfficeAddress || ''
       }
-      
+
       const response = await insertParentDetails(payload)
       setSuccess(`✅ ${response.message || 'Parent details saved successfully!'}`)
       setTimeout(() => { setActiveTab('address'); setSuccess('') }, 2000)
@@ -738,11 +740,11 @@ const RegistrationForm = () => {
       setError('Please submit Administration details first.')
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       const payload = {
         StudentId: studentId,
@@ -765,7 +767,7 @@ const RegistrationForm = () => {
         G_Pincode: formData.gPincode || '',
         G_Address: formData.gAddress || ''
       }
-      
+
       const response = await submitAddressDetails(payload)
       setSuccess(`✅ ${response.message || 'Address saved successfully!'}`)
       setTimeout(() => { setActiveTab('lastSchool'); setSuccess('') }, 2000)
@@ -781,11 +783,11 @@ const RegistrationForm = () => {
       setError('Please submit Administration details first.')
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       const payload = {
         StudentId: studentId,
@@ -801,7 +803,7 @@ const RegistrationForm = () => {
         BestCoachingTeacherMobile: formData.bestCoachingTeacherMobile || '',
         BestCoachingTeacherEmail: formData.bestCoachingTeacherEmail || ''
       }
-      
+
       const response = await insertLastSchoolDetails(payload)
       setSuccess(`✅ ${response.message || 'Last school details inserted successfully!'}`)
       setTimeout(() => { setActiveTab('previousSchool'); setSuccess('') }, 2000)
@@ -817,7 +819,7 @@ const RegistrationForm = () => {
       setError('Please select a school/college')
       return
     }
-    
+
     const newRecord = {
       schoolId: formData.prevSchoolCollegeName,
       schoolName: schools.find(s => s.SchoolID == formData.prevSchoolCollegeName)?.SchoolCollegeName || formData.prevSchoolCollegeName,
@@ -832,10 +834,10 @@ const RegistrationForm = () => {
       percentageCgpa: formData.percentageCgpa || '',
       reasonForSchoolChange: formData.reasonForSchoolChange || ''
     }
-    
+
     setPreviousSchoolsList(prev => [...prev, newRecord])
     setSuccess('✅ Previous school record added to list!')
-    
+
     // Clear previous school fields
     setFormData(prev => ({
       ...prev,
@@ -851,7 +853,7 @@ const RegistrationForm = () => {
       percentageCgpa: '',
       reasonForSchoolChange: ''
     }))
-    
+
     setTimeout(() => setSuccess(''), 2000)
   }
 
@@ -866,16 +868,16 @@ const RegistrationForm = () => {
       setError('Please submit Administration details first.')
       return
     }
-    
+
     if (previousSchoolsList.length === 0) {
       setError('Please add at least one previous school record to the list')
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       // Submit each previous school record
       for (const school of previousSchoolsList) {
@@ -893,10 +895,10 @@ const RegistrationForm = () => {
           PercentageOrCGPA: school.percentageCgpa || '',
           ReasonForChange: school.reasonForSchoolChange || ''
         }
-        
+
         await insertPreviousSchoolDetails(payload)
       }
-      
+
       setSuccess(`✅ All ${previousSchoolsList.length} previous school record(s) saved successfully!`)
       setPreviousSchoolsList([]) // Clear the list after successful submit
       setTimeout(() => { setActiveTab('sibling'); setSuccess('') }, 2000)
@@ -912,27 +914,27 @@ const RegistrationForm = () => {
       setError('Please enter Sibling Student ID')
       return
     }
-    
+
     if (!formData.siblingRelationship) {
       setError('Please select Relationship')
       return
     }
-    
+
     const newSibling = {
       siblingStudentId: formData.siblingId,
       relationship: formData.siblingRelationship
     }
-    
+
     setSiblingsList(prev => [...prev, newSibling])
     setSuccess('✅ Sibling added to list!')
-    
+
     // Clear sibling fields
     setFormData(prev => ({
       ...prev,
       siblingId: '',
       siblingRelationship: ''
     }))
-    
+
     setTimeout(() => setSuccess(''), 2000)
   }
 
@@ -947,16 +949,16 @@ const RegistrationForm = () => {
       setError('Please submit Administration details first.')
       return
     }
-    
+
     if (siblingsList.length === 0) {
       setError('Please add at least one sibling to the list')
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       // Submit each sibling record
       for (const sibling of siblingsList) {
@@ -965,10 +967,10 @@ const RegistrationForm = () => {
           SiblingStudentId: parseInt(sibling.siblingStudentId) || 0,
           Relationship: sibling.relationship
         }
-        
+
         await addSibling(payload)
       }
-      
+
       setSuccess(`✅ All ${siblingsList.length} sibling(s) saved successfully!`)
       setSiblingsList([]) // Clear the list after successful submit
       setTimeout(() => { setActiveTab('bestFriend'); setSuccess('') }, 2000)
@@ -984,26 +986,26 @@ const RegistrationForm = () => {
       setError('Please enter Friend ID')
       return
     }
-    
+
     if (!formData.friendName) {
       setError('Please enter Friend Name')
       return
     }
-    
+
     if (!formData.friendMobile) {
       setError('Please enter Friend Mobile')
       return
     }
-    
+
     const newBestFriend = {
       friendId: formData.friendId,
       friendName: formData.friendName,
       friendMobile: formData.friendMobile
     }
-    
+
     setBestFriendsList(prev => [...prev, newBestFriend])
     setSuccess('✅ Best friend added to list!')
-    
+
     // Clear best friend fields
     setFormData(prev => ({
       ...prev,
@@ -1011,7 +1013,7 @@ const RegistrationForm = () => {
       friendName: '',
       friendMobile: ''
     }))
-    
+
     setTimeout(() => setSuccess(''), 2000)
   }
 
@@ -1026,16 +1028,16 @@ const RegistrationForm = () => {
       setError('Please submit Administration details first.')
       return
     }
-    
+
     if (bestFriendsList.length === 0) {
       setError('Please add at least one best friend to the list')
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       // Submit each best friend record
       for (const friend of bestFriendsList) {
@@ -1045,10 +1047,10 @@ const RegistrationForm = () => {
           Best_F_Name1: friend.friendName || '',
           Best_F_Mobile1: friend.friendMobile || ''
         }
-        
+
         await addBestFriend(payload)
       }
-      
+
       setSuccess(`✅ All ${bestFriendsList.length} best friend(s) saved successfully!`)
       setBestFriendsList([]) // Clear the list after successful submit
       setTimeout(() => { setActiveTab('medical'); setSuccess('') }, 2000)
@@ -1064,11 +1066,11 @@ const RegistrationForm = () => {
       setError('Please submit Administration details first.')
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       const payload = {
         StudentId: studentId,
@@ -1076,7 +1078,7 @@ const RegistrationForm = () => {
         Weight: formData.weight || '',
         BloodGroup: formData.medicalBloodGroup || ''
       }
-      
+
       const response = await insertMedicalRecord(payload)
       setSuccess(`✅ ${response.message || 'Medical record inserted successfully!'}`)
       setTimeout(() => { setActiveTab('transport'); setSuccess('') }, 2000)
@@ -1092,11 +1094,11 @@ const RegistrationForm = () => {
       setError('Please submit Administration details first.')
       return
     }
-    
+
     setLoading(true)
     setError('')
     setSuccess('')
-    
+
     try {
       const payload = {
         StudentId: studentId,
@@ -1104,7 +1106,7 @@ const RegistrationForm = () => {
         RouteId: parseInt(formData.routeId) || 0,
         StopId: parseInt(formData.stopId) || 0
       }
-      
+
       const response = await insertTransportDetails(payload)
       setSuccess(`✅ ${response.message || 'Transport details saved successfully!'}`)
       setTimeout(() => setSuccess(''), 5000)
@@ -1309,7 +1311,7 @@ const RegistrationForm = () => {
         fatherCompanyName: '', fatherOfficeAddress: '', fatherDesignation: '', familyIncome: '', motherName: '',
         motherContactNumber: '', motherMobileAdmission: '', motherEmailId: '', motherQualification: '',
         motherProfession: '', motherOfficeAddress: '', guardianName: '', guardianMobileAdmission: '',
-        guardianMobileNo: '', guardianEmailId: '', relationWithStudent: '', 
+        guardianMobileNo: '', guardianEmailId: '', relationWithStudent: '',
         spouseName: '', spouseContactNo: '', spouseMobileAdmission: '', spouseEmailId: '', spouseQualification: '',
         spouseProfession: '', spouseOfficeAddress: '', studentUserId: '',
         studentPassword: '', parentLoginId: '', parentPassword: '', pCountry: '', pState: '', pDistrict: '',
@@ -1469,21 +1471,9 @@ const RegistrationForm = () => {
                 {/* Administration Details Tab */}
                 <CTabPane visible={activeTab === 'administration'}>
                   <CRow className="g-3">
+
                     <CCol md={4}>
-                      <CFormLabel>Date of Admission *</CFormLabel>
-                      <CFormInput type="date" name="dateOfAdmission" value={formData.dateOfAdmission} onChange={handleChange} required />
-                    </CCol>
-                    <CCol md={4}>
-                      <CFormLabel>Fee Category *</CFormLabel>
-                      <CFormSelect name="feeCategory" value={formData.feeCategory} onChange={handleChange} required>
-                        <option value="">Select Fee Category</option>
-                        {feeCategories.map(category => (
-                          <option key={category.Id} value={category.Id}>{category.FeeCategoryName}</option>
-                        ))}
-                      </CFormSelect>
-                    </CCol>
-                    <CCol md={4}>
-                      <CFormLabel>Organisation Name *</CFormLabel>
+                      <CFormLabel>Organisation Name <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="organizationName" value={formData.organizationName} onChange={handleChange} required>
                         <option value="">Select Organisation</option>
                         {organizations.map(org => (
@@ -1492,7 +1482,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>College Name *</CFormLabel>
+                      <CFormLabel>College Name <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="collegeName" value={formData.collegeName} onChange={handleChange} required disabled={!formData.organizationName}>
                         <option value="">Select College</option>
                         {colleges.map(college => (
@@ -1501,7 +1491,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Branch *</CFormLabel>
+                      <CFormLabel>Branch <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="branch" value={formData.branch} onChange={handleChange} required disabled={!formData.collegeName}>
                         <option value="">Select Branch</option>
                         {branches.map(branch => (
@@ -1510,7 +1500,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Course Type *</CFormLabel>
+                      <CFormLabel>Course Type <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="courseType" value={formData.courseType} onChange={handleChange} required disabled={!formData.collegeName}>
                         <option value="">Select Course Type</option>
                         {courseTypes.map(ct => (
@@ -1519,7 +1509,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>University *</CFormLabel>
+                      <CFormLabel>University <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="university" value={formData.university} onChange={handleChange} required disabled={!formData.courseType}>
                         <option value="">Select University</option>
                         {universities.map(uni => (
@@ -1528,7 +1518,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Batch *</CFormLabel>
+                      <CFormLabel>Batch <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="batchId" value={formData.batchId} onChange={handleChange} required disabled={!formData.university}>
                         <option value="">Select Batch</option>
                         {batches.map(batch => (
@@ -1537,7 +1527,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Course *</CFormLabel>
+                      <CFormLabel>Course <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="course" value={formData.course} onChange={handleChange} required disabled={!formData.batchId}>
                         <option value="">Select Course</option>
                         {courses.map(course => (
@@ -1564,21 +1554,21 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Student Name *</CFormLabel>
+                      <CFormLabel>Student Name <span className="text-danger">*</span></CFormLabel>
                       <CFormInput name="studentName" value={formData.studentName} onChange={handleChange} placeholder="Enter full name" required />
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Student Registration Number (SRN) *</CFormLabel>
+                      <CFormLabel>Student Registration Number (SRN) <span className="text-danger">*</span></CFormLabel>
                       <CFormInput name="studentRegistrationNumber" value={formData.studentRegistrationNumber} readOnly className="bg-light" placeholder="Auto-generated" />
                       <small className="text-muted">Auto-generated based on selections</small>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Mobile Number 1 *</CFormLabel>
-                      <CFormInput 
-                        name="mobileNumber1" 
-                        value={formData.mobileNumber1} 
-                        onChange={handleChange} 
-                        placeholder="Enter 10-digit mobile" 
+                      <CFormLabel> Mobile Number 1 <span className="text-danger">*</span> </CFormLabel>
+                      <CFormInput
+                        name="mobileNumber1"
+                        value={formData.mobileNumber1}
+                        onChange={handleChange}
+                        placeholder="Enter 10-digit mobile"
                         required
                         className={mobileErrors.mobileNumber1 ? 'is-invalid' : ''}
                       />
@@ -1591,10 +1581,10 @@ const RegistrationForm = () => {
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel>Mobile Number 2</CFormLabel>
-                      <CFormInput 
-                        name="mobileNumber2" 
-                        value={formData.mobileNumber2} 
-                        onChange={handleChange} 
+                      <CFormInput
+                        name="mobileNumber2"
+                        value={formData.mobileNumber2}
+                        onChange={handleChange}
                         placeholder="Enter 10-digit mobile"
                         className={mobileErrors.mobileNumber2 ? 'is-invalid' : ''}
                       />
@@ -1606,10 +1596,10 @@ const RegistrationForm = () => {
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel>Mobile Number 3</CFormLabel>
-                      <CFormInput 
-                        name="mobileNumber3" 
-                        value={formData.mobileNumber3} 
-                        onChange={handleChange} 
+                      <CFormInput
+                        name="mobileNumber3"
+                        value={formData.mobileNumber3}
+                        onChange={handleChange}
                         placeholder="Enter 10-digit mobile"
                         className={mobileErrors.mobileNumber3 ? 'is-invalid' : ''}
                       />
@@ -1644,18 +1634,31 @@ const RegistrationForm = () => {
                       <CFormLabel>Mother Name</CFormLabel>
                       <CFormInput name="adminMotherName" value={formData.adminMotherName} onChange={handleChange} placeholder="Enter mother name" />
                     </CCol>
-                    <CCol md={6}>
-                      <CFormLabel>College Email *</CFormLabel>
+                    <CCol md={4}>
+                      <CFormLabel>College Email <span className="text-danger">*</span></CFormLabel>
                       <CFormInput type="email" name="emailId" value={formData.emailId} readOnly className="bg-light" placeholder="Auto-generated" />
                       <small className="text-muted">Format: firstname.srn@atm.edu.in</small>
                     </CCol>
-                    
+                    <CCol md={4}>
+                      <CFormLabel>Date of Admission <span className="text-danger">*</span></CFormLabel>
+                      <CFormInput type="date" name="dateOfAdmission" value={formData.dateOfAdmission} onChange={handleChange} required />
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Fee Category <span className="text-danger">*</span></CFormLabel>
+                      <CFormSelect name="feeCategory" value={formData.feeCategory} onChange={handleChange} required>
+                        <option value="">Select Fee Category</option>
+                        {feeCategories.map(category => (
+                          <option key={category.Id} value={category.Id}>{category.FeeCategoryName}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+
                     <CCol xs={12} className="mt-4">
                       <div className="d-flex gap-2">
-                        <CButton 
-                          type="button" 
-                          color="primary" 
-                          onClick={(e) => handleSubmit(e, 'submit')} 
+                        <CButton
+                          type="button"
+                          color="primary"
+                          onClick={(e) => handleSubmit(e, 'submit')}
                           disabled={loading}
                         >
                           {loading ? (
@@ -1666,14 +1669,14 @@ const RegistrationForm = () => {
                           ) : (
                             <>
                               <CIcon icon={cilSave} className="me-1" />
-                              Submit 
+                              Submit
                             </>
                           )}
                         </CButton>
-                        <CButton 
-                          type="button" 
-                          color="success" 
-                          onClick={(e) => handleSubmit(e, 'next')} 
+                        <CButton
+                          type="button"
+                          color="success"
+                          onClick={(e) => handleSubmit(e, 'next')}
                           disabled={loading}
                         >
                           {loading ? (
@@ -1697,7 +1700,7 @@ const RegistrationForm = () => {
                 <CTabPane visible={activeTab === 'studentDetails'}>
                   <CRow className="g-3">
                     <CCol md={4}>
-                      <CFormLabel>Gender *</CFormLabel>
+                      <CFormLabel>Gender <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="gender" value={formData.gender} onChange={handleChange} required>
                         <option value="">Select</option>
                         <option>Male</option>
@@ -1706,11 +1709,11 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Date of Birth *</CFormLabel>
+                      <CFormLabel>Date of Birth <span className="text-danger">*</span></CFormLabel>
                       <CFormInput type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required />
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Nationality *</CFormLabel>
+                      <CFormLabel>Nationality <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="nationality" value={formData.nationality} onChange={handleChange} required>
                         <option value="">Select Nationality</option>
                         {nationalities.map(nat => (
@@ -1732,7 +1735,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Category *</CFormLabel>
+                      <CFormLabel>Category <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="category" value={formData.category} onChange={handleChange} required>
                         <option value="">Select Category</option>
                         {categories.map(cat => (
@@ -1758,7 +1761,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Religion *</CFormLabel>
+                      <CFormLabel>Religion <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="religion" value={formData.religion} onChange={handleChange} required>
                         <option value="">Select Religion</option>
                         {religions.map(rel => (
@@ -1792,7 +1795,7 @@ const RegistrationForm = () => {
                       <CFormLabel>PAN No.</CFormLabel>
                       <CFormInput name="panNo" value={formData.panNo} onChange={handleChange} placeholder="Enter PAN number" maxLength="10" />
                     </CCol>
-                    
+
                     <CCol xs={12} className="mt-4">
                       <CButton type="button" color="success" onClick={handleStudentDetailsSubmit} disabled={loading || !studentId}>
                         {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Student Details</>}
@@ -1823,13 +1826,14 @@ const RegistrationForm = () => {
                           handleChange(e)
                         }
                       }}>
+                        <option value="add_new" style={{ fontWeight: 'bold', color: '#0d6efd' }}>
+                          ➕ Add New Profession
+                        </option>
                         <option value="">Select Profession</option>
                         {professions.map(prof => (
                           <option key={prof.Id} value={String(prof.Id)}>{prof.ProfessionName || 'Unknown'}</option>
                         ))}
-                        <option value="add_new" style={{fontWeight: 'bold', color: '#0d6efd'}}>
-                          ➕ Add New Profession
-                        </option>
+
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}><CFormLabel>Father Company Name</CFormLabel><CFormInput name="fatherCompanyName" value={formData.fatherCompanyName} onChange={handleChange} placeholder="Enter company" /></CCol>
@@ -1846,12 +1850,13 @@ const RegistrationForm = () => {
                         }
                       }}>
                         <option value="">Select Designation</option>
+                        <option value="add_new" style={{ fontWeight: 'bold', color: '#0d6efd' }}>
+                          ➕ Add New Designation
+                        </option>
                         {designations.map(desg => (
                           <option key={desg.Id} value={String(desg.Id)}>{desg.Desgname || 'Unknown'}</option>
                         ))}
-                        <option value="add_new" style={{fontWeight: 'bold', color: '#0d6efd'}}>
-                          ➕ Add New Designation
-                        </option>
+
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}>
@@ -1869,12 +1874,12 @@ const RegistrationForm = () => {
                         {incomeRanges.map(income => (
                           <option key={income.IncomeId} value={String(income.IncomeId)}>{income.RangeValue || 'Unknown'}</option>
                         ))}
-                        <option value="add_new" style={{fontWeight: 'bold', color: '#0d6efd'}}>
+                        <option value="add_new" style={{ fontWeight: 'bold', color: '#0d6efd' }}>
                           ➕ Add New Income Range
                         </option>
                       </CFormSelect>
                     </CCol>
-                    
+
                     <CCol xs={12}><h6 className="text-primary mt-3">Mother Details</h6></CCol>
                     <CCol md={4}><CFormLabel>Mother Name</CFormLabel><CFormInput name="motherName" value={formData.motherName} onChange={handleChange} placeholder="Enter mother name" /></CCol>
                     <CCol md={4}><CFormLabel>Mother Contact Number</CFormLabel><CFormInput name="motherContactNumber" value={formData.motherContactNumber} onChange={handleChange} placeholder="Enter contact" /></CCol>
@@ -1885,20 +1890,42 @@ const RegistrationForm = () => {
                       <CFormLabel>Mother Profession</CFormLabel>
                       <CFormSelect name="motherProfession" value={formData.motherProfession} onChange={handleChange}>
                         <option value="">Select Profession</option>
+                        <option value="add_new" style={{ fontWeight: 'bold', color: '#0d6efd' }}>
+                          ➕ Add New Profession
+                        </option>
                         {professions.map(prof => (
                           <option key={prof.Id} value={String(prof.Id)}>{prof.ProfessionName || 'Unknown'}</option>
                         ))}
                       </CFormSelect>
                     </CCol>
                     <CCol md={4}><CFormLabel>Mother Office Address</CFormLabel><CFormInput name="motherOfficeAddress" value={formData.motherOfficeAddress} onChange={handleChange} placeholder="Enter address" /></CCol>
-                    
+
                     <CCol xs={12}><h6 className="text-primary mt-3">Guardian Details</h6></CCol>
                     <CCol md={4}><CFormLabel>Guardian Name</CFormLabel><CFormInput name="guardianName" value={formData.guardianName} onChange={handleChange} placeholder="Enter guardian name" /></CCol>
                     <CCol md={4}><CFormLabel>Guardian Mobile (Admission)</CFormLabel><CFormInput name="guardianMobileAdmission" value={formData.guardianMobileAdmission} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={4}><CFormLabel>Guardian Mobile No</CFormLabel><CFormInput name="guardianMobileNo" value={formData.guardianMobileNo} onChange={handleChange} placeholder="Enter mobile" /></CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Guardian Mobile No</CFormLabel>
+
+                      <CFormInput
+                        name="guardianMobileNo"
+                        value={formData.guardianMobileNo}
+                        onChange={handleChange}
+                        placeholder="Enter mobile"
+                        onInput={(e) => {
+                          const msg = validateMobileNumber(e.target.value);
+                          setGuardianMobileErr(msg);
+                        }}
+                        invalid={!!guardianMobileErr}
+                      />
+
+                      {guardianMobileErr && (
+                        <div className="text-danger small">{guardianMobileErr}</div>
+                      )}
+                    </CCol>
+
                     <CCol md={4}><CFormLabel>Guardian Email ID</CFormLabel><CFormInput type="email" name="guardianEmailId" value={formData.guardianEmailId} onChange={handleChange} placeholder="Enter email" /></CCol>
                     <CCol md={4}><CFormLabel>Relation with Student</CFormLabel><CFormInput name="relationWithStudent" value={formData.relationWithStudent} onChange={handleChange} placeholder="Enter relation" /></CCol>
-                    
+
                     <CCol xs={12}><h6 className="text-primary mt-3">Spouse Details</h6></CCol>
                     <CCol md={4}><CFormLabel>Spouse Name</CFormLabel><CFormInput name="spouseName" value={formData.spouseName} onChange={handleChange} placeholder="Enter spouse name" /></CCol>
                     <CCol md={4}><CFormLabel>Spouse Contact No</CFormLabel><CFormInput name="spouseContactNo" value={formData.spouseContactNo} onChange={handleChange} placeholder="Enter contact" /></CCol>
@@ -1907,12 +1934,12 @@ const RegistrationForm = () => {
                     <CCol md={4}><CFormLabel>Spouse Qualification</CFormLabel><CFormInput name="spouseQualification" value={formData.spouseQualification} onChange={handleChange} placeholder="Enter qualification" /></CCol>
                     <CCol md={4}><CFormLabel>Spouse Profession</CFormLabel><CFormInput name="spouseProfession" value={formData.spouseProfession} onChange={handleChange} placeholder="Enter profession" /></CCol>
                     <CCol md={4}><CFormLabel>Spouse Office Address</CFormLabel><CFormInput name="spouseOfficeAddress" value={formData.spouseOfficeAddress} onChange={handleChange} placeholder="Enter office address" /></CCol>
-                    
+
                     <CCol xs={12} className="mt-4">
-                      <CButton 
-                        type="button" 
-                        color="success" 
-                        onClick={handleParentSubmit} 
+                      <CButton
+                        type="button"
+                        color="success"
+                        onClick={handleParentSubmit}
                         disabled={loading || !studentId}
                       >
                         {loading ? (
@@ -1941,7 +1968,7 @@ const RegistrationForm = () => {
                   <CRow className="g-3">
                     <CCol xs={12}><h6 className="text-primary">Permanent Address</h6></CCol>
                     <CCol md={3}>
-                      <CFormLabel>Country *</CFormLabel>
+                      <CFormLabel>Country <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="pCountry" value={formData.pCountry} onChange={handleChange} required>
                         <option value="">Select Country</option>
                         {countries.map(country => (
@@ -1950,7 +1977,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={3}>
-                      <CFormLabel>State *</CFormLabel>
+                      <CFormLabel>State <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="pState" value={formData.pState} onChange={handleChange} disabled={!formData.pCountry} required>
                         <option value="">Select State</option>
                         {pStates.map(state => (
@@ -1959,7 +1986,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={3}>
-                      <CFormLabel>District *</CFormLabel>
+                      <CFormLabel>District <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="pDistrict" value={formData.pDistrict} onChange={handleChange} disabled={!formData.pState} required>
                         <option value="">Select District</option>
                         {pDistricts.map(district => (
@@ -1978,20 +2005,20 @@ const RegistrationForm = () => {
                     </CCol>
                     <CCol md={3}><CFormLabel>Pincode</CFormLabel><CFormInput name="pPincode" value={formData.pPincode} onChange={handleChange} placeholder="Enter pincode" /></CCol>
                     <CCol md={9}><CFormLabel>Address</CFormLabel><CFormTextarea name="pAddress" value={formData.pAddress} onChange={handleChange} rows={2} placeholder="Enter complete address" /></CCol>
-                    
+
                     <CCol xs={12} className="mt-3">
                       <div className="d-flex justify-content-between align-items-center">
                         <h6 className="text-primary mb-0">Correspondence Address</h6>
-                        <CFormCheck 
+                        <CFormCheck
                           id="sameAsPermanent"
-                          label="Same as Permanent Address" 
+                          label="Same as Permanent Address"
                           checked={sameAsPermanent}
                           onChange={handleSameAsPermanent}
                         />
                       </div>
                     </CCol>
                     <CCol md={3}>
-                      <CFormLabel>Country *</CFormLabel>
+                      <CFormLabel>Country <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="cCountry" value={formData.cCountry} onChange={handleChange} disabled={sameAsPermanent} required>
                         <option value="">Select Country</option>
                         {countries.map(country => (
@@ -2000,7 +2027,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={3}>
-                      <CFormLabel>State *</CFormLabel>
+                      <CFormLabel>State <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="cState" value={formData.cState} onChange={handleChange} disabled={sameAsPermanent || !formData.cCountry} required>
                         <option value="">Select State</option>
                         {cStates.map(state => (
@@ -2009,7 +2036,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={3}>
-                      <CFormLabel>District *</CFormLabel>
+                      <CFormLabel>District <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="cDistrict" value={formData.cDistrict} onChange={handleChange} disabled={sameAsPermanent || !formData.cState} required>
                         <option value="">Select District</option>
                         {cDistricts.map(district => (
@@ -2028,20 +2055,20 @@ const RegistrationForm = () => {
                     </CCol>
                     <CCol md={3}><CFormLabel>Pincode</CFormLabel><CFormInput name="cPincode" value={formData.cPincode} onChange={handleChange} disabled={sameAsPermanent} placeholder="Enter pincode" /></CCol>
                     <CCol md={9}><CFormLabel>Address</CFormLabel><CFormTextarea name="cAddress" value={formData.cAddress} onChange={handleChange} disabled={sameAsPermanent} rows={2} placeholder="Enter complete address" /></CCol>
-                    
+
                     <CCol xs={12} className="mt-3">
                       <div className="d-flex justify-content-between align-items-center">
                         <h6 className="text-primary mb-0">Guardian Address</h6>
-                        <CFormCheck 
+                        <CFormCheck
                           id="guardianSameAsPermanent"
-                          label="Same as Permanent Address" 
+                          label="Same as Permanent Address"
                           checked={guardianSameAsPermanent}
                           onChange={handleGuardianSameAsPermanent}
                         />
                       </div>
                     </CCol>
                     <CCol md={3}>
-                      <CFormLabel>Country *</CFormLabel>
+                      <CFormLabel>Country <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="gCountry" value={formData.gCountry} onChange={handleChange} disabled={guardianSameAsPermanent} required>
                         <option value="">Select Country</option>
                         {countries.map(country => (
@@ -2050,7 +2077,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={3}>
-                      <CFormLabel>State *</CFormLabel>
+                      <CFormLabel>State <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="gState" value={formData.gState} onChange={handleChange} disabled={guardianSameAsPermanent || !formData.gCountry} required>
                         <option value="">Select State</option>
                         {gStates.map(state => (
@@ -2059,7 +2086,7 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={3}>
-                      <CFormLabel>District *</CFormLabel>
+                      <CFormLabel>District <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect name="gDistrict" value={formData.gDistrict} onChange={handleChange} disabled={guardianSameAsPermanent || !formData.gState} required>
                         <option value="">Select District</option>
                         {gDistricts.map(district => (
@@ -2078,7 +2105,7 @@ const RegistrationForm = () => {
                     </CCol>
                     <CCol md={3}><CFormLabel>Pincode</CFormLabel><CFormInput name="gPincode" value={formData.gPincode} onChange={handleChange} disabled={guardianSameAsPermanent} placeholder="Enter pincode" /></CCol>
                     <CCol md={9}><CFormLabel>Address</CFormLabel><CFormTextarea name="gAddress" value={formData.gAddress} onChange={handleChange} disabled={guardianSameAsPermanent} rows={2} placeholder="Enter complete address" /></CCol>
-                    
+
                     <CCol xs={12} className="mt-4">
                       <CButton type="button" color="success" onClick={handleAddressSubmit} disabled={loading || !studentId}>
                         {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Address Details</>}
@@ -2091,28 +2118,31 @@ const RegistrationForm = () => {
                 {/* Last School Tab */}
                 <CTabPane visible={activeTab === 'lastSchool'}>
                   <CRow className="g-3">
-                    <CCol md={6}>
-                      <CFormLabel>School/College *</CFormLabel>
-                      <CFormSelect name="schoolCollege" value={formData.schoolCollege} onChange={handleSchoolChange} required>
-                        <option value="">Select School/College</option>
-                        {schools.map(school => (
-                          <option key={school.SchoolID} value={school.SchoolID}>{school.SchoolCollegeName}</option>
-                        ))}
-                        <option value="add_new" style={{fontWeight: 'bold', color: '#0d6efd'}}>
-                          ➕ Add New School/College
-                        </option>
-                      </CFormSelect>
-                    </CCol>
-                    <CCol md={6}><CFormLabel>School Principal Name</CFormLabel><CFormInput name="schoolPrincipalName" value={formData.schoolPrincipalName} onChange={handleChange} placeholder="Enter principal name" /></CCol>
-                    <CCol md={4}><CFormLabel>Principal Mobile No.</CFormLabel><CFormInput name="schoolMobileNo" value={formData.schoolMobileNo} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={4}><CFormLabel>Principal Email ID</CFormLabel><CFormInput type="email" name="schoolEmailId" value={formData.schoolEmailId} onChange={handleChange} placeholder="Enter email" /></CCol>
-                    <CCol md={4}><CFormLabel>Best School Teacher Name</CFormLabel><CFormInput name="bestSchoolTeacherName" value={formData.bestSchoolTeacherName} onChange={handleChange} placeholder="Enter teacher name" /></CCol>
-                    <CCol md={4}><CFormLabel>Teacher Mobile Number</CFormLabel><CFormInput name="bestSchoolTeacherMobile" value={formData.bestSchoolTeacherMobile} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={4}><CFormLabel>Teacher Email ID</CFormLabel><CFormInput type="email" name="bestSchoolTeacherEmail" value={formData.bestSchoolTeacherEmail} onChange={handleChange} placeholder="Enter email" /></CCol>
-                    <CCol md={4}><CFormLabel>Best Coaching Teacher Name</CFormLabel><CFormInput name="bestCoachingTeacherName" value={formData.bestCoachingTeacherName} onChange={handleChange} placeholder="Enter teacher name" /></CCol>
-                    <CCol md={4}><CFormLabel>Coaching Teacher Mobile</CFormLabel><CFormInput name="bestCoachingTeacherMobile" value={formData.bestCoachingTeacherMobile} onChange={handleChange} placeholder="Enter mobile" /></CCol>
-                    <CCol md={4}><CFormLabel>Coaching Teacher Email</CFormLabel><CFormInput type="email" name="bestCoachingTeacherEmail" value={formData.bestCoachingTeacherEmail} onChange={handleChange} placeholder="Enter email" /></CCol>
-                    
+                    <CRow>
+                      <CCol md={8}>
+                        <CFormLabel>School/College <span className="text-danger">*</span></CFormLabel>
+                        <CFormSelect name="schoolCollege" value={formData.schoolCollege} onChange={handleSchoolChange} required>
+                          <option value="">Select School/College</option>
+                          {schools.map(school => (
+                            <option key={school.SchoolID} value={school.SchoolID}>{school.SchoolCollegeName}</option>
+                          ))}
+                          <option value="add_new" style={{ fontWeight: 'bold', color: '#0d6efd' }}>
+                            ➕ Add New School/College
+                          </option>
+                        </CFormSelect>
+                      </CCol>
+                    </CRow>
+                    <CRow className="mt-3">
+                      <CCol md={4}><CFormLabel>School Principal Name</CFormLabel><CFormInput name="schoolPrincipalName" value={formData.schoolPrincipalName} onChange={handleChange} placeholder="Enter principal name" /></CCol>
+                      <CCol md={4}><CFormLabel>Principal Mobile No.</CFormLabel><CFormInput name="schoolMobileNo" value={formData.schoolMobileNo} onChange={handleChange} placeholder="Enter mobile" /></CCol>
+                      <CCol md={4}><CFormLabel>Principal Email ID</CFormLabel><CFormInput type="email" name="schoolEmailId" value={formData.schoolEmailId} onChange={handleChange} placeholder="Enter email" /></CCol>
+                      <CCol md={4}><CFormLabel>Best School Teacher Name</CFormLabel><CFormInput name="bestSchoolTeacherName" value={formData.bestSchoolTeacherName} onChange={handleChange} placeholder="Enter teacher name" /></CCol>
+                      <CCol md={4}><CFormLabel>Teacher Mobile Number</CFormLabel><CFormInput name="bestSchoolTeacherMobile" value={formData.bestSchoolTeacherMobile} onChange={handleChange} placeholder="Enter mobile" /></CCol>
+                      <CCol md={4}><CFormLabel>Teacher Email ID</CFormLabel><CFormInput type="email" name="bestSchoolTeacherEmail" value={formData.bestSchoolTeacherEmail} onChange={handleChange} placeholder="Enter email" /></CCol>
+                      <CCol md={4}><CFormLabel>Best Coaching Teacher Name</CFormLabel><CFormInput name="bestCoachingTeacherName" value={formData.bestCoachingTeacherName} onChange={handleChange} placeholder="Enter teacher name" /></CCol>
+                      <CCol md={4}><CFormLabel>Coaching Teacher Mobile</CFormLabel><CFormInput name="bestCoachingTeacherMobile" value={formData.bestCoachingTeacherMobile} onChange={handleChange} placeholder="Enter mobile" /></CCol>
+                      <CCol md={4}><CFormLabel>Coaching Teacher Email</CFormLabel><CFormInput type="email" name="bestCoachingTeacherEmail" value={formData.bestCoachingTeacherEmail} onChange={handleChange} placeholder="Enter email" /></CCol>
+                    </CRow>
                     <CCol xs={12} className="mt-4">
                       <CButton type="button" color="success" onClick={handleLastSchoolSubmit} disabled={loading || !studentId}>
                         {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Last School Details</>}
@@ -2125,35 +2155,39 @@ const RegistrationForm = () => {
                 {/* Previous School Details Tab */}
                 <CTabPane visible={activeTab === 'previousSchool'}>
                   <CRow className="g-3">
-                    <CCol md={6}>
-                      <CFormLabel>College/School Name</CFormLabel>
-                      <CFormSelect name="prevSchoolCollegeName" value={formData.prevSchoolCollegeName} onChange={handlePrevSchoolSelectChange}>
-                        <option value="">Select School/College</option>
-                        {schools.map(school => (
-                          <option key={school.SchoolID} value={school.SchoolID}>
-                            {school.SchoolCollegeName}
+                    <CRow className="mb-2">
+                      <CCol md={6}>
+                        <CFormLabel>College/School Name</CFormLabel>
+                        <CFormSelect name="prevSchoolCollegeName" value={formData.prevSchoolCollegeName} onChange={handlePrevSchoolSelectChange}>
+                          <option value="">Select School/College</option>
+                          {schools.map(school => (
+                            <option key={school.SchoolID} value={school.SchoolID}>
+                              {school.SchoolCollegeName}
+                            </option>
+                          ))}
+                          <option value="add_new" style={{ fontWeight: 'bold', color: '#0d6efd' }}>
+                            ➕ Add New School/College
                           </option>
-                        ))}
-                        <option value="add_new" style={{fontWeight: 'bold', color: '#0d6efd'}}>
-                          ➕ Add New School/College
-                        </option>
-                      </CFormSelect>
-                    </CCol>
-                    <CCol md={6}><CFormLabel>Education Board</CFormLabel><CFormInput name="educationBoard" value={formData.educationBoard} onChange={handleChange} placeholder="Enter board" /></CCol>
-                    <CCol md={4}><CFormLabel>Medium of Instruction</CFormLabel><CFormInput name="mediumOfInstruction" value={formData.mediumOfInstruction} onChange={handleChange} placeholder="Enter medium" /></CCol>
-                    <CCol md={4}><CFormLabel>TC Number</CFormLabel><CFormInput name="tcNumber" value={formData.tcNumber} onChange={handleChange} placeholder="Enter TC number" /></CCol>
-                    <CCol md={4}><CFormLabel>Roll Number</CFormLabel><CFormInput name="rollNumber" value={formData.rollNumber} onChange={handleChange} placeholder="Enter roll number" /></CCol>
-                    <CCol md={4}><CFormLabel>Passing Year</CFormLabel><CFormInput name="passingYear" value={formData.passingYear} onChange={handleChange} placeholder="Enter passing year" /></CCol>
-                    <CCol md={4}><CFormLabel>Last Class Passed</CFormLabel><CFormInput name="lastClassPassed" value={formData.lastClassPassed} onChange={handleChange} placeholder="Enter last class" /></CCol>
-                    <CCol md={4}><CFormLabel>Total Marks</CFormLabel><CFormInput type="number" name="totalMarks" value={formData.totalMarks} onChange={handleChange} placeholder="Enter total marks" /></CCol>
-                    <CCol md={4}><CFormLabel>Obtained Marks</CFormLabel><CFormInput type="number" name="obtainedMarks" value={formData.obtainedMarks} onChange={handleChange} placeholder="Enter obtained marks" /></CCol>
-                    <CCol md={4}><CFormLabel>%/CGPA</CFormLabel><CFormInput name="percentageCgpa" value={formData.percentageCgpa} onChange={handleChange} placeholder="Enter percentage/CGPA" /></CCol>
+                        </CFormSelect>
+                      </CCol>
+                    </CRow>
+                    <CRow className="mb-3">
+                      <CCol md={4}><CFormLabel>Education Board</CFormLabel><CFormInput name="educationBoard" value={formData.educationBoard} onChange={handleChange} placeholder="Enter board" /></CCol>
+                      <CCol md={4}><CFormLabel>Medium of Instruction</CFormLabel><CFormInput name="mediumOfInstruction" value={formData.mediumOfInstruction} onChange={handleChange} placeholder="Enter medium" /></CCol>
+                      <CCol md={4}><CFormLabel>TC Number</CFormLabel><CFormInput name="tcNumber" value={formData.tcNumber} onChange={handleChange} placeholder="Enter TC number" /></CCol>
+                      <CCol md={4}><CFormLabel>Roll Number</CFormLabel><CFormInput name="rollNumber" value={formData.rollNumber} onChange={handleChange} placeholder="Enter roll number" /></CCol>
+                      <CCol md={4}><CFormLabel>Passing Year</CFormLabel><CFormInput name="passingYear" value={formData.passingYear} onChange={handleChange} placeholder="Enter passing year" /></CCol>
+                      <CCol md={4}><CFormLabel>Last Class Passed</CFormLabel><CFormInput name="lastClassPassed" value={formData.lastClassPassed} onChange={handleChange} placeholder="Enter last class" /></CCol>
+                      <CCol md={4}><CFormLabel>Total Marks</CFormLabel><CFormInput type="number" name="totalMarks" value={formData.totalMarks} onChange={handleChange} placeholder="Enter total marks" /></CCol>
+                      <CCol md={4}><CFormLabel>Obtained Marks</CFormLabel><CFormInput type="number" name="obtainedMarks" value={formData.obtainedMarks} onChange={handleChange} placeholder="Enter obtained marks" /></CCol>
+                      <CCol md={4}><CFormLabel>Percentage / CGPA</CFormLabel><CFormInput name="percentageCgpa" value={formData.percentageCgpa} onChange={handleChange} placeholder="Enter percentage/CGPA" /></CCol>
+                    </CRow>
                     <CCol md={12}><CFormLabel>Reason For School Change</CFormLabel><CFormInput name="reasonForSchoolChange" value={formData.reasonForSchoolChange} onChange={handleChange} placeholder="Enter reason" /></CCol>
-                    
+
                     <CCol xs={12} className="mt-4">
-                      <CButton 
-                        type="button" 
-                        color="primary" 
+                      <CButton
+                        type="button"
+                        color="primary"
                         onClick={handleAddPreviousSchoolToList}
                         disabled={!formData.prevSchoolCollegeName}
                       >
@@ -2191,9 +2225,9 @@ const RegistrationForm = () => {
                                   <td>{school.obtainedMarks}/{school.totalMarks}</td>
                                   <td>{school.percentageCgpa || 'N/A'}</td>
                                   <td>
-                                    <CButton 
-                                      color="danger" 
-                                      size="sm" 
+                                    <CButton
+                                      color="danger"
+                                      size="sm"
                                       onClick={() => handleRemovePreviousSchool(index)}
                                     >
                                       <CIcon icon={cilX} />
@@ -2204,10 +2238,10 @@ const RegistrationForm = () => {
                             </tbody>
                           </table>
                         </div>
-                        <CButton 
-                          type="button" 
-                          color="success" 
-                          onClick={handlePreviousSchoolSubmit} 
+                        <CButton
+                          type="button"
+                          color="success"
+                          onClick={handlePreviousSchoolSubmit}
                           disabled={loading || !studentId}
                           className="mt-2"
                         >
@@ -2233,17 +2267,17 @@ const RegistrationForm = () => {
                   <CRow className="g-3">
                     <CCol xs={12}><h6 className="text-primary">👨‍👩‍👧‍👦 Sibling Information</h6></CCol>
                     <CCol md={4}>
-                      <CFormLabel>Sibling Student ID *</CFormLabel>
-                      <CFormInput 
+                      <CFormLabel>Sibling Student ID <span className="text-danger">*</span></CFormLabel>
+                      <CFormInput
                         type="number"
-                        name="siblingId" 
-                        value={formData.siblingId} 
-                        onChange={handleChange} 
-                        placeholder="Enter sibling student ID" 
+                        name="siblingId"
+                        value={formData.siblingId}
+                        onChange={handleChange}
+                        placeholder="Enter sibling student ID"
                       />
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Relationship *</CFormLabel>
+                      <CFormLabel>Relationship <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect
                         name="siblingRelationship"
                         value={formData.siblingRelationship}
@@ -2259,9 +2293,9 @@ const RegistrationForm = () => {
                       </CFormSelect>
                     </CCol>
                     <CCol md={4} className="d-flex align-items-end">
-                      <CButton 
-                        type="button" 
-                        color="primary" 
+                      <CButton
+                        type="button"
+                        color="primary"
                         onClick={handleAddSiblingToList}
                         disabled={!formData.siblingId || !formData.siblingRelationship}
                       >
@@ -2290,9 +2324,9 @@ const RegistrationForm = () => {
                                   <td>{sibling.siblingStudentId}</td>
                                   <td>{sibling.relationship}</td>
                                   <td>
-                                    <CButton 
-                                      color="danger" 
-                                      size="sm" 
+                                    <CButton
+                                      color="danger"
+                                      size="sm"
                                       onClick={() => handleRemoveSibling(index)}
                                     >
                                       <CIcon icon={cilX} />
@@ -2308,10 +2342,10 @@ const RegistrationForm = () => {
 
                     <CCol xs={12} className="mt-4">
                       {siblingsList.length > 0 && (
-                        <CButton 
-                          type="button" 
-                          color="success" 
-                          onClick={handleSiblingSubmit} 
+                        <CButton
+                          type="button"
+                          color="success"
+                          onClick={handleSiblingSubmit}
                           disabled={loading || !studentId}
                         >
                           {loading ? (
@@ -2337,37 +2371,37 @@ const RegistrationForm = () => {
                   <CRow className="g-3">
                     <CCol xs={12}><h6 className="text-primary">👥 Best Friends</h6></CCol>
                     <CCol md={3}>
-                      <CFormLabel>Friend ID *</CFormLabel>
-                      <CFormInput 
+                      <CFormLabel>Friend ID <span className="text-danger">*</span></CFormLabel>
+                      <CFormInput
                         type="number"
-                        name="friendId" 
-                        value={formData.friendId} 
-                        onChange={handleChange} 
-                        placeholder="Enter friend ID" 
+                        name="friendId"
+                        value={formData.friendId}
+                        onChange={handleChange}
+                        placeholder="Enter friend ID"
                       />
                     </CCol>
                     <CCol md={3}>
-                      <CFormLabel>Friend Name *</CFormLabel>
-                      <CFormInput 
-                        name="friendName" 
-                        value={formData.friendName} 
-                        onChange={handleChange} 
-                        placeholder="Enter friend name" 
+                      <CFormLabel>Friend Name <span className="text-danger">*</span></CFormLabel>
+                      <CFormInput
+                        name="friendName"
+                        value={formData.friendName}
+                        onChange={handleChange}
+                        placeholder="Enter friend name"
                       />
                     </CCol>
                     <CCol md={3}>
-                      <CFormLabel>Friend Mobile *</CFormLabel>
-                      <CFormInput 
-                        name="friendMobile" 
-                        value={formData.friendMobile} 
-                        onChange={handleChange} 
-                        placeholder="Enter friend mobile" 
+                      <CFormLabel>Friend Mobile <span className="text-danger">*</span></CFormLabel>
+                      <CFormInput
+                        name="friendMobile"
+                        value={formData.friendMobile}
+                        onChange={handleChange}
+                        placeholder="Enter friend mobile"
                       />
                     </CCol>
                     <CCol md={3} className="d-flex align-items-end">
-                      <CButton 
-                        type="button" 
-                        color="primary" 
+                      <CButton
+                        type="button"
+                        color="primary"
                         onClick={handleAddBestFriendToList}
                         disabled={!formData.friendId || !formData.friendName || !formData.friendMobile}
                       >
@@ -2398,9 +2432,9 @@ const RegistrationForm = () => {
                                   <td>{friend.friendName}</td>
                                   <td>{friend.friendMobile}</td>
                                   <td>
-                                    <CButton 
-                                      color="danger" 
-                                      size="sm" 
+                                    <CButton
+                                      color="danger"
+                                      size="sm"
                                       onClick={() => handleRemoveBestFriend(index)}
                                     >
                                       <CIcon icon={cilX} />
@@ -2413,13 +2447,13 @@ const RegistrationForm = () => {
                         </div>
                       </CCol>
                     )}
-                    
+
                     <CCol xs={12} className="mt-4">
                       {bestFriendsList.length > 0 && (
-                        <CButton 
-                          type="button" 
-                          color="success" 
-                          onClick={handleBestFriendSubmit} 
+                        <CButton
+                          type="button"
+                          color="success"
+                          onClick={handleBestFriendSubmit}
                           disabled={loading || !studentId}
                         >
                           {loading ? (
@@ -2446,7 +2480,7 @@ const RegistrationForm = () => {
                     <CCol md={4}><CFormLabel>Height</CFormLabel><CFormInput name="height" value={formData.height} onChange={handleChange} placeholder="Enter height (cm)" /></CCol>
                     <CCol md={4}><CFormLabel>Weight</CFormLabel><CFormInput name="weight" value={formData.weight} onChange={handleChange} placeholder="Enter weight (kg)" /></CCol>
                     <CCol md={4}><CFormLabel>Blood Group</CFormLabel><CFormSelect name="medicalBloodGroup" value={formData.medicalBloodGroup} onChange={handleChange}><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></CFormSelect></CCol>
-                    
+
                     <CCol xs={12} className="mt-4">
                       <CButton type="button" color="success" onClick={handleMedicalSubmit} disabled={loading || !studentId}>
                         {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Medical Record</>}
@@ -2485,7 +2519,7 @@ const RegistrationForm = () => {
                         ))}
                       </CFormSelect>
                     </CCol>
-                    
+
                     <CCol xs={12} className="mt-4">
                       <CButton type="button" color="success" onClick={handleTransportSubmit} disabled={loading || !studentId}>
                         {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Transport Details</>}
@@ -2508,86 +2542,86 @@ const RegistrationForm = () => {
         <CModalBody>
           <CRow className="g-3">
             <CCol md={12}>
-              <CFormLabel>School/College Name *</CFormLabel>
-              <CFormInput 
-                name="schoolName" 
-                value={newSchoolData.schoolName} 
-                onChange={handleNewSchoolChange} 
+              <CFormLabel>School/College Name <span className="text-danger">*</span></CFormLabel>
+              <CFormInput
+                name="schoolName"
+                value={newSchoolData.schoolName}
+                onChange={handleNewSchoolChange}
                 placeholder="Enter school/college name"
                 required
               />
             </CCol>
             <CCol md={6}>
               <CFormLabel>Country</CFormLabel>
-              <CFormInput 
-                name="schoolCountry" 
-                value={newSchoolData.schoolCountry} 
-                onChange={handleNewSchoolChange} 
+              <CFormInput
+                name="schoolCountry"
+                value={newSchoolData.schoolCountry}
+                onChange={handleNewSchoolChange}
                 placeholder="Enter country"
               />
             </CCol>
             <CCol md={6}>
               <CFormLabel>State</CFormLabel>
-              <CFormInput 
-                name="schoolState" 
-                value={newSchoolData.schoolState} 
-                onChange={handleNewSchoolChange} 
+              <CFormInput
+                name="schoolState"
+                value={newSchoolData.schoolState}
+                onChange={handleNewSchoolChange}
                 placeholder="Enter state"
               />
             </CCol>
             <CCol md={6}>
               <CFormLabel>District</CFormLabel>
-              <CFormInput 
-                name="schoolDistrict" 
-                value={newSchoolData.schoolDistrict} 
-                onChange={handleNewSchoolChange} 
+              <CFormInput
+                name="schoolDistrict"
+                value={newSchoolData.schoolDistrict}
+                onChange={handleNewSchoolChange}
                 placeholder="Enter district"
               />
             </CCol>
             <CCol md={6}>
               <CFormLabel>Area</CFormLabel>
-              <CFormInput 
-                name="schoolArea" 
-                value={newSchoolData.schoolArea} 
-                onChange={handleNewSchoolChange} 
+              <CFormInput
+                name="schoolArea"
+                value={newSchoolData.schoolArea}
+                onChange={handleNewSchoolChange}
                 placeholder="Enter area"
               />
             </CCol>
             <CCol md={4}>
               <CFormLabel>Pincode</CFormLabel>
-              <CFormInput 
-                name="schoolPincode" 
-                value={newSchoolData.schoolPincode} 
-                onChange={handleNewSchoolChange} 
+              <CFormInput
+                name="schoolPincode"
+                value={newSchoolData.schoolPincode}
+                onChange={handleNewSchoolChange}
                 placeholder="Enter pincode"
                 maxLength="6"
               />
             </CCol>
             <CCol md={4}>
               <CFormLabel>Contact Number</CFormLabel>
-              <CFormInput 
-                name="schoolContactNo" 
-                value={newSchoolData.schoolContactNo} 
-                onChange={handleNewSchoolChange} 
+              <CFormInput
+                name="schoolContactNo"
+                value={newSchoolData.schoolContactNo}
+                onChange={handleNewSchoolChange}
                 placeholder="Enter contact number"
               />
             </CCol>
             <CCol md={4}>
               <CFormLabel>Email ID</CFormLabel>
-              <CFormInput 
+              <CFormInput
                 type="email"
-                name="schoolEmailId" 
-                value={newSchoolData.schoolEmailId} 
-                onChange={handleNewSchoolChange} 
+                name="schoolEmailId"
+                value={newSchoolData.schoolEmailId}
+                onChange={handleNewSchoolChange}
                 placeholder="Enter email"
               />
             </CCol>
             <CCol md={12}>
               <CFormLabel>Website</CFormLabel>
-              <CFormInput 
-                name="schoolWebsite" 
-                value={newSchoolData.schoolWebsite} 
-                onChange={handleNewSchoolChange} 
+              <CFormInput
+                name="schoolWebsite"
+                value={newSchoolData.schoolWebsite}
+                onChange={handleNewSchoolChange}
                 placeholder="Enter website URL"
               />
             </CCol>
@@ -2598,9 +2632,9 @@ const RegistrationForm = () => {
             <CIcon icon={cilX} className="me-1" />
             Cancel
           </CButton>
-          <CButton 
-            color="success" 
-            onClick={handleAddNewSchool} 
+          <CButton
+            color="success"
+            onClick={handleAddNewSchool}
             disabled={loading || !newSchoolData.schoolName}
           >
             {loading ? (
@@ -2633,7 +2667,7 @@ const RegistrationForm = () => {
             {modalSource === 'profession' && (
               <>
                 <CCol md={12}>
-                  <CFormLabel>Profession Name *</CFormLabel>
+                  <CFormLabel>Profession Name <span className="text-danger">*</span></CFormLabel>
                   <CFormInput
                     name="professionName"
                     value={newModalData.professionName}
@@ -2648,7 +2682,7 @@ const RegistrationForm = () => {
             {modalSource === 'designation' && (
               <>
                 <CCol md={6}>
-                  <CFormLabel>Designation Name *</CFormLabel>
+                  <CFormLabel>Designation Name <span className="text-danger">*</span></CFormLabel>
                   <CFormInput
                     name="designationName"
                     value={newModalData.designationName}
@@ -2682,7 +2716,7 @@ const RegistrationForm = () => {
             {modalSource === 'income' && (
               <>
                 <CCol md={4}>
-                  <CFormLabel>Start Range *</CFormLabel>
+                  <CFormLabel>Start Range <span className="text-danger">*</span></CFormLabel>
                   <CFormInput
                     type="number"
                     name="startRange"
@@ -2693,7 +2727,7 @@ const RegistrationForm = () => {
                   />
                 </CCol>
                 <CCol md={4}>
-                  <CFormLabel>End Range *</CFormLabel>
+                  <CFormLabel>End Range <span className="text-danger">*</span></CFormLabel>
                   <CFormInput
                     type="number"
                     name="endRange"
@@ -2726,9 +2760,9 @@ const RegistrationForm = () => {
             onClick={handleAddNewModal}
             disabled={loading || (
               modalSource === 'profession' ? !newModalData.professionName :
-              modalSource === 'designation' ? !newModalData.designationName :
-              modalSource === 'income' ? (!newModalData.startRange || !newModalData.endRange) :
-              false
+                modalSource === 'designation' ? !newModalData.designationName :
+                  modalSource === 'income' ? (!newModalData.startRange || !newModalData.endRange) :
+                    false
             )}
           >
             {loading ? (

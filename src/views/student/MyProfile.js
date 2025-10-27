@@ -1813,7 +1813,7 @@ const MyProfile = () => {
                       </CCol>
                       
                       <CCol md={4}>
-                        <CFormLabel>Gender *</CFormLabel>
+                        <CFormLabel>Gender <span className="text-danger">*</span></CFormLabel> 
                         <CFormSelect name="gender" value={formData.gender} onChange={handleChange} required disabled={!isEditing}>
                           <option value="">Select</option>
                           <option value="1">Male</option>
@@ -1823,7 +1823,7 @@ const MyProfile = () => {
                       </CCol>
                       
                       <CCol md={4}>
-                        <CFormLabel>Date of Birth *</CFormLabel>
+                        <CFormLabel>Date of Birth <span className="text-danger">*</span></CFormLabel> 
                         <CFormInput 
                           type="date" 
                           name="dateOfBirth" 
@@ -2420,7 +2420,7 @@ const MyProfile = () => {
                 <CForm onSubmit={handleSaveLastSchoolDetails}>
                     <CRow className="g-3">
                       <CCol md={6}>
-                        <CFormLabel>School/College Name *</CFormLabel>
+                        <CFormLabel>School/College Name <span className="text-danger">*</span></CFormLabel> 
                         <CFormSelect 
                           name="schoolId" 
                           value={lastSchoolFormData.schoolId} 
@@ -3010,7 +3010,7 @@ const MyProfile = () => {
         <CModalBody>
           <CRow className="g-3">
             <CCol md={12}>
-              <CFormLabel>School/College Name *</CFormLabel>
+              <CFormLabel>School/College Name <span className="text-danger">*</span></CFormLabel> 
               <CFormInput 
                 name="schoolCollegeName" 
                 value={newSchoolData.schoolCollegeName} 
@@ -3121,7 +3121,7 @@ const MyProfile = () => {
         <CModalBody>
           <CRow className="g-3">
             <CCol md={6}>
-              <CFormLabel>School/College Name *</CFormLabel>
+              <CFormLabel>School/College Name <span className="text-danger">*</span></CFormLabel> 
               <CFormSelect 
                 name="schoolId" 
                 value={prevSchoolFormData.schoolId} 
@@ -3262,7 +3262,7 @@ const MyProfile = () => {
         <CModalBody>
           <CRow className="g-3">
             <CCol md={12}>
-              <CFormLabel>Sibling Student ID *</CFormLabel>
+              <CFormLabel>Sibling Student ID <span className="text-danger">*</span></CFormLabel> 
               <CFormInput 
                 type="number"
                 name="siblingStudentId" 
@@ -3273,7 +3273,7 @@ const MyProfile = () => {
               />
             </CCol>
             <CCol md={12}>
-              <CFormLabel>Relationship *</CFormLabel>
+              <CFormLabel>Relationship <span className="text-danger">*</span></CFormLabel> 
               <CFormSelect
                 name="relationship" 
                 value={siblingFormData.relationship} 
@@ -3322,7 +3322,7 @@ const MyProfile = () => {
         <CModalBody>
           <CRow className="g-3">
             <CCol md={12}>
-              <CFormLabel>Friend ID *</CFormLabel>
+              <CFormLabel>Friend ID <span className="text-danger">*</span></CFormLabel> 
               <CFormInput 
                 type="number"
                 name="friendId" 
@@ -3333,7 +3333,7 @@ const MyProfile = () => {
               />
             </CCol>
             <CCol md={12}>
-              <CFormLabel>Friend Name *</CFormLabel>
+              <CFormLabel>Friend Name <span className="text-danger">*</span></CFormLabel> 
               <CFormInput 
                 name="friendName" 
                 value={bestFriendFormData.friendName} 
@@ -3343,7 +3343,7 @@ const MyProfile = () => {
               />
             </CCol>
             <CCol md={12}>
-              <CFormLabel>Friend Mobile *</CFormLabel>
+              <CFormLabel>Friend Mobile <span className="text-danger">*</span></CFormLabel> 
               <CFormInput 
                 name="friendMobile" 
                 value={bestFriendFormData.friendMobile} 

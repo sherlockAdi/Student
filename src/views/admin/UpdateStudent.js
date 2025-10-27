@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
-  CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CForm,
-  CFormInput, CFormLabel, CAlert, CSpinner, CListGroup, CListGroupItem
+  CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CFormInput, CFormLabel,
+  CAlert, CSpinner, CListGroup, CListGroupItem
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilSearch, cilUser, cilPhone, cilX } from '@coreui/icons'
 import { searchStudentByText } from '../../api/api'
-// We'll import the MyProfile component and pass studentIdProp to it
 import MyProfile from '../../components/UpdateStudentProfile'
 
 const UpdateStudent = () => {
@@ -17,34 +16,31 @@ const UpdateStudent = () => {
   const [error, setError] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
 
-  // Search students as user types
-  useEffect(() => {
-    const searchStudents = async () => {
-      if (searchText.length < 2) {
-        setSearchResults([])
-        setShowDropdown(false)
-        return
-      }
-
-      setSearching(true)
-      setError('')
-      
-      try {
-        const results = await searchStudentByText(searchText)
-        setSearchResults(results || [])
-        setShowDropdown(true)
-      } catch (err) {
-        console.error('Error searching students:', err)
-        setError('Failed to search students')
-        setSearchResults([])
-      } finally {
-        setSearching(false)
-      }
+  // 🔍 Manual search on button click
+  const handleSearch = async () => {
+    if (searchText.trim().length < 2) {
+      setError('Please enter at least 2 characters to search')
+      setSearchResults([])
+      setShowDropdown(false)
+      return
     }
 
-    const debounceTimer = setTimeout(searchStudents, 300)
-    return () => clearTimeout(debounceTimer)
-  }, [searchText])
+    setSearching(true)
+    setError('')
+    setShowDropdown(false)
+
+    try {
+      const results = await searchStudentByText(searchText)
+      setSearchResults(results || [])
+      setShowDropdown(true)
+    } catch (err) {
+      console.error('Error searching students:', err)
+      setError('Failed to search students')
+      setSearchResults([])
+    } finally {
+      setSearching(false)
+    }
+  }
 
   const handleSelectStudent = (student) => {
     setSelectedStudent(student)
@@ -72,26 +68,45 @@ const UpdateStudent = () => {
             </CCardHeader>
             <CCardBody>
               <CRow className="g-3">
-                <CCol xs={12}>
-                  <CFormLabel>Search Student by Name *</CFormLabel>
-                  <div className="position-relative">
-                    <CFormInput
-                      type="text"
-                      placeholder="Type student name to search..."
-                      value={searchText}
-                      onChange={(e) => setSearchText(e.target.value)}
-                      autoComplete="off"
-                    />
-                    {searching && (
-                      <div className="position-absolute top-50 end-0 translate-middle-y me-3">
-                        <CSpinner size="sm" />
-                      </div>
-                    )}
-                  </div>
-                  <small className="text-muted">Type at least 2 characters to search</small>
+                <CCol md={8}>
+                  <CFormLabel>
+                    Search Student by Name <span className="text-danger">*</span>
+                  </CFormLabel>
+                  <CFormInput
+                    type="text"
+                    placeholder="Enter student name"
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    autoComplete="off"
+                  />
+                  <small className="text-muted">Type at least 2 characters before searching</small>
                 </CCol>
 
-                {/* Search Results Dropdown */}
+                <CCol md={8} className="d-flex align-items-end">
+                  <CButton
+                    color="primary"
+                    onClick={handleSearch}
+                    disabled={searching}
+                    className="me-2"
+                  >
+                    {searching ? (
+                      <>
+                        <CSpinner size="sm" className="me-2" />
+                        Searching...
+                      </>
+                    ) : (
+                      <>
+                        <CIcon icon={cilSearch} className="me-2" />
+                        Search
+                      </>
+                    )}
+                  </CButton>
+                  <CButton color="secondary" variant="outline" onClick={handleReset}>
+                    <CIcon icon={cilX} className="me-1" /> Reset
+                  </CButton>
+                </CCol>
+
+                {/* Search Results */}
                 {showDropdown && searchResults.length > 0 && (
                   <CCol xs={12}>
                     <CListGroup>
@@ -127,9 +142,7 @@ const UpdateStudent = () => {
 
                 {showDropdown && searchResults.length === 0 && !searching && (
                   <CCol xs={12}>
-                    <CAlert color="info">
-                      No students found matching "{searchText}"
-                    </CAlert>
+                    <CAlert color="info">No students found matching "{searchText}"</CAlert>
                   </CCol>
                 )}
 
@@ -154,14 +167,15 @@ const UpdateStudent = () => {
                       {selectedStudent.StudentName}
                     </h5>
                     <div className="text-muted">
-                      <span className="me-3">Student ID: <strong>{selectedStudent.StudentId}</strong></span>
+                      <span className="me-3">
+                        Student ID: <strong>{selectedStudent.StudentId}</strong>
+                      </span>
                       <span className="me-3">📞 {selectedStudent.Mobileno1}</span>
                       <span>🆔 {selectedStudent.AdmissionNo}</span>
                     </div>
                   </div>
                   <CButton color="secondary" size="sm" onClick={handleReset}>
-                    <CIcon icon={cilX} className="me-1" />
-                    Change Student
+                    <CIcon icon={cilX} className="me-1" /> Change Student
                   </CButton>
                 </div>
               </CCardBody>

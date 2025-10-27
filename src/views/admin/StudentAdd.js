@@ -216,7 +216,7 @@ const StudentAdd = () => {
             <CForm className="row g-3" onSubmit={handleSubmit}>
               {/* Program Details */}
               <CCol xs={12}>
-                <CFormLabel className="fw-bold">Program Details *</CFormLabel>
+                <CFormLabel className="fw-bold">Program Details <span className="text-danger">*</span></CFormLabel> 
               </CCol>
 
               <CCol md={3}>
@@ -319,7 +319,7 @@ const StudentAdd = () => {
 
               {/* Student ID (Auto-generated SRN) */}
               <CCol md={3}>
-                <CFormLabel>Admission No. (SRN) *</CFormLabel>
+                <CFormLabel>Admission No. (SRN) <span className="text-danger">*</span></CFormLabel> 
                 <div className="input-group">
                   <CFormInput
                     name="StudentId"
@@ -341,7 +341,7 @@ const StudentAdd = () => {
 
               {/* Student Personal Details */}
               <CCol xs={12} className="mt-3">
-                <CFormLabel className="fw-bold">Student Details *</CFormLabel>
+                <CFormLabel className="fw-bold">Student Details <span className="text-danger">*</span></CFormLabel> 
               </CCol>
 
               <CCol md={4}>
@@ -405,7 +405,7 @@ const StudentAdd = () => {
 
               {/* Auto-generated College Email */}
               <CCol md={6}>
-                <CFormLabel>College Email *</CFormLabel>
+                <CFormLabel>College Email <span className="text-danger">*</span></CFormLabel> 
                 <CFormInput
                   name="CollegeEmail"
                   value={form.CollegeEmail}
@@ -420,7 +420,7 @@ const StudentAdd = () => {
 
               {/* Auto-generated Password */}
               <CCol md={6}>
-                <CFormLabel>Password (Default) *</CFormLabel>
+                <CFormLabel>Password (Default) <span className="text-danger">*</span></CFormLabel> 
                 <CFormInput
                   name="Password"
                   type="text"
