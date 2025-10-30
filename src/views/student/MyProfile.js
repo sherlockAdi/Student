@@ -23,8 +23,10 @@ import {
 } from '../../api/api'
 
 import { getStudentId } from '../../utils/auth'
+import { useToast } from '../../components'
 
 const MyProfile = () => {
+  const { pushToast } = useToast()
   const [activeTab, setActiveTab] = useState('administration')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -681,6 +683,7 @@ const MyProfile = () => {
       console.log('Updating student details:', payload)
       const response = await updateStudentDetails(payload)
       setSuccess(`✅ ${response.message || 'Student details updated successfully!'}`)
+      pushToast({ title: 'Success', message: response.message || 'Student details updated successfully', type: 'success' })
       
       // Refresh personal details
       const updatedData = await getStudentDetails(studentId)
@@ -694,6 +697,7 @@ const MyProfile = () => {
     } catch (err) {
       console.error('Error updating details:', err)
       setError(err.response?.data?.message || err.message || 'Failed to update details.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to update details', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -792,6 +796,7 @@ const MyProfile = () => {
       console.log('Updating parent details:', payload)
       const response = await insertParentDetails(payload)
       setSuccess(`✅ ${response.message || 'Parent details updated successfully!'}`)
+      pushToast({ title: 'Success', message: response.message || 'Parent details updated successfully', type: 'success' })
       
       // Refresh parent details
       const updatedData = await getParentDetails(studentId)
@@ -805,6 +810,7 @@ const MyProfile = () => {
     } catch (err) {
       console.error('Error updating parent details:', err)
       setError(err.response?.data?.message || err.message || 'Failed to update parent details.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to update parent details', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -884,6 +890,7 @@ const MyProfile = () => {
       console.log('Updating address details:', payload)
       const response = await submitAddressDetails(payload)
       setSuccess(`✅ ${response.message || 'Address details updated successfully!'}`)
+      pushToast({ title: 'Success', message: response.message || 'Address details updated successfully', type: 'success' })
       
       // Refresh address details
       const updatedData = await getAddressDetails(studentId)
@@ -897,6 +904,7 @@ const MyProfile = () => {
     } catch (err) {
       console.error('Error updating address details:', err)
       setError(err.response?.data?.message || err.message || 'Failed to update address details.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to update address details', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -975,6 +983,7 @@ const MyProfile = () => {
       
       const response = await insertSchoolDetails(payload)
       setSuccess(`✅ ${response.message || 'School added successfully!'}`)
+      pushToast({ title: 'Success', message: response.message || 'School added successfully', type: 'success' })
       
       // Refresh schools list
       const updatedSchools = await getSchoolMasterDropdown()
@@ -1008,6 +1017,7 @@ const MyProfile = () => {
     } catch (err) {
       console.error('Error adding school:', err)
       setError(err.response?.data?.message || err.message || 'Failed to add school.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to add school', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -1040,6 +1050,7 @@ const MyProfile = () => {
       console.log('Updating last school details:', payload)
       const response = await insertLastSchoolDetails(payload)
       setSuccess(`✅ ${response.message || 'Last school details updated successfully!'}`)
+      pushToast({ title: 'Success', message: response.message || 'Last school details updated successfully', type: 'success' })
       
       // Refresh last school details
       const updatedData = await getLastSchoolDetails(studentId)
@@ -1055,6 +1066,7 @@ const MyProfile = () => {
     } catch (err) {
       console.error('Error updating last school details:', err)
       setError(err.response?.data?.message || err.message || 'Failed to update last school details.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to update last school details', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -1148,11 +1160,13 @@ const MyProfile = () => {
         // Update mode - just console log for now
         console.log('UPDATE Previous School Details (not implemented):', payload)
         setSuccess('✅ Update functionality will be implemented soon (data logged to console)')
+        pushToast({ title: 'Success', message: 'Updated previous school (mock). Data logged to console.', type: 'success' })
       } else {
         // Insert mode
         console.log('INSERT Previous School Details:', payload)
         const response = await insertPreviousSchoolDetails(payload)
         setSuccess(`✅ ${response.message || 'Previous school details added successfully!'}`)
+        pushToast({ title: 'Success', message: response.message || 'Previous school details added successfully', type: 'success' })
         
         // Refresh previous school details
         const updatedData = await getPreviousSchoolDetails(studentId)
@@ -1181,6 +1195,7 @@ const MyProfile = () => {
     } catch (err) {
       console.error('Error saving previous school details:', err)
       setError(err.response?.data?.message || err.message || 'Failed to save previous school details.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to save previous school details', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -1229,11 +1244,13 @@ const MyProfile = () => {
         // Update mode - just console log for now
         console.log('UPDATE Sibling (not implemented):', payload)
         setSuccess('✅ Update functionality will be implemented soon (data logged to console)')
+        pushToast({ title: 'Success', message: 'Updated sibling (mock). Data logged to console.', type: 'success' })
       } else {
         // Insert mode
         console.log('INSERT Sibling:', payload)
         const response = await addSibling(payload)
         setSuccess(`✅ ${response.message || 'Sibling added successfully!'}`)
+        pushToast({ title: 'Success', message: response.message || 'Sibling added successfully', type: 'success' })
         
         // Refresh siblings
         const updatedData = await getSiblings(studentId)
@@ -1252,6 +1269,7 @@ const MyProfile = () => {
     } catch (err) {
       console.error('Error saving sibling:', err)
       setError(err.response?.data?.message || err.message || 'Failed to save sibling.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to save sibling', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -1303,11 +1321,13 @@ const MyProfile = () => {
         // Update mode - just console log for now
         console.log('UPDATE Best Friend (not implemented):', payload)
         setSuccess('✅ Update functionality will be implemented soon (data logged to console)')
+        pushToast({ title: 'Success', message: 'Updated best friend (mock). Data logged to console.', type: 'success' })
       } else {
         // Insert mode
         console.log('INSERT Best Friend:', payload)
         const response = await addBestFriend(payload)
         setSuccess(`✅ ${response.message || 'Best friend added successfully!'}`)
+        pushToast({ title: 'Success', message: response.message || 'Best friend added successfully', type: 'success' })
         
         // Refresh best friends
         const updatedData = await getBestFriend(studentId)
@@ -1327,6 +1347,7 @@ const MyProfile = () => {
     } catch (err) {
       console.error('Error saving best friend:', err)
       setError(err.response?.data?.message || err.message || 'Failed to save best friend.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to save best friend', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -1376,10 +1397,12 @@ const MyProfile = () => {
         console.log('Inserting new medical details...')
         response = await insertMedicalDetails(payload)
         setSuccess(`✅ ${response.message || 'Medical details added successfully!'}`)
+        pushToast({ title: 'Success', message: response.message || 'Medical details added successfully', type: 'success' })
       } else {
         console.log('Updating existing medical details...')
         response = await updateMedicalDetails(payload)
         setSuccess(`✅ ${response.message || 'Medical details updated successfully!'}`)
+        pushToast({ title: 'Success', message: response.message || 'Medical details updated successfully', type: 'success' })
       }
       
       // Refresh medical details

@@ -24,9 +24,11 @@ import {
   insertDesignation,
   insertIncomeRange
 } from '../../api/api'
+import { useToast } from '../../components'
 
 const RegistrationForm = () => {
   const navigate = useNavigate()
+  const { pushToast } = useToast()
   const [activeTab, setActiveTab] = useState('administration')
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
@@ -113,7 +115,7 @@ const RegistrationForm = () => {
 
   const [formData, setFormData] = useState({
     // Administration Details
-    dateOfAdmission: getTodayDate(), feeCategory: '', organizationName: '', collegeName: '', branch: '',
+    dateOfAdmission: getTodayDate(), feeCategory: '', admissionCategory: '', organizationName: '', collegeName: '', branch: '',
     courseType: '', university: '', financialYear: '', course: '', batchId: '', section: '',
     studentName: '', mobileNumber1: '', studentRegistrationNumber: '', studentUniversityNumber: '',
     mobileNumber2: '', mobileNumber3: '', admissionNo: '', studentId: '', referenceId: '',
@@ -208,6 +210,7 @@ const RegistrationForm = () => {
       } catch (err) {
         console.error('Error loading master data:', err)
         setError('Failed to load master data')
+        pushToast({ title: 'Load Failed', message: 'Failed to load master data', type: 'error' })
       }
     }
     loadMasterData()
@@ -560,6 +563,7 @@ const RegistrationForm = () => {
       const payload = {
         DateOfAdmission: formData.dateOfAdmission,
         FeeCategoryId: parseInt(formData.feeCategory) || 0,
+        AdmissionCategory: parseInt(formData.admissionCategory) || 0,
         OrganizationId: parseInt(formData.organizationName) || 0,
         CollegeId: parseInt(formData.collegeName) || 0,
         BranchId: parseInt(formData.branch) || 0,
@@ -591,7 +595,7 @@ const RegistrationForm = () => {
       console.log('API Response:', response)
 
       // Display success message with returned data
-      if (response) {
+      if (response && response?.StudentID != -1) {
         // Store StudentID for parent details submission
         if (response.StudentID) {
           setStudentId(response.StudentID)
@@ -629,11 +633,18 @@ const RegistrationForm = () => {
             setSuccess('')
           }, 2000)
         }
+
+        pushToast({ title: 'Success', message: response.Message || 'Administration submitted successfully', type: 'success' })
+      }
+      else {
+        setError(response.Message || 'Failed to submit registration. Please try again.')
+        pushToast({ title: 'Error', message: response.Message || 'Failed to submit registration. Please try again.', type: 'error' })
       }
 
     } catch (err) {
       console.error('Error submitting registration:', err)
       setError(err.response?.data?.message || err.message || 'Failed to submit registration. Please try again.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to submit registration', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -671,8 +682,10 @@ const RegistrationForm = () => {
       const response = await updateStudentDetails(payload)
       setSuccess(`✅ ${response.message || 'Student details updated successfully!'}`)
       setTimeout(() => { setActiveTab('parentGuardian'); setSuccess('') }, 2000)
+      pushToast({ title: 'Success', message: response.message || 'Student details updated successfully', type: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to update student details.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to update student details', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -728,8 +741,10 @@ const RegistrationForm = () => {
       const response = await insertParentDetails(payload)
       setSuccess(`✅ ${response.message || 'Parent details saved successfully!'}`)
       setTimeout(() => { setActiveTab('address'); setSuccess('') }, 2000)
+      pushToast({ title: 'Success', message: response.message || 'Parent details saved successfully', type: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to submit parent details.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to submit parent details', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -771,8 +786,10 @@ const RegistrationForm = () => {
       const response = await submitAddressDetails(payload)
       setSuccess(`✅ ${response.message || 'Address saved successfully!'}`)
       setTimeout(() => { setActiveTab('lastSchool'); setSuccess('') }, 2000)
+      pushToast({ title: 'Success', message: response.message || 'Address saved successfully', type: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to submit address.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to submit address', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -807,8 +824,10 @@ const RegistrationForm = () => {
       const response = await insertLastSchoolDetails(payload)
       setSuccess(`✅ ${response.message || 'Last school details inserted successfully!'}`)
       setTimeout(() => { setActiveTab('previousSchool'); setSuccess('') }, 2000)
+      pushToast({ title: 'Success', message: response.message || 'Last school details inserted successfully', type: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to submit last school details.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to submit last school details', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -902,8 +921,10 @@ const RegistrationForm = () => {
       setSuccess(`✅ All ${previousSchoolsList.length} previous school record(s) saved successfully!`)
       setPreviousSchoolsList([]) // Clear the list after successful submit
       setTimeout(() => { setActiveTab('sibling'); setSuccess('') }, 2000)
+      pushToast({ title: 'Success', message: `All ${previousSchoolsList.length} previous school record(s) saved successfully`, type: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to submit previous school details.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to submit previous school details', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -974,8 +995,10 @@ const RegistrationForm = () => {
       setSuccess(`✅ All ${siblingsList.length} sibling(s) saved successfully!`)
       setSiblingsList([]) // Clear the list after successful submit
       setTimeout(() => { setActiveTab('bestFriend'); setSuccess('') }, 2000)
+      pushToast({ title: 'Success', message: `All ${siblingsList.length} sibling(s) saved successfully`, type: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to add sibling.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to add sibling', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -1054,8 +1077,10 @@ const RegistrationForm = () => {
       setSuccess(`✅ All ${bestFriendsList.length} best friend(s) saved successfully!`)
       setBestFriendsList([]) // Clear the list after successful submit
       setTimeout(() => { setActiveTab('medical'); setSuccess('') }, 2000)
+      pushToast({ title: 'Success', message: `All ${bestFriendsList.length} best friend(s) saved successfully`, type: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to add best friend.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to add best friend', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -1082,8 +1107,10 @@ const RegistrationForm = () => {
       const response = await insertMedicalRecord(payload)
       setSuccess(`✅ ${response.message || 'Medical record inserted successfully!'}`)
       setTimeout(() => { setActiveTab('transport'); setSuccess('') }, 2000)
+      pushToast({ title: 'Success', message: response.message || 'Medical record inserted successfully', type: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to submit medical record.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to submit medical record', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -1110,8 +1137,10 @@ const RegistrationForm = () => {
       const response = await insertTransportDetails(payload)
       setSuccess(`✅ ${response.message || 'Transport details saved successfully!'}`)
       setTimeout(() => setSuccess(''), 5000)
+      pushToast({ title: 'Success', message: response.message || 'Transport details saved successfully', type: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to submit transport details.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to submit transport details', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -1161,6 +1190,7 @@ const RegistrationForm = () => {
       }
       const response = await insertSchoolDetails(payload)
       setSuccess(`✅ ${response.message || 'School added successfully!'}`)
+      pushToast({ title: 'Success', message: response.message || 'School added successfully', type: 'success' })
 
       // Refresh schools list
       const updatedSchools = await getSchoolMasterDropdown()
@@ -1194,6 +1224,7 @@ const RegistrationForm = () => {
     } catch (err) {
       console.error('Error adding school:', err)
       setError(err.response?.data?.message || err.message || 'Failed to add school.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to add school', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -1275,6 +1306,7 @@ const RegistrationForm = () => {
       }
 
       setSuccess(`✅ ${successMessage}`)
+      pushToast({ title: 'Success', message: successMessage, type: 'success' })
 
       // Reset and close modal
       setNewModalData({
@@ -1292,6 +1324,7 @@ const RegistrationForm = () => {
 
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to add record.')
+      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to add record', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -1650,6 +1683,14 @@ const RegistrationForm = () => {
                         {feeCategories.map(category => (
                           <option key={category.Id} value={category.Id}>{category.FeeCategoryName}</option>
                         ))}
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel>Admission Category</CFormLabel>
+                      <CFormSelect name="admissionCategory" value={formData.admissionCategory} onChange={handleChange}>
+                        <option value="">Select Admission Category</option>
+                        <option value="1">PPP</option>
+                        <option value="2">Government</option>
                       </CFormSelect>
                     </CCol>
 
@@ -2176,7 +2217,15 @@ const RegistrationForm = () => {
                       <CCol md={4}><CFormLabel>Medium of Instruction</CFormLabel><CFormInput name="mediumOfInstruction" value={formData.mediumOfInstruction} onChange={handleChange} placeholder="Enter medium" /></CCol>
                       <CCol md={4}><CFormLabel>TC Number</CFormLabel><CFormInput name="tcNumber" value={formData.tcNumber} onChange={handleChange} placeholder="Enter TC number" /></CCol>
                       <CCol md={4}><CFormLabel>Roll Number</CFormLabel><CFormInput name="rollNumber" value={formData.rollNumber} onChange={handleChange} placeholder="Enter roll number" /></CCol>
-                      <CCol md={4}><CFormLabel>Passing Year</CFormLabel><CFormInput name="passingYear" value={formData.passingYear} onChange={handleChange} placeholder="Enter passing year" /></CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Passing Year</CFormLabel>
+                        <CFormSelect name="passingYear" value={formData.passingYear} onChange={handleChange}>
+                          <option value="">Select year</option>
+                          {Array.from({ length: new Date().getFullYear() - 2004 + 1 }, (_, i) => 2004 + i).map((year) => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
                       <CCol md={4}><CFormLabel>Last Class Passed</CFormLabel><CFormInput name="lastClassPassed" value={formData.lastClassPassed} onChange={handleChange} placeholder="Enter last class" /></CCol>
                       <CCol md={4}><CFormLabel>Total Marks</CFormLabel><CFormInput type="number" name="totalMarks" value={formData.totalMarks} onChange={handleChange} placeholder="Enter total marks" /></CCol>
                       <CCol md={4}><CFormLabel>Obtained Marks</CFormLabel><CFormInput type="number" name="obtainedMarks" value={formData.obtainedMarks} onChange={handleChange} placeholder="Enter obtained marks" /></CCol>

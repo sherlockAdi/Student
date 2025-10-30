@@ -7,8 +7,10 @@ import CIcon from '@coreui/icons-react'
 import { cilSearch, cilUser, cilPhone, cilX } from '@coreui/icons'
 import { searchStudentByText } from '../../api/api'
 import MyProfile from '../../components/UpdateStudentProfile'
+import { useToast } from '../../components'
 
 const UpdateStudent = () => {
+  const { pushToast } = useToast()
   const [searchText, setSearchText] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [selectedStudent, setSelectedStudent] = useState(null)
@@ -20,6 +22,7 @@ const UpdateStudent = () => {
   const handleSearch = async () => {
     if (searchText.trim().length < 2) {
       setError('Please enter at least 2 characters to search')
+      pushToast({ title: 'Validation', message: 'Please enter at least 2 characters to search', type: 'warning' })
       setSearchResults([])
       setShowDropdown(false)
       return
@@ -33,10 +36,12 @@ const UpdateStudent = () => {
       const results = await searchStudentByText(searchText)
       setSearchResults(results || [])
       setShowDropdown(true)
+      pushToast({ title: 'Search Complete', message: `Found ${results?.length || 0} student(s)`, type: 'success' })
     } catch (err) {
       console.error('Error searching students:', err)
       setError('Failed to search students')
       setSearchResults([])
+      pushToast({ title: 'Error', message: 'Failed to search students', type: 'error' })
     } finally {
       setSearching(false)
     }

@@ -50,7 +50,7 @@ const Login = () => {
       }
       
       // Role-based navigation
-      if(data.RoleId === "1"){
+      if(data.RoleId === "1" || data.RoleId === "3"){
         loginAs('admin')
         const from = location.state?.from?.pathname
         if (from) {
