@@ -19,10 +19,11 @@ import {
   insertTransportDetails, getTransportRoutes, getTransportStops, getCountries,
   getStatesByCountry, getDistrictsByState, getAreasByDistrict, insertSchoolDetails,
   getFeeCategories, getDesignations, getProfessions, getIncomeRanges,
-  getFinancialYears,
+  getFinancialYears, getAdmissionCategories,
   insertProfession,
   insertDesignation,
-  insertIncomeRange
+  insertIncomeRange,
+  searchStudentByText
 } from '../../api/api'
 import { useToast } from '../../components'
 
@@ -84,6 +85,7 @@ const RegistrationForm = () => {
   const [designations, setDesignations] = useState([])
   const [professions, setProfessions] = useState([])
   const [incomeRanges, setIncomeRanges] = useState([])
+  const [admissionCategories, setAdmissionCategories] = useState([])
   const [pStates, setPStates] = useState([])
   const [pDistricts, setPDistricts] = useState([])
   const [pAreas, setPAreas] = useState([])
@@ -103,6 +105,11 @@ const RegistrationForm = () => {
   })
   const [guardianMobileErr, setGuardianMobileErr] = useState('');
 
+  // Sibling search UI state
+  const [siblingSearchText, setSiblingSearchText] = useState('')
+  const [siblingSearchResults, setSiblingSearchResults] = useState([])
+  const [siblingSearching, setSiblingSearching] = useState(false)
+  const [siblingShowDropdown, setSiblingShowDropdown] = useState(false)
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -119,51 +126,34 @@ const RegistrationForm = () => {
     courseType: '', university: '', financialYear: '', course: '', batchId: '', section: '',
     studentName: '', mobileNumber1: '', studentRegistrationNumber: '', studentUniversityNumber: '',
     mobileNumber2: '', mobileNumber3: '', admissionNo: '', studentId: '', referenceId: '',
-    adminFatherName: '', adminMotherName: '',
-
-    // Student Details
-    emailId: '', gender: '', dateOfBirth: '', nationality: '', birthplace: '', motherTongue: '',
-    category: '', subCategory: '', minority: '', religion: '', bloodGroup: '', adharCardNumber: '',
-    domicile: '', panNo: '',
-
-    // Parent and Guardian Details
-    fatherName: '', fatherMobileAdmission: '', fatherContactNo: '', fatherEmailId: '', fatherAdharNo: '',
-    fatherQualification: '', fatherProfession: '', fatherCompanyName: '', fatherOfficeAddress: '',
-    fatherDesignation: '', familyIncome: '', motherName: '', motherContactNumber: '', motherMobileAdmission: '',
-    motherEmailId: '', motherQualification: '', motherProfession: '', motherOfficeAddress: '', guardianName: '',
-    guardianMobileAdmission: '', guardianMobileNo: '', guardianEmailId: '', relationWithStudent: '',
+    adminFatherName: '', adminMotherName: '', emailId: '', gender: '', dateOfBirth: '', nationality: '',
+    birthplace: '', motherTongue: '', category: '', subCategory: '', minority: '', religion: '',
+    bloodGroup: '', adharCardNumber: '', domicile: '', panNo: '', fatherName: '', fatherMobileAdmission: '',
+    fatherContactNo: '', fatherEmailId: '', fatherAdharNo: '', fatherQualification: '', fatherProfession: '',
+    fatherCompanyName: '', fatherOfficeAddress: '', fatherDesignation: '', familyIncome: '', motherName: '',
+    motherContactNumber: '', motherMobileAdmission: '', motherEmailId: '', motherQualification: '',
+    motherProfession: '', motherOfficeAddress: '', guardianName: '', guardianMobileAdmission: '',
+    guardianMobileNo: '', guardianEmailId: '', relationWithStudent: '',
     spouseName: '', spouseContactNo: '', spouseMobileAdmission: '', spouseEmailId: '', spouseQualification: '',
-    spouseProfession: '', spouseOfficeAddress: '',
-
-    // Login Details
-    studentUserId: '', studentPassword: '', parentLoginId: '', parentPassword: '',
-
-    // Address Details
-    pCountry: '', pState: '', pDistrict: '', pArea: '', pPincode: '', pAddress: '',
-    cCountry: '', cState: '', cDistrict: '', cArea: '', cPincode: '', cAddress: '',
-    gCountry: '', gState: '', gDistrict: '', gArea: '', gPincode: '', gAddress: '',
-
-    // Last School
+    spouseProfession: '', spouseOfficeAddress: '', studentUserId: '',
+    studentPassword: '', parentLoginId: '', parentPassword: '', pCountry: '', pState: '', pDistrict: '',
+    pArea: '', pPincode: '', pAddress: '', cCountry: '', cState: '', cDistrict: '', cArea: '', cPincode: '',
+    cAddress: '', gCountry: '', gState: '', gDistrict: '', gArea: '', gPincode: '', gAddress: '',
     schoolCollege: '', schoolPrincipalName: '', schoolMobileNo: '', schoolEmailId: '',
     bestSchoolTeacherName: '', bestSchoolTeacherMobile: '', bestSchoolTeacherEmail: '',
     bestCoachingTeacherName: '', bestCoachingTeacherMobile: '', bestCoachingTeacherEmail: '',
 
-    // Previous School Details
-    prevSchoolCollegeName: '', educationBoard: '', mediumOfInstruction: '', tcNumber: '',
-    rollNumber: '', passingYear: '', lastClassPassed: '', totalMarks: '', obtainedMarks: '',
+    prevSchoolCollegeName: '', educationBoard: '', mediumOfInstruction: '',
+    tcNumber: '', rollNumber: '', passingYear: '', lastClassPassed: '', totalMarks: '', obtainedMarks: '',
     percentageCgpa: '', reasonForSchoolChange: '',
 
-    // School List / School Master
     schoolMasterName: '', schoolCountry: '', schoolState: '', schoolDistrict: '', schoolArea: '',
     schoolPincode: '', schoolContactNo: '', schoolEmailId: '', schoolWebsite: '',
 
-    // Sibling & Best Friend
     siblingId: '', siblingRelationship: '', friendId: '', friendName: '', friendMobile: '',
 
-    // Medical Records
     height: '', weight: '', medicalBloodGroup: '',
 
-    // Transport
     transportYesNo: '', routeId: '', stopId: '',
   })
 
@@ -179,7 +169,7 @@ const RegistrationForm = () => {
           setFormData(prev => ({ ...prev, referenceId: userId }))
         }
 
-        const [feeCatsData, orgsData, natsData, tonguesData, catsData, relsData, schoolsData, routesData, countriesData, desgsData, profsData, incomesData, finYearsData] = await Promise.all([
+        const [feeCatsData, orgsData, natsData, tonguesData, catsData, relsData, schoolsData, routesData, countriesData, desgsData, profsData, incomesData, finYearsData, admissionCatsData] = await Promise.all([
           getFeeCategories(),
           getOrganizations(),
           getNationalities(),
@@ -192,7 +182,8 @@ const RegistrationForm = () => {
           getDesignations(),
           getProfessions(),
           getIncomeRanges(),
-          getFinancialYears()
+          getFinancialYears(),
+          getAdmissionCategories()
         ])
         setFeeCategories(feeCatsData || [])
         setOrganizations(orgsData || [])
@@ -207,6 +198,7 @@ const RegistrationForm = () => {
         setProfessions(profsData || [])
         setIncomeRanges(incomesData || [])
         setFinancialYears(finYearsData || [])
+        setAdmissionCategories(admissionCatsData || [])
       } catch (err) {
         console.error('Error loading master data:', err)
         setError('Failed to load master data')
@@ -930,75 +922,78 @@ const RegistrationForm = () => {
     }
   }
 
+  const handleSiblingSearch = async () => {
+    if (siblingSearchText.trim().length < 2) {
+      setError('Please enter at least 2 characters to search sibling')
+      setSiblingSearchResults([])
+      setSiblingShowDropdown(false)
+      return
+    }
+    setSiblingSearching(true)
+    setError('')
+    setSiblingShowDropdown(false)
+    try {
+      const results = await searchStudentByText(siblingSearchText)
+      setSiblingSearchResults(results || [])
+      setSiblingShowDropdown(true)
+    } catch (err) {
+      console.error('Error searching sibling:', err)
+      setError('Failed to search students for sibling')
+      setSiblingSearchResults([])
+    } finally {
+      setSiblingSearching(false)
+    }
+  }
+
+  const handleSelectSibling = (student) => {
+    setFormData(prev => ({ ...prev, siblingId: String(student.StudentId) }))
+    setSiblingSearchText('')
+    setSiblingSearchResults([])
+    setSiblingShowDropdown(false)
+  }
+
   const handleAddSiblingToList = () => {
-    if (!formData.siblingId) {
-      setError('Please enter Sibling Student ID')
-      return
+    if (!formData.siblingId || !formData.siblingRelationship) return
+    // If search results contained the selected, try to find details; else add minimal
+    const sel = siblingSearchResults.find(s => String(s.StudentId) === String(formData.siblingId))
+    const newItem = {
+      siblingStudentId: String(formData.siblingId),
+      relationship: formData.siblingRelationship,
+      studentName: sel?.StudentName || '',
+      mobile: sel?.Mobileno1 || '',
+      admissionNo: sel?.AdmissionNo || '',
+      email: sel?.EmailId || ''
     }
-
-    if (!formData.siblingRelationship) {
-      setError('Please select Relationship')
-      return
-    }
-
-    const newSibling = {
-      siblingStudentId: formData.siblingId,
-      relationship: formData.siblingRelationship
-    }
-
-    setSiblingsList(prev => [...prev, newSibling])
-    setSuccess('✅ Sibling added to list!')
-
-    // Clear sibling fields
-    setFormData(prev => ({
-      ...prev,
-      siblingId: '',
-      siblingRelationship: ''
-    }))
-
-    setTimeout(() => setSuccess(''), 2000)
+    setSiblingsList(prev => [...prev, newItem])
+    setFormData(prev => ({ ...prev, siblingId: '', siblingRelationship: '' }))
   }
 
   const handleRemoveSibling = (index) => {
     setSiblingsList(prev => prev.filter((_, i) => i !== index))
-    setSuccess('✅ Sibling removed from list')
-    setTimeout(() => setSuccess(''), 2000)
   }
 
   const handleSiblingSubmit = async () => {
-    if (!studentId) {
-      setError('Please submit Administration details first.')
-      return
-    }
-
-    if (siblingsList.length === 0) {
-      setError('Please add at least one sibling to the list')
-      return
-    }
-
+    if (!studentId || siblingsList.length === 0) return
     setLoading(true)
     setError('')
     setSuccess('')
 
     try {
-      // Submit each sibling record
-      for (const sibling of siblingsList) {
+      for (const s of siblingsList) {
         const payload = {
           StudentId: studentId,
-          SiblingStudentId: parseInt(sibling.siblingStudentId) || 0,
-          Relationship: sibling.relationship
+          SiblingStudentId: parseInt(s.siblingStudentId) || 0,
+          Relationship: s.relationship || ''
         }
-
         await addSibling(payload)
       }
-
-      setSuccess(`✅ All ${siblingsList.length} sibling(s) saved successfully!`)
-      setSiblingsList([]) // Clear the list after successful submit
-      setTimeout(() => { setActiveTab('bestFriend'); setSuccess('') }, 2000)
-      pushToast({ title: 'Success', message: `All ${siblingsList.length} sibling(s) saved successfully`, type: 'success' })
+      setSuccess(`✅ Saved ${siblingsList.length} sibling(s) successfully`)
+      // Clear list after save
+      setSiblingsList([])
+      setTimeout(() => setSuccess(''), 2000)
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to add sibling.')
-      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to add sibling', type: 'error' })
+      console.error('Error saving siblings:', err)
+      setError(err.response?.data?.message || err.message || 'Failed to save siblings')
     } finally {
       setLoading(false)
     }
@@ -1350,14 +1345,22 @@ const RegistrationForm = () => {
         studentPassword: '', parentLoginId: '', parentPassword: '', pCountry: '', pState: '', pDistrict: '',
         pArea: '', pPincode: '', pAddress: '', cCountry: '', cState: '', cDistrict: '', cArea: '', cPincode: '',
         cAddress: '', gCountry: '', gState: '', gDistrict: '', gArea: '', gPincode: '', gAddress: '',
-        schoolCollege: '', schoolPrincipalName: '', schoolMobileNo: '', schoolEmailId: '', bestSchoolTeacherName: '',
-        bestSchoolTeacherMobile: '', bestSchoolTeacherEmail: '', bestCoachingTeacherName: '', bestCoachingTeacherMobile: '',
-        bestCoachingTeacherEmail: '', prevSchoolCollegeName: '', educationBoard: '', mediumOfInstruction: '',
+        schoolCollege: '', schoolPrincipalName: '', schoolMobileNo: '', schoolEmailId: '',
+        bestSchoolTeacherName: '', bestSchoolTeacherMobile: '', bestSchoolTeacherEmail: '',
+        bestCoachingTeacherName: '', bestCoachingTeacherMobile: '', bestCoachingTeacherEmail: '',
+
+        prevSchoolCollegeName: '', educationBoard: '', mediumOfInstruction: '',
         tcNumber: '', rollNumber: '', passingYear: '', lastClassPassed: '', totalMarks: '', obtainedMarks: '',
-        percentageCgpa: '', reasonForSchoolChange: '', schoolMasterName: '', schoolCountry: '', schoolState: '',
-        schoolDistrict: '', schoolArea: '', schoolPincode: '', schoolContactNo: '', schoolEmailId: '', schoolWebsite: '',
-        siblingId: '', siblingRelationship: '', friendId: '', friendName: '', friendMobile: '', height: '',
-        weight: '', medicalBloodGroup: '', transportYesNo: '', routeId: '', stopId: '',
+        percentageCgpa: '', reasonForSchoolChange: '',
+
+        schoolMasterName: '', schoolCountry: '', schoolState: '', schoolDistrict: '', schoolArea: '',
+        schoolPincode: '', schoolContactNo: '', schoolEmailId: '', schoolWebsite: '',
+
+        siblingId: '', siblingRelationship: '', friendId: '', friendName: '', friendMobile: '',
+
+        height: '', weight: '', medicalBloodGroup: '',
+
+        transportYesNo: '', routeId: '', stopId: '',
       })
       setMobileErrors({
         mobileNumber1: '',
@@ -1689,8 +1692,9 @@ const RegistrationForm = () => {
                       <CFormLabel>Admission Category</CFormLabel>
                       <CFormSelect name="admissionCategory" value={formData.admissionCategory} onChange={handleChange}>
                         <option value="">Select Admission Category</option>
-                        <option value="1">PPP</option>
-                        <option value="2">Government</option>
+                        {admissionCategories.map(cat => (
+                          <option key={cat.Id} value={cat.Id}>{cat.AdmissionCategoryName}</option>
+                        ))}
                       </CFormSelect>
                     </CCol>
 
@@ -2315,17 +2319,50 @@ const RegistrationForm = () => {
                 <CTabPane visible={activeTab === 'sibling'}>
                   <CRow className="g-3">
                     <CCol xs={12}><h6 className="text-primary">👨‍👩‍👧‍👦 Sibling Information</h6></CCol>
-                    <CCol md={4}>
+                    <CCol md={6}>
                       <CFormLabel>Sibling Student ID <span className="text-danger">*</span></CFormLabel>
                       <CFormInput
-                        type="number"
+                        type="text"
                         name="siblingId"
                         value={formData.siblingId}
                         onChange={handleChange}
-                        placeholder="Enter sibling student ID"
+                        placeholder="Enter or select sibling student ID"
                       />
+                      <div className="mt-2">
+                        <CFormLabel>Search Student</CFormLabel>
+                        <div className="d-flex gap-2">
+                          <CFormInput
+                            type="text"
+                            value={siblingSearchText}
+                            onChange={(e) => setSiblingSearchText(e.target.value)}
+                            placeholder="Type name, SRN, or mobile"
+                          />
+                          <CButton color="primary" onClick={handleSiblingSearch} disabled={siblingSearching}>
+                            {siblingSearching ? <><CSpinner size="sm" className="me-1"/>Searching...</> : 'Search'}
+                          </CButton>
+                        </div>
+                      </div>
+                      {siblingShowDropdown && (
+                        <div className="mt-2 border rounded" style={{ maxHeight: 240, overflowY: 'auto' }}>
+                          {siblingSearchResults.length > 0 ? (
+                            siblingSearchResults.map((stu) => (
+                              <div
+                                key={stu.StudentId}
+                                className="p-2 hover-bg-light"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => handleSelectSibling(stu)}
+                              >
+                                <div><strong>{stu.StudentName}</strong> <span className="badge bg-info ms-2">ID: {stu.StudentId}</span></div>
+                                <div className="text-muted small">📞 {stu.Mobileno1 || 'N/A'} · 🆔 {stu.AdmissionNo || 'N/A'} · 📧 {stu.EmailId || 'N/A'}</div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-2 text-muted">No students found</div>
+                          )}
+                        </div>
+                      )}
                     </CCol>
-                    <CCol md={4}>
+                    <CCol md={3}>
                       <CFormLabel>Relationship <span className="text-danger">*</span></CFormLabel>
                       <CFormSelect
                         name="siblingRelationship"
@@ -2341,7 +2378,7 @@ const RegistrationForm = () => {
                         <option value="Step-Sister">Step-Sister</option>
                       </CFormSelect>
                     </CCol>
-                    <CCol md={4} className="d-flex align-items-end">
+                    <CCol md={3} className="d-flex align-items-end">
                       <CButton
                         type="button"
                         color="primary"
@@ -2362,6 +2399,9 @@ const RegistrationForm = () => {
                               <tr>
                                 <th>#</th>
                                 <th>Sibling Student ID</th>
+                                <th>Name</th>
+                                <th>Mobile</th>
+                                <th>Admission No</th>
                                 <th>Relationship</th>
                                 <th>Action</th>
                               </tr>
@@ -2371,6 +2411,9 @@ const RegistrationForm = () => {
                                 <tr key={index}>
                                   <td>{index + 1}</td>
                                   <td>{sibling.siblingStudentId}</td>
+                                  <td>{sibling.studentName || '—'}</td>
+                                  <td>{sibling.mobile || '—'}</td>
+                                  <td>{sibling.admissionNo || '—'}</td>
                                   <td>{sibling.relationship}</td>
                                   <td>
                                     <CButton

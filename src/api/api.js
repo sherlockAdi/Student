@@ -2,8 +2,8 @@ import axios from 'axios'
 
 const api = axios.create({
   // Leave baseURL blank to allow Vite proxy in development
-  // baseURL: 'http://localhost:62623/',
-  baseURL: 'http://61.246.33.108:8069/',
+  baseURL: 'http://localhost:62623/',
+  // baseURL: 'http://61.246.33.108:8069/',
   timeout: 10000, // 10 second timeout to prevent hanging requests
   headers: {
     'Content-Type': 'application/json',
@@ -395,6 +395,12 @@ export async function getAllStudents(params = {}) {
 export async function getFeeCategories() {
   const { data } = await api.get('/studentapi/feecategory/all');
   return data; // [{ Id: 1, FeeCategoryName: "Govt (GEN/OBC)", Status: true, Archive: false }]
+}
+
+// Get Admission Categories
+export async function getAdmissionCategories() {
+  const { data } = await api.get('/studentapi/admissioncategory/all');
+  return data;
 }
 
 // 👔 Get Designations
