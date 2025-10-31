@@ -23,7 +23,8 @@ import {
   insertProfession,
   insertDesignation,
   insertIncomeRange,
-  searchStudentByText
+  searchStudentByText,
+  getStudentDetailsByStudentId
 } from '../../api/api'
 import { useToast } from '../../components'
 
@@ -110,6 +111,14 @@ const RegistrationForm = () => {
   const [siblingSearchResults, setSiblingSearchResults] = useState([])
   const [siblingSearching, setSiblingSearching] = useState(false)
   const [siblingShowDropdown, setSiblingShowDropdown] = useState(false)
+  const [siblingSelectedDetails, setSiblingSelectedDetails] = useState(null)
+
+  // Best Friend search UI state
+  const [friendSearchText, setFriendSearchText] = useState('')
+  const [friendSearchResults, setFriendSearchResults] = useState([])
+  const [friendSearching, setFriendSearching] = useState(false)
+  const [friendShowDropdown, setFriendShowDropdown] = useState(false)
+  const [friendSelectedDetails, setFriendSelectedDetails] = useState(null)
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -945,27 +954,67 @@ const RegistrationForm = () => {
     }
   }
 
-  const handleSelectSibling = (student) => {
+  const handleSelectSibling = async (student) => {
     setFormData(prev => ({ ...prev, siblingId: String(student.StudentId) }))
     setSiblingSearchText('')
     setSiblingSearchResults([])
     setSiblingShowDropdown(false)
+    // Try to fetch full details for richer display
+    try {
+      const details = await getStudentDetailsByStudentId(student.StudentId)
+      setSiblingSelectedDetails(details || student)
+    } catch (e) {
+      setSiblingSelectedDetails(student)
+    }
   }
 
-  const handleAddSiblingToList = () => {
+  const handleAddSiblingToList = async () => {
     if (!formData.siblingId || !formData.siblingRelationship) return
-    // If search results contained the selected, try to find details; else add minimal
-    const sel = siblingSearchResults.find(s => String(s.StudentId) === String(formData.siblingId))
+    const idStr = String(formData.siblingId)
+    let detail = siblingSelectedDetails
+    // If no selected detail or mismatched, try to fetch by ID
+    if (!detail || String(detail.StudentId) !== idStr) {
+      const inlineSel = siblingSearchResults.find(s => String(s.StudentId) === idStr)
+      if (inlineSel) {
+        try {
+          const full = await getStudentDetailsByStudentId(inlineSel.StudentId)
+          detail = full || inlineSel
+        } catch (e) {
+          detail = inlineSel
+        }
+      } else {
+        try {
+          const full = await getStudentDetailsByStudentId(parseInt(idStr))
+          detail = full || null
+        } catch (e) {
+          detail = null
+        }
+      }
+    }
     const newItem = {
-      siblingStudentId: String(formData.siblingId),
+      siblingStudentId: idStr,
       relationship: formData.siblingRelationship,
-      studentName: sel?.StudentName || '',
-      mobile: sel?.Mobileno1 || '',
-      admissionNo: sel?.AdmissionNo || '',
-      email: sel?.EmailId || ''
+      EmailId: detail?.EmailId || '',
+      Mobileno1: detail?.Mobileno1 || '',
+      StudentName: detail?.StudentName || '',
+      AdmissionNo: detail?.AdmissionNo || '',
+      Gender: detail?.Gender || '',
+      DateOfBirth: detail?.DateOfBirth || '',
+      NationalityId: detail?.NationalityId || '',
+      Birthplace: detail?.Birthplace || '',
+      MotherTongueId: detail?.MotherTongueId || '',
+      Category: detail?.Category || '',
+      SubCategory: detail?.SubCategory || '',
+      Minority: detail?.Minority || '',
+      Religion: detail?.Religion || '',
+      BloodGroup: detail?.BloodGroup || '',
+      AadharCardNumber: detail?.AadharCardNumber || '',
+      Domicile: detail?.Domicile || '',
+      PanNo: detail?.PanNo || ''
     }
     setSiblingsList(prev => [...prev, newItem])
     setFormData(prev => ({ ...prev, siblingId: '', siblingRelationship: '' }))
+    setSiblingSelectedDetails(null)
   }
 
   const handleRemoveSibling = (index) => {
@@ -999,46 +1048,103 @@ const RegistrationForm = () => {
     }
   }
 
-  const handleAddBestFriendToList = () => {
+  const handleFriendSearch = async () => {
+    if (friendSearchText.trim().length < 2) {
+      setError('Please enter at least 2 characters to search friend')
+      setFriendSearchResults([])
+      setFriendShowDropdown(false)
+      return
+    }
+    setFriendSearching(true)
+    setError('')
+    setFriendShowDropdown(false)
+    try {
+      const results = await searchStudentByText(friendSearchText)
+      setFriendSearchResults(results || [])
+      setFriendShowDropdown(true)
+    } catch (err) {
+      console.error('Error searching friend:', err)
+      setError('Failed to search students for friend')
+      setFriendSearchResults([])
+    } finally {
+      setFriendSearching(false)
+    }
+  }
+
+  const handleSelectFriend = async (student) => {
+    setFormData(prev => ({ ...prev, friendId: String(student.StudentId), friendName: student.StudentName || prev.friendName, friendMobile: student.Mobileno1 || prev.friendMobile }))
+    setFriendSearchText('')
+    setFriendSearchResults([])
+    setFriendShowDropdown(false)
+    try {
+      const details = await getStudentDetailsByStudentId(student.StudentId)
+      setFriendSelectedDetails(details || student)
+    } catch (e) {
+      setFriendSelectedDetails(student)
+    }
+  }
+
+  const handleAddBestFriendToList = async () => {
     if (!formData.friendId) {
-      setError('Please enter Friend ID')
+      setError('Please select or enter Friend ID')
       return
     }
 
-    if (!formData.friendName) {
-      setError('Please enter Friend Name')
-      return
-    }
-
-    if (!formData.friendMobile) {
-      setError('Please enter Friend Mobile')
-      return
+    const idStr = String(formData.friendId)
+    let detail = friendSelectedDetails
+    if (!detail || String(detail.StudentId) !== idStr) {
+      const inlineSel = friendSearchResults.find(s => String(s.StudentId) === idStr)
+      if (inlineSel) {
+        try {
+          const full = await getStudentDetailsByStudentId(inlineSel.StudentId)
+          detail = full || inlineSel
+        } catch (e) {
+          detail = inlineSel
+        }
+      } else {
+        try {
+          const full = await getStudentDetailsByStudentId(parseInt(idStr))
+          detail = full || null
+        } catch (e) {
+          detail = null
+        }
+      }
     }
 
     const newBestFriend = {
-      friendId: formData.friendId,
-      friendName: formData.friendName,
-      friendMobile: formData.friendMobile
+      friendId: idStr,
+      friendName: formData.friendName || detail?.StudentName || '',
+      friendMobile: formData.friendMobile || detail?.Mobileno1 || '',
+      EmailId: detail?.EmailId || '',
+      Mobileno1: detail?.Mobileno1 || '',
+      StudentName: detail?.StudentName || '',
+      AdmissionNo: detail?.AdmissionNo || '',
+      Gender: detail?.Gender || '',
+      DateOfBirth: detail?.DateOfBirth || '',
+      NationalityId: detail?.NationalityId || '',
+      Birthplace: detail?.Birthplace || '',
+      MotherTongueId: detail?.MotherTongueId || '',
+      Category: detail?.Category || '',
+      SubCategory: detail?.SubCategory || '',
+      Minority: detail?.Minority || '',
+      Religion: detail?.Religion || '',
+      BloodGroup: detail?.BloodGroup || '',
+      AadharCardNumber: detail?.AadharCardNumber || '',
+      Domicile: detail?.Domicile || '',
+      PanNo: detail?.PanNo || ''
     }
 
     setBestFriendsList(prev => [...prev, newBestFriend])
     setSuccess('✅ Best friend added to list!')
 
-    // Clear best friend fields
-    setFormData(prev => ({
-      ...prev,
-      friendId: '',
-      friendName: '',
-      friendMobile: ''
-    }))
-
+    // Clear
+    setFormData(prev => ({ ...prev, friendId: '', friendName: '', friendMobile: '' }))
+    setFriendSelectedDetails(null)
     setTimeout(() => setSuccess(''), 2000)
   }
 
   const handleRemoveBestFriend = (index) => {
     setBestFriendsList(prev => prev.filter((_, i) => i !== index))
-    setSuccess('✅ Best friend removed from list')
-    setTimeout(() => setSuccess(''), 2000)
   }
 
   const handleBestFriendSubmit = async () => {
@@ -2370,12 +2476,12 @@ const RegistrationForm = () => {
                         onChange={handleChange}
                       >
                         <option value="">Select Relationship</option>
-                        <option value="Brother">Brother</option>
-                        <option value="Sister">Sister</option>
-                        <option value="Half-Brother">Half-Brother</option>
-                        <option value="Half-Sister">Half-Sister</option>
-                        <option value="Step-Brother">Step-Brother</option>
-                        <option value="Step-Sister">Step-Sister</option>
+                        <option>Brother</option>
+                        <option>Sister</option>
+                        <option>Half-Brother</option>
+                        <option>Half-Sister</option>
+                        <option>Step-Brother</option>
+                        <option>Step-Sister</option>
                       </CFormSelect>
                     </CCol>
                     <CCol md={3} className="d-flex align-items-end">
@@ -2399,9 +2505,23 @@ const RegistrationForm = () => {
                               <tr>
                                 <th>#</th>
                                 <th>Sibling Student ID</th>
-                                <th>Name</th>
-                                <th>Mobile</th>
-                                <th>Admission No</th>
+                                <th>StudentName</th>
+                                <th>Mobileno1</th>
+                                <th>EmailId</th>
+                                <th>AdmissionNo</th>
+                                <th>Gender</th>
+                                <th>DateOfBirth</th>
+                                <th>NationalityId</th>
+                                <th>Birthplace</th>
+                                <th>MotherTongueId</th>
+                                <th>Category</th>
+                                <th>SubCategory</th>
+                                <th>Minority</th>
+                                <th>Religion</th>
+                                <th>BloodGroup</th>
+                                <th>AadharCardNumber</th>
+                                <th>Domicile</th>
+                                <th>PanNo</th>
                                 <th>Relationship</th>
                                 <th>Action</th>
                               </tr>
@@ -2411,9 +2531,23 @@ const RegistrationForm = () => {
                                 <tr key={index}>
                                   <td>{index + 1}</td>
                                   <td>{sibling.siblingStudentId}</td>
-                                  <td>{sibling.studentName || '—'}</td>
-                                  <td>{sibling.mobile || '—'}</td>
-                                  <td>{sibling.admissionNo || '—'}</td>
+                                  <td>{sibling.StudentName || '—'}</td>
+                                  <td>{sibling.Mobileno1 || '—'}</td>
+                                  <td>{sibling.EmailId || '—'}</td>
+                                  <td>{sibling.AdmissionNo || '—'}</td>
+                                  <td>{sibling.Gender || '—'}</td>
+                                  <td>{sibling.DateOfBirth ? String(sibling.DateOfBirth).slice(0,10) : '—'}</td>
+                                  <td>{sibling.NationalityId || '—'}</td>
+                                  <td>{sibling.Birthplace || '—'}</td>
+                                  <td>{sibling.MotherTongueId || '—'}</td>
+                                  <td>{sibling.Category || '—'}</td>
+                                  <td>{sibling.SubCategory || '—'}</td>
+                                  <td>{sibling.Minority || '—'}</td>
+                                  <td>{sibling.Religion || '—'}</td>
+                                  <td>{sibling.BloodGroup || '—'}</td>
+                                  <td>{sibling.AadharCardNumber || '—'}</td>
+                                  <td>{sibling.Domicile || '—'}</td>
+                                  <td>{sibling.PanNo || '—'}</td>
                                   <td>{sibling.relationship}</td>
                                   <td>
                                     <CButton
@@ -2511,8 +2645,23 @@ const RegistrationForm = () => {
                               <tr>
                                 <th>#</th>
                                 <th>Friend ID</th>
-                                <th>Friend Name</th>
-                                <th>Friend Mobile</th>
+                                <th>StudentName</th>
+                                <th>Mobileno1</th>
+                                <th>EmailId</th>
+                                <th>Admission No</th>
+                                <th>Gender</th>
+                                <th>DateOfBirth</th>
+                                <th>NationalityId</th>
+                                <th>Birthplace</th>
+                                <th>MotherTongueId</th>
+                                <th>Category</th>
+                                <th>SubCategory</th>
+                                <th>Minority</th>
+                                <th>Religion</th>
+                                <th>BloodGroup</th>
+                                <th>AadharCardNumber</th>
+                                <th>Domicile</th>
+                                <th>PanNo</th>
                                 <th>Action</th>
                               </tr>
                             </thead>
@@ -2521,8 +2670,23 @@ const RegistrationForm = () => {
                                 <tr key={index}>
                                   <td>{index + 1}</td>
                                   <td>{friend.friendId}</td>
-                                  <td>{friend.friendName}</td>
-                                  <td>{friend.friendMobile}</td>
+                                  <td>{friend.StudentName || friend.friendName || '—'}</td>
+                                  <td>{friend.Mobileno1 || friend.friendMobile || '—'}</td>
+                                  <td>{friend.EmailId || '—'}</td>
+                                  <td>{friend.AdmissionNo || '—'}</td>
+                                  <td>{friend.Gender || '—'}</td>
+                                  <td>{friend.DateOfBirth ? String(friend.DateOfBirth).slice(0,10) : '—'}</td>
+                                  <td>{friend.NationalityId || '—'}</td>
+                                  <td>{friend.Birthplace || '—'}</td>
+                                  <td>{friend.MotherTongueId || '—'}</td>
+                                  <td>{friend.Category || '—'}</td>
+                                  <td>{friend.SubCategory || '—'}</td>
+                                  <td>{friend.Minority || '—'}</td>
+                                  <td>{friend.Religion || '—'}</td>
+                                  <td>{friend.BloodGroup || '—'}</td>
+                                  <td>{friend.AadharCardNumber || '—'}</td>
+                                  <td>{friend.Domicile || '—'}</td>
+                                  <td>{friend.PanNo || '—'}</td>
                                   <td>
                                     <CButton
                                       color="danger"
