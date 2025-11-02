@@ -45,6 +45,7 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
   const [transportDetails, setTransportDetails] = useState(null)
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [isEditingAdministration, setIsEditingAdministration] = useState(false)
   const [isEditingParent, setIsEditingParent] = useState(false)
   const [isEditingAddress, setIsEditingAddress] = useState(false)
   const [isEditingLastSchool, setIsEditingLastSchool] = useState(false)
@@ -226,6 +227,93 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
     routeId: '',
     stopId: ''
   })
+
+  // Administration editable form state (mirrors Registration fields labels)
+  const [adminEditData, setAdminEditData] = useState({
+    dateOfAdmission: '',
+    feeCategory: '',
+    organizationName: '',
+    collegeName: '',
+    branch: '',
+    courseType: '',
+    university: '',
+    financialYear: '',
+    course: '',
+    batch: '',
+    section: '',
+    studentName: '',
+    studentRegistrationNumber: '',
+    studentUniversityNumber: '',
+    mobileNumber1: '',
+    mobileNumber2: '',
+    mobileNumber3: '',
+    admissionNo: ''
+  })
+
+  const handleAdminEditChange = (e) => {
+    const { name, value } = e.target
+    setAdminEditData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleAdminEditStart = () => {
+    if (adminDetails) {
+      setAdminEditData({
+        dateOfAdmission: adminDetails.DateOfAdmission ? String(adminDetails.DateOfAdmission).slice(0,10) : '',
+        feeCategory: adminDetails.FeeCategoryName || '',
+        organizationName: adminDetails.OrganisationName || '',
+        collegeName: adminDetails.CollegeName || '',
+        branch: adminDetails.BranchName || '',
+        courseType: adminDetails.CourseName || '',
+        university: adminDetails.UniversityName || '',
+        financialYear: adminDetails.FinancialYear || '',
+        course: adminDetails.Course || '',
+        batch: adminDetails.BatchNo || '',
+        section: adminDetails.Section || '',
+        studentName: adminDetails.StudentName || '',
+        studentRegistrationNumber: adminDetails.StudentRegistrationNumber || '',
+        studentUniversityNumber: adminDetails.StudentUniversityNumber || '',
+        mobileNumber1: adminDetails.MobileNumber1 || '',
+        mobileNumber2: adminDetails.MobileNumber2 || '',
+        mobileNumber3: adminDetails.MobileNumber3 || '',
+        admissionNo: adminDetails.AdmissionNo || ''
+      })
+    }
+    setIsEditingAdministration(true)
+  }
+
+  const handleAdminEditCancel = () => {
+    // Restore to data from adminDetails
+    if (adminDetails) {
+      setAdminEditData({
+        dateOfAdmission: adminDetails.DateOfAdmission ? String(adminDetails.DateOfAdmission).slice(0,10) : '',
+        feeCategory: adminDetails.FeeCategoryName || '',
+        organizationName: adminDetails.OrganisationName || '',
+        collegeName: adminDetails.CollegeName || '',
+        branch: adminDetails.BranchName || '',
+        courseType: adminDetails.CourseName || '',
+        university: adminDetails.UniversityName || '',
+        financialYear: adminDetails.FinancialYear || '',
+        course: adminDetails.Course || '',
+        batch: adminDetails.BatchNo || '',
+        section: adminDetails.Section || '',
+        studentName: adminDetails.StudentName || '',
+        studentRegistrationNumber: adminDetails.StudentRegistrationNumber || '',
+        studentUniversityNumber: adminDetails.StudentUniversityNumber || '',
+        mobileNumber1: adminDetails.MobileNumber1 || '',
+        mobileNumber2: adminDetails.MobileNumber2 || '',
+        mobileNumber3: adminDetails.MobileNumber3 || '',
+        admissionNo: adminDetails.AdmissionNo || ''
+      })
+    }
+    setIsEditingAdministration(false)
+  }
+
+  const handleAdminEditSave = () => {
+    // For now, just console all the data; change API will be wired later
+    // eslint-disable-next-line no-console
+    console.log('Administration update payload:', adminEditData)
+    setIsEditingAdministration(false)
+  }
 
   // Load profile data on mount
   useEffect(() => {
@@ -1788,10 +1876,22 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
 
           <CCardBody className="p-4">
             <CTabContent>
-              {/* Administration Tab */}
+              {/* Administration Tab (Editable) */}
               <CTabPane visible={activeTab === 'administration'}>
-                <h5 className="text-primary mb-4 border-bottom pb-2">🏫 Administration Details</h5>
-                {adminDetails ? (
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="text-primary mb-0">🏫 Administration Details</h5>
+                  {!isEditingAdministration && adminDetails && (
+                    <CButton color="primary" size="sm" onClick={handleAdminEditStart}>
+                      <CIcon icon={cilPencil} className="me-1" /> Edit
+                    </CButton>
+                  )}
+                </div>
+
+                {!adminDetails && (
+                  <CAlert color="info">Loading administration details...</CAlert>
+                )}
+
+                {adminDetails && !isEditingAdministration && (
                   <CRow>
                     <InfoRow label="Date of Admission" value={formatDate(adminDetails.DateOfAdmission)} />
                     <InfoRow label="Fee Category" value={adminDetails.FeeCategoryName} />
@@ -1811,8 +1911,38 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
                     <InfoRow label="Mobile Number 2" value={adminDetails.MobileNumber2} />
                     <InfoRow label="Mobile Number 3" value={adminDetails.MobileNumber3} />
                   </CRow>
-                ) : (
-                  <CAlert color="info">Loading administration details...</CAlert>
+                )}
+
+                {adminDetails && isEditingAdministration && (
+                  <CForm onSubmit={(e) => { e.preventDefault(); handleAdminEditSave() }}>
+                    <CRow className="g-3">
+                      <CCol md={4}><CFormLabel>Date of Admission</CFormLabel><CFormInput type="date" name="dateOfAdmission" value={adminEditData.dateOfAdmission} onChange={handleAdminEditChange} /></CCol>
+                      <CCol md={4}><CFormLabel>Fee Category</CFormLabel><CFormSelect name="feeCategory" value={adminEditData.feeCategory} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}><CFormLabel>Organisation Name</CFormLabel><CFormSelect name="organizationName" value={adminEditData.organizationName} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}><CFormLabel>College Name</CFormLabel><CFormSelect name="collegeName" value={adminEditData.collegeName} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}><CFormLabel>Branch</CFormLabel><CFormSelect name="branch" value={adminEditData.branch} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}><CFormLabel>Course Type</CFormLabel><CFormSelect name="courseType" value={adminEditData.courseType} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}><CFormLabel>University</CFormLabel><CFormSelect name="university" value={adminEditData.university} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}><CFormLabel>Financial Year</CFormLabel><CFormSelect name="financialYear" value={adminEditData.financialYear} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}><CFormLabel>Course</CFormLabel><CFormSelect name="course" value={adminEditData.course} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}><CFormLabel>Batch</CFormLabel><CFormSelect name="batch" value={adminEditData.batch} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}><CFormLabel>Section</CFormLabel><CFormSelect name="section" value={adminEditData.section} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+
+                      <CCol md={4}><CFormLabel>Student Name</CFormLabel><CFormInput name="studentName" value={adminEditData.studentName} onChange={handleAdminEditChange} /></CCol>
+                      <CCol md={4}><CFormLabel>SRN</CFormLabel><CFormInput name="studentRegistrationNumber" value={adminEditData.studentRegistrationNumber} onChange={handleAdminEditChange} /></CCol>
+                      <CCol md={4}><CFormLabel>Student University Number</CFormLabel><CFormInput name="studentUniversityNumber" value={adminEditData.studentUniversityNumber} onChange={handleAdminEditChange} /></CCol>
+                      <CCol md={4}><CFormLabel>Mobile Number 1</CFormLabel><CFormInput name="mobileNumber1" value={adminEditData.mobileNumber1} onChange={handleAdminEditChange} /></CCol>
+                      <CCol md={4}><CFormLabel>Mobile Number 2</CFormLabel><CFormInput name="mobileNumber2" value={adminEditData.mobileNumber2} onChange={handleAdminEditChange} /></CCol>
+                      <CCol md={4}><CFormLabel>Mobile Number 3</CFormLabel><CFormInput name="mobileNumber3" value={adminEditData.mobileNumber3} onChange={handleAdminEditChange} /></CCol>
+                      <CCol md={4}><CFormLabel>Admission Number</CFormLabel><CFormInput name="admissionNo" value={adminEditData.admissionNo} onChange={handleAdminEditChange} /></CCol>
+                      <CCol md={4}><CFormLabel>Admission Category</CFormLabel><CFormSelect name="admissionCategory" value={adminEditData.admissionCategory || ''} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+
+                      <CCol xs={12} className="mt-2 d-flex gap-2">
+                        <CButton type="button" color="secondary" onClick={handleAdminEditCancel}><CIcon icon={cilX} className="me-1"/>Cancel</CButton>
+                        <CButton type="submit" color="success">Save (Console)</CButton>
+                      </CCol>
+                    </CRow>
+                  </CForm>
                 )}
               </CTabPane>
 
