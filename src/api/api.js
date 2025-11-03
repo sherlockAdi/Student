@@ -474,5 +474,128 @@ export async function getReligions() {
   const { data } = await api.get('/studentapi/master/religions');
   return data;
 }
+// 🏢 Get FinancialYear Names
+export async function getFinancialYear() {
+  const { data } = await api.get('/studentapi/financialyear/get');
+  return data;
+}
+export async function getCourseList(courseTypeId, universityId, batchId) {  
+  const { data } = await api.get('/studentapi/courses/by-CourseTypeUniversitybatch', {
+    params: {
+      coursetype: 12,
+      universityid: 27,
+      batchid: 6107,
+    },
+  });
+  return data;
+}
+export async function getSections(courseId) {
+  const { data } = await api.get('/studentapi/semesters/by-courseuniversity',{ params: {
+      coursetype: 12,
+      universityid: 27,
+      batchid: 6107,
+      courses: courseId,
+    },});
+  return data;
+}
+export async function getFeeHeads() {
+  try {
+    const { data } = await api.get('/studentapi/feehead/active');
+    return data;
+  } catch (error) {
+    console.error('Error fetching fee heads:', error);
+    throw error;
+  }
+}
+export async function getStudentFeeSummary(financialYear = '', courseId = null, section = null, FeeHeadId = null) {
+  try {
+    const params = new URLSearchParams();
 
+    if (financialYear) {
+      params.append('financialYear', financialYear);
+    }
+
+    if (courseId) {
+      params.append('CourseId', courseId);
+    }
+
+    if (section) {
+      params.append('SectionId', section);
+    }
+
+    if (FeeHeadId) {
+      params.append('feeheadid', FeeHeadId);
+    }
+
+    const { data } = await api.get(`/studentapi/student/fee-summary?${params.toString()}`);
+    return data;
+  } catch (error) {
+    console.error('Error fetching student fee summary:', error);
+    throw error;
+  }
+}
+// 📅 Get Batches by University
+export async function getBatchesByUniversity2(courseTypeId, universityId) {
+  const { data } = await api.get('/studentapi/batches/by-university', {
+    params: {
+      coursetype: 12,
+      universityid: 27,
+    },
+  });
+  return data;
+}
+// 📊 Get Fee Categories
+export async function getFeeCategories() {
+  const { data } = await api.get('/studentapi/feecategory/all');
+  return data;
+}
+// 📊 Get Fee Categories
+export async function getadmissionCategories() {
+  const { data } = await api.get('/studentapi/admissioncategory/all');
+  return data;
+}
+/**
+ * Fetch student records from searchstudent2_New
+ * @param {Object} params - Filters for search
+ * @returns {Promise<Object>} - { success, students, totalRecords, message }
+ */
+export async function getAllStudentRecords(params = {}) {
+  const {
+    CollegeId = 1,       // @collegeid
+    BranchId = 12,        // @branchid
+    CourseId = '%',        // @courseid
+    UniversityId = '%',    // @universityid
+    CourseTypeId = '%',    // @coursetypeid
+    BatchId = '%',         // @batchid
+    SemesterId = '%',      // @semesterid
+    IsLeft = '%',          // @isleft
+    FirstName = '%',       // @firstname (will search full name)
+    CEmail = '%',          // @cemail (admission no)
+    UserId = '%',          // @userid (for private students)
+    mobileno1='%',
+    Gender='%',
+  } = params;
+
+
+    const res = await api.post('/studentapi/searchstudentRecords', {
+      CollegeId,
+      BranchId,
+      CourseId,
+      UniversityId,
+      CourseTypeId,
+      BatchId,
+      SemesterId,
+      IsLeft,
+      FirstName,
+      CEmail,
+      UserId,
+      mobileno1,
+      Gender,
+    });
+    // console.log('Raw response:', response);        
+    // console.log('isSuccess:', response.data.isSuccess);
+    // console.log('data.data:', response.data.data);\
+    return res
+   
+}
 export default api

@@ -23,41 +23,89 @@ import {
   COffcanvas,
   COffcanvasHeader,
   COffcanvasBody,
+  CFormLabel,
 } from '@coreui/react'
-import { getCommonData, getAllStudents } from '../../api/api'
+import { getCommonData, getAllStudents, getOrganizations, getCollegesByOrganization, getBranchesByCollege, getCourseTypesByCollege, getUniversitiesByCourseType, getBatchesByUniversity, getCoursesByBatch, getSectionsByCourse, getFinancialYear,getCasteCategories,getFeeCategories,getadmissionCategories,getAllStudentRecords  } from '../../api/api'
+import { useFormState } from 'react-dom'
 
 
 const StudentList = () => {
   const navigate = useNavigate()
   const location = useLocation()
   // Full filter set via common-data API
+
+  const [organizations, setOrganizations] = useState([])
   const [countries, setCountries] = useState([]); // type=1
   const [states, setStates] = useState([]); // type=2 requires country
   const [districts, setDistricts] = useState([]); // type=3 requires state
   const [tehsils, setTehsils] = useState([]); // type=4 requires district
-  const [castes, setCastes] = useState([]); // type=5
+  
   const [branches, setBranches] = useState([]); // type=6 (parent college optional)
   const [semestersOpt, setSemestersOpt] = useState([]); // type=7
-  const [courses, setCourses] = useState([]); // type=8 (parent optional)
-  const [courseTypes, setCourseTypes] = useState([]); // type=9
+
   const [colleges, setColleges] = useState([]); // type=10
-  const [universities, setUniversities] = useState([]); // type=11
+
 
   // Selected values (ids as strings)
-  const [countryId, setCountryId] = useState('');
-  const [stateId, setStateId] = useState('');
-  const [districtId, setDistrictId] = useState('');
-  const [tehsilId, setTehsilId] = useState('');
-  const [casteId, setCasteId] = useState('');
+  const [OrganizationId, setOrganizationId] = useState('')
   const [collegeId, setCollegeId] = useState('');
   const [branchId, setBranchId] = useState('');
-  const [semesterId, setSemesterId] = useState('');
-  const [courseId, setCourseId] = useState('');
   const [courseTypeId, setCourseTypeId] = useState('');
-  const [universityId, setUniversityId] = useState('');
+  const [coursetypes, setCourseTypes] = useState([]);
+  const [universityId, setUniversityId] = useState([]);
+  const [universities, setUniversities] = useState([]);
+  const [BatchId, setBatchList] = useState([]);
+  const [Batches, setBatches] = useState([]);
+  const [CourseId, setCourseId] = useState('');
+  const [Course, setCourses] = useState([]);
+  const [SectionId, setSection] = useState([]);
+  const [Sections, setSections] = useState([]);
+  const [financialYears, setFinancialYears] = useState([]);
+  const [FeeCategoryId,setFeecategoryId]=useState('');
+  const [feecategories,setFeeCategories]=useState([]);
+  const [admissioncategoryId,setadmissionCategoryId]=useState('');
+  const [admissioncategories,setadmissioncategories]=useState([]);
+  const [mobileno1,setmobile1]=useState('');
+  const [mobileNumber,setMobileNumber]=useState([]);
+  const [Gender,setgender]=useState('');
+  const [Genders,setGenders]=useState([]);
+
+
+  const [filters, setFilters] = useState({
+    CollegeId: '',
+    BranchId: '',
+    CourseId: '',
+    UniversityId: '',
+    CourseTypeId: '',
+    BatchId: '',
+    SemesterId: '',
+    IsLeft: '',
+    FirstName: '',
+    CEmail: '',
+    UserId: '',
+  });
+
+  const [students, setStudents] = useState([]);
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const [countryId, setCountryId] = useState('');
+  const [stateId, setStateId] = useState('');
+  const [, setDistrictId] = useState('');
+  const [tehsilId, setTehsilId] = useState('');
+  const [casteId, setCasteId] = useState('');
+  const [castecategories,setCastes]=useState([]);
+  const [financialYear, setFinancialYear] = useState('')
+
+
+  const [semesterId, setSemesterId] = useState('');
+
+
+
 
   // Server data and paging
-  const [students, setStudents] = useState([]);
+  
   const [totalRecords, setTotalRecords] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -77,55 +125,113 @@ const StudentList = () => {
   // Load top-level option sets
   useEffect(() => {
     (async () => {
-      setCountries(await getCommonData({ type: 1 }));
-      setCastes(await getCommonData({ type: 5 }));
-      setSemestersOpt(await getCommonData({ type: 7 }));
-      setCourses(await getCommonData({ type: 8 }));
-      setCourseTypes(await getCommonData({ type: 9 }));
-      setColleges(await getCommonData({ type: 10 }));
-      setUniversities(await getCommonData({ type: 11 }));
-      // Branches: load all initially to allow All
-      setBranches(await getCommonData({ type: 6 }));
+      setOrganizations(await getOrganizations());
+
+
     })();
   }, []);
 
-  // Cascading loads for region hierarchy
+  // Load colleges when organization changes
   useEffect(() => {
-    (async () => {
-      setStates(countryId ? await getCommonData({ type: 2, parentid: parseInt(countryId) }) : []);
-      setStateId('');
-      setDistrictId('');
-      setTehsilId('');
-      setDistricts([]);
-      setTehsils([]);
-    })();
-  }, [countryId]);
-
+    if (OrganizationId && parseInt(OrganizationId) > 0) {
+      getCollegesByOrganization(OrganizationId)
+        .then(data => setColleges(data || []))
+        .catch(err => console.error('Error loading colleges:', err))
+    } else {
+      setColleges([])
+    }
+  }, [OrganizationId])
+  // Load branches and course types when college changes
   useEffect(() => {
-    (async () => {
-      setDistricts(stateId ? await getCommonData({ type: 3, parentid: parseInt(stateId) }) : []);
-      setDistrictId('');
-      setTehsilId('');
-      setTehsils([]);
-    })();
-  }, [stateId]);
+    if (collegeId && parseInt(collegeId) > 0) {
+      Promise.all([
+        getBranchesByCollege(collegeId),
+        getCourseTypesByCollege(collegeId)
+      ])
+        .then(([branchesData, courseTypesData]) => {
+          setBranches(branchesData || [])
+          setCourseTypes(courseTypesData || [])
+        })
+        .catch(err => console.error('Error loading branches/course types:', err))
+    } else {
+      setBranches([])
+      setCourseTypeId([])
+    }
+  }, [collegeId])
 
+  // Load universities when course type changes
   useEffect(() => {
-    (async () => {
-      setTehsils(districtId ? await getCommonData({ type: 4, parentid: parseInt(districtId) }) : []);
-      setTehsilId('');
-    })();
-  }, [districtId]);
+    if (courseTypeId) {
+      getUniversitiesByCourseType(courseTypeId)
+        .then(data => setUniversities(data || []))
+        .catch(err => console.error('Error loading universities:', err))
+    } else {
+      setUniversities([])
+    }
+  }, [courseTypeId])
 
-  // College -> Branch dependency
+  // Load batches when university changes
   useEffect(() => {
-    (async () => {
-      const list = await getCommonData({ type: 6, parentid: collegeId ? parseInt(collegeId) : -1 });
-      setBranches(list || []);
-      setBranchId('');
-    })();
-  }, [collegeId]);
+    if (courseTypeId && universityId > 0) {
+      getBatchesByUniversity(courseTypeId, universityId)
+        .then(data => setBatches(data || []))
+        .catch(err => console.error('Error loading batches:', err))
+    } else {
+      setBatches([])
+    }
+  }, [courseTypeId, universityId])
 
+  // Load courses when batch changes
+  useEffect(() => {
+    if (courseTypeId && universityId && BatchId) {
+      getCoursesByBatch(courseTypeId, universityId, BatchId)
+        .then(data => {
+          setCourses(data?.Courses || [])
+        })
+        .catch(err => console.error('Error loading courses:', err))
+    } else {
+      setCourses([])
+    }
+  }, [courseTypeId, universityId, BatchId])
+
+  // Load sections when course changes
+  useEffect(() => {
+    if (courseTypeId && universityId && BatchId && CourseId) {
+
+      getSectionsByCourse(courseTypeId, universityId, BatchId, CourseId)
+        .then(data => {
+          console.log(data)
+          setSections(data?.Sections || [])
+          setSemestersOpt(data?.Semesters || [])
+        })
+        .catch(err => console.error('Error loading sections:', err))
+    } else {
+      setSections([])
+    }
+  }, [courseTypeId, universityId, BatchId, CourseId])
+
+  // Load financialyear 
+  useEffect(() => {
+  
+      getFinancialYear()
+        .then(data => setFinancialYears(data || []))
+        .catch(err => console.error('Error loading colleges:', err))
+
+        
+      getCasteCategories()
+        .then(data => setCastes(data || []))
+        .catch(err => console.error('Error loading colleges:', err))
+
+        getFeeCategories()
+        .then(data => setFeeCategories(data || []))
+        .catch(err => console.error('Error loading colleges:', err))
+
+        getadmissionCategories()
+        .then(data => setadmissioncategories(data || []))
+        .catch(err => console.error('Error loading colleges:', err))
+      
+  }, [])
+  
   // Fetch from server
   const fetchStudents = async (page = pageNumber) => {
     setIsLoading(true);
@@ -152,7 +258,8 @@ const StudentList = () => {
         pageSize,
       };
       const res = await getAllStudents(params);
-      if (res?.isSuccess) {
+
+      if (res) {
         setStudents(res.data || []);
         setTotalRecords(res.totalRecords || 0);
       } else {
@@ -174,23 +281,6 @@ const StudentList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-filter when any master data filter changes
-  useEffect(() => {
-    setPageNumber(1);
-    fetchStudents(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collegeId, branchId, courseId, universityId, courseTypeId, semesterId, casteId, gender, isLeft, admissionNo, studentName, mobile]);
-
-  // Refresh when returning from add/edit page
-  useEffect(() => {
-    if (location.state?.refresh) {
-      fetchStudents(1);
-      // Clear the state to prevent refresh on subsequent renders
-      window.history.replaceState({}, document.title);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]);
-
   const onResetFilters = () => {
     setCountryId(''); setStateId(''); setDistrictId(''); setTehsilId('');
     setCasteId(''); setCollegeId(''); setBranchId(''); setSemesterId('');
@@ -206,6 +296,46 @@ const StudentList = () => {
     setPageNumber(page);
     fetchStudents(page);
   };
+
+  const fetchStudentss = async (page = 1, searchFilters = filters) => {
+  setIsLoading(true);
+  console.log(searchFilters)
+  try {
+    const params = {
+      CollegeId: collegeId ? collegeId: '%',
+      BranchId: branchId ? branchId : '%',
+      CourseId: CourseId ? CourseId : '%',
+      UniversityId: universityId ? universityId : '%',
+      CourseTypeId: courseTypeId ? courseTypeId : '%',
+      BatchId: BatchId ? BatchId: '%',
+      SemesterId: semesterId ? semesterId : '%',      
+      isLeft: searchFilters.IsLeft === '' ? null : searchFilters.IsLeft === 'true',
+      CEmail: admissionNo || null,
+      FirstName: studentName || null,
+      mobileno1: mobile || null,
+      Gender:gender ||null,
+      pageNumber: page,
+      pageSize,
+    };
+    console.log(params);
+
+    const res = await getAllStudentRecords(params);
+    if (res) {
+      console.log(res?.data?.data)
+  setStudents(res?.data?.data || []);
+  setTotalRecords(res?.data?.data.length || 0);
+} else {
+  setStudents([]);
+  setTotalRecords(0);
+}
+  } catch (e) {
+    console.error(e);
+    setStudents([]);
+    setTotalRecords(0);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <CRow>
@@ -226,47 +356,80 @@ const StudentList = () => {
           </CCardHeader>
           <CCardBody>
             {/* Full Filter Panel (Common Data) */}
+
             <CForm className="row g-3 mb-3">
               <CCol md={3}>
-                <CFormSelect label="University" value={universityId} onChange={(e) => setUniversityId(e.target.value)}>
-                  <option value="">All Universities</option>
-                  {universities.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                <CFormLabel>Organisation Name </CFormLabel>
+                <CFormSelect name="organizationName" value={OrganizationId} onChange={(e) => setOrganizationId(e.target.value)} >
+                  <option value="">Select Organisation</option>
+                  {organizations && organizations.map(org => (
+                    <option key={org.OrganisationID} value={org.OrganisationID}>{org.OrganisationName}</option>
+                  ))}
                 </CFormSelect>
               </CCol>
               <CCol md={3}>
-                <CFormSelect label="College" value={collegeId} onChange={(e) => setCollegeId(e.target.value)}>
-                  <option value="">All Colleges</option>
-                  {colleges.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                <CFormLabel>College Name *</CFormLabel>
+                <CFormSelect name="collegeName" value={collegeId} onChange={(e => setCollegeId(e.target.value))} >
+                  <option value="">Select College</option>
+                  {colleges.map(college => (
+                    <option key={college.CollegeID} value={college.CollegeID}>{college.CollegeName}</option>
+                  ))}
                 </CFormSelect>
               </CCol>
+
               <CCol md={3}>
                 <CFormSelect label="Branch" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
                   <option value="">All Branches</option>
-                  {branches.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                  {branches.map((x) => <option key={x.Id} value={x.Id}>{x.BranchName}</option>)}
                 </CFormSelect>
               </CCol>
               <CCol md={3}>
                 <CFormSelect label="Course Type" value={courseTypeId} onChange={(e) => setCourseTypeId(e.target.value)}>
                   <option value="">All Course Types</option>
-                  {courseTypes.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                  {coursetypes.map((x) => <option key={x.Id} value={x.Id}>{x.CourseName}</option>)}
                 </CFormSelect>
               </CCol>
               <CCol md={3}>
-                <CFormSelect label="Course" value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+                <CFormSelect label="University" value={universityId} onChange={(e) => setUniversityId(e.target.value)}>
+                  <option value="">All University</option>
+                  {universities.map((x) => <option key={x.Id} value={x.Id}>{x.Name}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={3}>
+                <CFormSelect label="Batch" value={BatchId} onChange={(e) => setBatchList(e.target.value)}>
+                  <option value="">All Batches</option>
+                  {Batches.map((x) => <option key={x.Id} value={x.Id}>{x.BatchName}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={3}>
+                <CFormSelect label="Course" value={CourseId}
+                  onChange={(e) => setCourseId(e.target.value)}>
                   <option value="">All Courses</option>
-                  {courses.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                  {Course.map((x) => <option key={x.Id} value={x.Id}>{x.CourseName}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={3}>
+                <CFormSelect label="Section" value={SectionId} onChange={(e) => setSection(e.target.value)}>
+                  <option value="">All Section</option>
+                  {Sections.map((x) => <option key={x.Id} value={x.Id}>{x.Name}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={3}>
+                <CFormSelect label="Financial Year" value={financialYear} onChange={(e) => setFinancialYear(e.target.value)}>
+                  <option value="">All FinancialYear</option>
+                  {financialYears.map((x) => <option key={x.Id} value={x.Id}>{x.FinancialYear}</option>)}
                 </CFormSelect>
               </CCol>
               <CCol md={3}>
                 <CFormSelect label="Semester" value={semesterId} onChange={(e) => setSemesterId(e.target.value)}>
                   <option value="">All Semesters</option>
-                  {semestersOpt.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                  {semestersOpt.map((x) => <option key={x.Id} value={x.Id}>{x.SemesterName}</option>)}
                 </CFormSelect>
               </CCol>
               <CCol md={3}>
                 <CFormSelect label="Caste Category" value={casteId} onChange={(e) => setCasteId(e.target.value)}>
                   <option value="">All Categories</option>
-                  {castes.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                  {castecategories.map((x) => <option key={x.id} value={x.id}>{x.CategoryName}</option>)}
                 </CFormSelect>
               </CCol>
               <CCol md={3}>
@@ -274,6 +437,18 @@ const StudentList = () => {
                   <option value="">All Genders</option>
                   <option value="1">Male</option>
                   <option value="2">Female</option>
+                </CFormSelect>
+              </CCol>
+              <CCol md={3}>
+                <CFormSelect label="Fee Category" values={FeeCategoryId} onChange={(e)=>setFeecategoryId(e.target.value)}>
+                  <option value="">All Fee Category</option>
+                   {feecategories.map((x)=><option key={x.Id} value={x.Id}>{x.FeeCategoryName}</option>)}
+                </CFormSelect>
+              </CCol>
+              <CCol md={3}>
+                <CFormSelect label="Admission Category" values={admissioncategoryId} onChange={(e)=>setadmissionCategoryId(e.target.value)}>
+                  <option value="">All Admission Category</option>
+                  {admissioncategories.map((x)=><option key={x.Id} value={x.Id}>{x.AdmissionCategoryName}</option>)}
                 </CFormSelect>
               </CCol>
               <CCol md={3}>
@@ -307,11 +482,28 @@ const StudentList = () => {
                   <option value="true">Left</option>
                 </CFormSelect>
               </CCol>
-              <CCol md={12} className="d-flex justify-content-end gap-2">
+              {/* <CCol md={12} className="d-flex justify-content-end gap-2">
                 <CButton color="secondary" variant="outline" onClick={onResetFilters}>
                   Reset Filters
                 </CButton>
-              </CCol>
+              </CCol> */}
+              <CCol md={12} className="d-flex justify-content-end gap-2">
+  <CButton
+    color="primary"
+    onClick={() => {
+      setPageNumber(1);
+       fetchStudentss(1, filters);// 🔍 fetch data based on filters
+    }}
+  >
+    <CIcon icon={cilSearch} className="me-1" />
+    Search
+  </CButton>
+
+  <CButton color="secondary" variant="outline" onClick={onResetFilters}>
+    Reset Filters
+  </CButton>
+</CCol>
+
             </CForm>
 
             {/* Loading Indicator */}
@@ -358,15 +550,20 @@ const StudentList = () => {
               <CTableHead>
                 <CTableRow>
                   <CTableHeaderCell>#</CTableHeaderCell>
-                  <CTableHeaderCell>Student ID</CTableHeaderCell>
+                  <CTableHeaderCell>SRN</CTableHeaderCell>                  
                   <CTableHeaderCell>Name</CTableHeaderCell>
-                  <CTableHeaderCell>Gender</CTableHeaderCell>
                   <CTableHeaderCell>University</CTableHeaderCell>
-                  <CTableHeaderCell>Course Type</CTableHeaderCell>
+                  <CTableHeaderCell>Batch</CTableHeaderCell>
+                  <CTableHeaderCell>Course </CTableHeaderCell>
+                  <CTableHeaderCell>Course Type </CTableHeaderCell>
                   <CTableHeaderCell>Semester</CTableHeaderCell>
-                  <CTableHeaderCell>Category</CTableHeaderCell>
-                  <CTableHeaderCell>City</CTableHeaderCell>
-                  <CTableHeaderCell>Status</CTableHeaderCell>
+                  <CTableHeaderCell>Mobile No.</CTableHeaderCell>                  
+                  <CTableHeaderCell>Personal Email Id</CTableHeaderCell>
+                  <CTableHeaderCell>College Email Id</CTableHeaderCell>
+                  <CTableHeaderCell>Father Name</CTableHeaderCell>
+                  <CTableHeaderCell>Father Mobile No.</CTableHeaderCell>
+                  <CTableHeaderCell>Student ID</CTableHeaderCell>
+                  <CTableHeaderCell>IsLeft</CTableHeaderCell>
                   <CTableHeaderCell className="text-end">Actions</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
@@ -374,17 +571,22 @@ const StudentList = () => {
                 {students.map((s, idx) => (
                   <CTableRow key={s.id}>
                     <CTableHeaderCell scope="row">{(pageNumber - 1) * pageSize + idx + 1}</CTableHeaderCell>
-                    <CTableDataCell>{s.admissionno || '-'}</CTableDataCell>
-                    <CTableDataCell>{[s.firstname, s.middlename, s.lastname].filter(Boolean).join(' ')}</CTableDataCell>
-                    <CTableDataCell>{s.gender}</CTableDataCell>
+                    <CTableDataCell>{s.AdmissionNo || '-'}</CTableDataCell>
+                    <CTableDataCell>{[s.FirstName, s.LastName].filter(Boolean).join(' ') || '-'}</CTableDataCell>
                     <CTableDataCell>{s.UniversityName || '-'}</CTableDataCell>
-                    <CTableDataCell>{s.CourseTypeName || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.BatchNo ||'-'}</CTableDataCell>
+                    <CTableDataCell>{s.CourseName || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.CourseType || '-'}</CTableDataCell>
                     <CTableDataCell>{s.SemesterName || '-'}</CTableDataCell>
-                    <CTableDataCell>{s.CategoryName || '-'}</CTableDataCell>
-                    <CTableDataCell>{s.city || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.MobileNo || '-'}</CTableDataCell>                    
+                    <CTableDataCell>{s.PersonalEmailId || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.CollegeEmailId || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.FatherName || '-'}</CTableDataCell>                    
+                    <CTableDataCell>{s.FatherMobileNo || '-'}</CTableDataCell>
+                    <CTableDataCell>{s.Id || '-'}</CTableDataCell>
                     <CTableDataCell>
-                      <CBadge color={s.status ? 'success' : 'secondary'}>
-                        {s.status ? 'Active' : 'Inactive'}
+                      <CBadge color={s.IsLeft ? 'success' : 'secondary'}>
+                        {s.IsLeft ? 'Active' : 'Inactive'}
                       </CBadge>
                     </CTableDataCell>
                     <CTableDataCell className="text-end">

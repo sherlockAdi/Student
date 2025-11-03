@@ -26,6 +26,12 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Reports',
+    to: '/admin/reports',
+    roles: ['admin'],
+  },
+  {
+    component: CNavItem,
     name: 'My Profile',
     to: '/student/profile',
     roles: ['student'],
