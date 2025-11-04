@@ -96,6 +96,7 @@ const RegistrationForm = () => {
   const [gStates, setGStates] = useState([])
   const [gDistricts, setGDistricts] = useState([])
   const [gAreas, setGAreas] = useState([])
+  const [domicileStates, setDomicileStates] = useState([])
   const [previousSchoolsList, setPreviousSchoolsList] = useState([])
   const [siblingsList, setSiblingsList] = useState([])
   const [bestFriendsList, setBestFriendsList] = useState([])
@@ -165,6 +166,20 @@ const RegistrationForm = () => {
 
     transportYesNo: '', routeId: '', stopId: '',
   })
+
+  // Load domicile states (India - country ID 7)
+  useEffect(() => {
+    const loadDomicileStates = async () => {
+      try {
+        const states = await getStatesByCountry(6) // India's country ID is 7
+        setDomicileStates(states || [])
+      } catch (err) {
+        console.error('Error loading domicile states:', err)
+      }
+    }
+    
+    loadDomicileStates()
+  }, [])
 
   // Load initial master data and set reference ID from login
   useEffect(() => {
@@ -674,13 +689,16 @@ const RegistrationForm = () => {
         SubCategory: formData.subCategory || '',
         Minority: formData.minority || '',
         Religion: parseInt(formData.religion) || 0,
-        BloodGroup: formData.bloodGroup || '',
+        BloodGroup: formData.medicalBloodGroup || '',
         AadharCardNumber: formData.adharCardNumber || '',
         Domicile: formData.domicile || '',
-        PanNo: formData.panNo || ''
+        PanNo: formData.panNo || '',
+        Height: formData.height || '',
+        Weight: formData.weight || ''
       }
 
       const response = await updateStudentDetails(payload)
+      const medicalResponse = await insertMedicalRecord(payload)
       setSuccess(`✅ ${response.message || 'Student details updated successfully!'}`)
       setTimeout(() => { setActiveTab('parentGuardian'); setSuccess('') }, 2000)
       pushToast({ title: 'Success', message: response.message || 'Student details updated successfully', type: 'success' })
@@ -1177,41 +1195,11 @@ const RegistrationForm = () => {
 
       setSuccess(`✅ All ${bestFriendsList.length} best friend(s) saved successfully!`)
       setBestFriendsList([]) // Clear the list after successful submit
-      setTimeout(() => { setActiveTab('medical'); setSuccess('') }, 2000)
+      setTimeout(() => { setActiveTab('transport'); setSuccess('') }, 2000)
       pushToast({ title: 'Success', message: `All ${bestFriendsList.length} best friend(s) saved successfully`, type: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to add best friend.')
       pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to add best friend', type: 'error' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleMedicalSubmit = async () => {
-    if (!studentId) {
-      setError('Please submit Administration details first.')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-    setSuccess('')
-
-    try {
-      const payload = {
-        StudentId: studentId,
-        Height: formData.height || '',
-        Weight: formData.weight || '',
-        BloodGroup: formData.medicalBloodGroup || ''
-      }
-
-      const response = await insertMedicalRecord(payload)
-      setSuccess(`✅ ${response.message || 'Medical record inserted successfully!'}`)
-      setTimeout(() => { setActiveTab('transport'); setSuccess('') }, 2000)
-      pushToast({ title: 'Success', message: response.message || 'Medical record inserted successfully', type: 'success' })
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to submit medical record.')
-      pushToast({ title: 'Error', message: err.response?.data?.message || err.message || 'Failed to submit medical record', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -1596,11 +1584,6 @@ const RegistrationForm = () => {
                   </CNavLink>
                 </CNavItem>
                 <CNavItem>
-                  <CNavLink active={activeTab === 'medical'} onClick={() => setActiveTab('medical')}>
-                    Medical
-                  </CNavLink>
-                </CNavItem>
-                <CNavItem>
                   <CNavLink active={activeTab === 'transport'} onClick={() => setActiveTab('transport')}>
                     Transport
                   </CNavLink>
@@ -1759,7 +1742,7 @@ const RegistrationForm = () => {
                       <CFormLabel>Admission Number</CFormLabel>
                       <CFormInput type="number" name="admissionNo" value={formData.admissionNo} onChange={handleChange} placeholder="Enter admission number" />
                     </CCol>
-                    <CCol md={4}>
+                    {/* <CCol md={4}>
                       <CFormLabel>Student ID</CFormLabel>
                       <CFormInput name="studentId" value={formData.studentId} onChange={handleChange} placeholder="Enter student ID" />
                     </CCol>
@@ -1767,7 +1750,7 @@ const RegistrationForm = () => {
                       <CFormLabel>Reference ID</CFormLabel>
                       <CFormInput type="number" name="referenceId" value={formData.referenceId} onChange={handleChange} placeholder="Auto-filled from login" readOnly className="bg-light" />
                       <small className="text-muted">Logged-in user ID</small>
-                    </CCol>
+                    </CCol> */}
                     <CCol md={4}>
                       <CFormLabel>Father Name</CFormLabel>
                       <CFormInput name="adminFatherName" value={formData.adminFatherName} onChange={handleChange} placeholder="Enter father name" />
@@ -1920,9 +1903,35 @@ const RegistrationForm = () => {
                         ))}
                       </CFormSelect>
                     </CCol>
-                    {/* <CCol md={4}>
+                     <CCol md={4}>
+                      <CFormLabel>Domicile (State)</CFormLabel>
+                      <CFormSelect 
+                        name="domicile" 
+                        value={formData.domicile} 
+                        onChange={handleChange}
+                      >
+                        <option value="">Select State</option>
+                        {domicileStates.map(state => (
+                          <option key={state.Id} value={state.StateName}>
+                            {state.StateName}
+                          </option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                   
+                    <CCol md={4}>
+                      <CFormLabel>Adhar Card Number</CFormLabel>
+                      <CFormInput name="adharCardNumber" value={formData.adharCardNumber} onChange={handleChange} placeholder="Enter Adhar number" maxLength="12" required pattern="^[0-9]{12}$" inputMode="numeric" />
+                    </CCol>
+                   
+                    <CCol md={4}>
+                      <CFormLabel>PAN No.</CFormLabel>
+                      <CFormInput name="panNo" value={formData.panNo} onChange={handleChange} placeholder="Enter PAN number" maxLength="10" />
+                    </CCol>
+
+                     <CCol md={4}>
                       <CFormLabel>Blood Group</CFormLabel>
-                      <CFormSelect name="bloodGroup" value={formData.bloodGroup} onChange={handleChange}>
+                      <CFormSelect name="medicalBloodGroup" value={formData.medicalBloodGroup} onChange={handleChange}>
                         <option value="">Select</option>
                         <option>A+</option>
                         <option>A-</option>
@@ -1933,18 +1942,14 @@ const RegistrationForm = () => {
                         <option>AB+</option>
                         <option>AB-</option>
                       </CFormSelect>
-                    </CCol> */}
-                    <CCol md={4}>
-                      <CFormLabel>Adhar Card Number</CFormLabel>
-                      <CFormInput name="adharCardNumber" value={formData.adharCardNumber} onChange={handleChange} placeholder="Enter Adhar number" maxLength="12" required pattern="^[0-9]{12}$" inputMode="numeric" />
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Domicile</CFormLabel>
-                      <CFormInput name="domicile" value={formData.domicile} onChange={handleChange} placeholder="Enter domicile" />
+                      <CFormLabel>Height (cm)</CFormLabel>
+                      <CFormInput type="number" name="height" value={formData.height} onChange={handleChange} placeholder="e.g. 165" />
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>PAN No.</CFormLabel>
-                      <CFormInput name="panNo" value={formData.panNo} onChange={handleChange} placeholder="Enter PAN number" maxLength="10" />
+                      <CFormLabel>Weight (kg)</CFormLabel>
+                      <CFormInput type="number" name="weight" value={formData.weight} onChange={handleChange} placeholder="e.g. 60" />
                     </CCol>
 
                     <CCol xs={12} className="mt-4">
@@ -2730,21 +2735,6 @@ const RegistrationForm = () => {
                   </CRow>
                 </CTabPane>
 
-                {/* Medical Records Tab */}
-                <CTabPane visible={activeTab === 'medical'}>
-                  <CRow className="g-3">
-                    <CCol md={4}><CFormLabel>Height</CFormLabel><CFormInput name="height" value={formData.height} onChange={handleChange} placeholder="Enter height (cm)" /></CCol>
-                    <CCol md={4}><CFormLabel>Weight</CFormLabel><CFormInput name="weight" value={formData.weight} onChange={handleChange} placeholder="Enter weight (kg)" /></CCol>
-                    <CCol md={4}><CFormLabel>Blood Group</CFormLabel><CFormSelect name="medicalBloodGroup" value={formData.medicalBloodGroup} onChange={handleChange}><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></CFormSelect></CCol>
-
-                    <CCol xs={12} className="mt-4">
-                      <CButton type="button" color="success" onClick={handleMedicalSubmit} disabled={loading || !studentId}>
-                        {loading ? <><CSpinner size="sm" className="me-1" />Submitting...</> : <><CIcon icon={cilSave} className="me-1" />Save Medical Record</>}
-                      </CButton>
-                      {!studentId && <small className="text-danger ms-3">⚠️ Please submit Administration details first</small>}
-                    </CCol>
-                  </CRow>
-                </CTabPane>
 
                 {/* Transport Tab */}
                 <CTabPane visible={activeTab === 'transport'}>

@@ -218,7 +218,7 @@ const StudentList = () => {
             <CButton
               color="primary"
               size="sm"
-              onClick={() => navigate('/admin/students/add')}
+              onClick={() => navigate('/admin/registration')}
             >
               <CIcon icon={cilPlus} className="me-1" />
               Add Student
@@ -407,7 +407,7 @@ const StudentList = () => {
                           variant="outline"
                           className="d-inline-flex align-items-center justify-content-center"
                           style={{ width: 32, height: 32, padding: 0 }}
-                          onClick={() => navigate(`/admin/students/${s.id}/edit`)}
+                          onClick={() => navigate(`/admin/update-student?studentId=${s.id}&activeTab=profile`)}
                           aria-label="Edit"
                           title="Edit"
                         >

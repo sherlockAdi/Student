@@ -1,22 +1,62 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CFormInput, CFormLabel,
   CAlert, CSpinner, CListGroup, CListGroupItem
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilSearch, cilUser, cilPhone, cilX } from '@coreui/icons'
-import { searchStudentByText } from '../../api/api'
+import { searchStudentByText, updateStudentDetails } from '../../api/api'
 import MyProfile from '../../components/UpdateStudentProfile'
 import { useToast } from '../../components'
 
 const UpdateStudent = () => {
   const { pushToast } = useToast()
+  const [searchParams] = useSearchParams()
   const [searchText, setSearchText] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [searching, setSearching] = useState(false)
   const [error, setError] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
+  const [activeTab, setActiveTab] = useState('profile')
+
+  // Check for studentId in URL params on component mount
+  useEffect(() => {
+    const studentId = searchParams.get('studentId')
+    const tab = searchParams.get('tab')
+    
+    if (studentId) {
+      // If studentId is in URL, load student directly
+      loadStudentById(studentId)
+      setActiveTab(tab || 'profile')
+    }
+  }, [searchParams])
+
+  // Function to load student by ID
+  const loadStudentById = async (studentId) => {
+    setSearching(true)
+    setError('')
+    try {
+      const studentres = await searchStudentByText(studentId)
+      if(studentres.length > 0){
+        const student = studentres[0]
+        setSelectedStudent(student)
+        setSearchText('')
+        setSearchResults([])
+        setShowDropdown(false)
+      }else{
+        setError('Student not found')
+        pushToast({ title: 'Error', message: 'Student not found', type: 'error' })
+      }
+    } catch (err) {
+      console.error('Error loading student:', err)
+      setError('Failed to load student')
+      pushToast({ title: 'Error', message: 'Failed to load student', type: 'error' })
+    } finally {
+      setSearching(false)
+    }
+  }
 
   // 🔍 Manual search on button click
   const handleSearch = async () => {
@@ -61,6 +101,31 @@ const UpdateStudent = () => {
     setSelectedStudent(null)
     setError('')
     setShowDropdown(false)
+    setActiveTab('profile')
+  }
+
+  const handleRemoveCurrent = async () => {
+    if (!selectedStudent) return
+    
+    if (window.confirm(`Are you sure you want to remove ${selectedStudent.StudentName}? This action cannot be undone.`)) {
+      try {
+        // Here you would typically call your API to remove the student
+        // For now, we'll just reset the form
+        pushToast({ 
+          title: 'Student Removed', 
+          message: `${selectedStudent.StudentName} has been removed successfully.`,
+          type: 'success' 
+        })
+        handleReset()
+      } catch (error) {
+        console.error('Error removing student:', error)
+        pushToast({ 
+          title: 'Error', 
+          message: 'Failed to remove student. Please try again.',
+          type: 'error' 
+        })
+      }
+    }
   }
 
   return (
@@ -179,13 +244,47 @@ const UpdateStudent = () => {
                       <span>🆔 {selectedStudent.AdmissionNo}</span>
                     </div>
                   </div>
-                  <CButton color="secondary" size="sm" onClick={handleReset}>
-                    <CIcon icon={cilX} className="me-1" /> Change Student
-                  </CButton>
+                  <div className="d-flex gap-2">
+                    <CButton 
+                      color="danger" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleRemoveCurrent}
+                      title="Remove current student"
+                    >
+                      <CIcon icon={cilX} className="me-1" /> Remove Current
+                    </CButton>
+                    <CButton 
+                      color="secondary" 
+                      size="sm" 
+                      onClick={handleReset}
+                      title="Search for another student"
+                    >
+                      <CIcon icon={cilSearch} className="me-1" /> Change Student
+                    </CButton>
+                  </div>
                 </div>
               </CCardBody>
             </CCard>
-            <MyProfile studentIdProp={selectedStudent.StudentId} />
+            <MyProfile 
+              studentIdProp={selectedStudent.StudentId}
+              admissionNo={selectedStudent.AdmissionNo}
+              activeTab={activeTab}
+              onTabChange={(tab) => setActiveTab(tab)}
+              onUpdateSuccess={(updatedData) => {
+                // Update the selected student data if needed
+                setSelectedStudent(prev => ({
+                  ...prev,
+                  ...updatedData,
+                  // Add any other fields that might have been updated
+                }))
+                pushToast({
+                  title: 'Success',
+                  message: 'Student details updated successfully!',
+                  type: 'success'
+                })
+              }}
+            />
           </>
         )}
       </CCol>

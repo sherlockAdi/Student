@@ -20,7 +20,11 @@ import {
   getMedicalDetails, insertMedicalDetails, updateMedicalDetails,
   getTransportDetails, insertTransportDetails, updateTransportDetails,
   getTransportRoutes, getTransportStops, getFeeCategories, getDesignations,
-  getProfessions, getIncomeRanges
+  getProfessions, getIncomeRanges,
+  getAdministrationById,
+  getOrganizations, getCollegesByOrganization, getBranchesByCollege,
+  getCourseTypesByCollege, getUniversitiesByCourseType, getBatchesByUniversity,
+  getCoursesByBatch, getSectionsByCourse, getFinancialYears, getAdmissionCategories
 } from '../api/api'
 import { useToast } from '../components'
 
@@ -45,7 +49,7 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
   const [transportDetails, setTransportDetails] = useState(null)
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [isEditingAdministration, setIsEditingAdministration] = useState(false)
+  const [isEditingAdministration, setIsEditingAdministration] = useState(true)
   const [isEditingParent, setIsEditingParent] = useState(false)
   const [isEditingAddress, setIsEditingAddress] = useState(false)
   const [isEditingLastSchool, setIsEditingLastSchool] = useState(false)
@@ -73,6 +77,17 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
   const [countries, setCountries] = useState([])
   const [transportRoutes, setTransportRoutes] = useState([])
   const [transportStops, setTransportStops] = useState([])
+  // Masters for Administration cascading (IDs)
+  const [organizations, setOrganizations] = useState([])
+  const [colleges, setColleges] = useState([])
+  const [branches, setBranches] = useState([])
+  const [courseTypes, setCourseTypes] = useState([])
+  const [universities, setUniversities] = useState([])
+  const [batches, setBatches] = useState([])
+  const [courses, setCourses] = useState([])
+  const [sections, setSections] = useState([])
+  const [financialYears, setFinancialYears] = useState([])
+  const [admissionCategories, setAdmissionCategories] = useState([])
   const [pStates, setPStates] = useState([])
   const [pDistricts, setPDistricts] = useState([])
   const [pAreas, setPAreas] = useState([])
@@ -231,24 +246,180 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
   // Administration editable form state (mirrors Registration fields labels)
   const [adminEditData, setAdminEditData] = useState({
     dateOfAdmission: '',
-    feeCategory: '',
-    organizationName: '',
-    collegeName: '',
-    branch: '',
-    courseType: '',
-    university: '',
-    financialYear: '',
-    course: '',
-    batch: '',
-    section: '',
+    feeCategory: '', // Id
+    organizationName: '', // Id
+    collegeName: '', // Id
+    branch: '', // Id
+    courseType: '', // Id
+    university: '', // Id
+    financialYear: '', // Id
+    course: '', // Id
+    batch: '', // Id
+    section: '', // Id
     studentName: '',
     studentRegistrationNumber: '',
     studentUniversityNumber: '',
     mobileNumber1: '',
     mobileNumber2: '',
     mobileNumber3: '',
-    admissionNo: ''
+    admissionNo: '',
+    adminFatherName: '',
+    adminMotherName: '',
+    emailId: ''
   })
+
+  // Store raw IDs response for administration
+  const [adminIds, setAdminIds] = useState(null)
+
+  // Helper to safely iterate possibly non-array responses
+  const asArray = (val) => (Array.isArray(val) ? val : [])
+
+  // Preload cascading masters based on fetched IDs
+  useEffect(() => {
+    const preload = async () => {
+      if (!adminIds) return
+      try {
+        // Organization -> Colleges
+        if (adminIds.OrganizationId) {
+          const cols = await getCollegesByOrganization(adminIds.OrganizationId)
+          setColleges(cols || [])
+        }
+        // College -> Branches, Course Types
+        if (adminIds.CollegeId) {
+          const [brs, cts] = await Promise.all([
+            getBranchesByCollege(adminIds.CollegeId).catch(() => []),
+            getCourseTypesByCollege(adminIds.CollegeId).catch(() => [])
+          ])
+          setBranches(brs || [])
+          setCourseTypes(cts || [])
+        }
+        // CourseType -> Universities
+        if (adminIds.CourseTypeId) {
+          const unis = await getUniversitiesByCourseType(adminIds.CourseTypeId).catch(() => [])
+          setUniversities(unis || [])
+        }
+        // Batches depend on CourseType + University
+        if (adminIds.CourseTypeId && adminIds.UniversityId) {
+          const bats = await getBatchesByUniversity(adminIds.CourseTypeId, adminIds.UniversityId).catch(() => [])
+          setBatches(bats || [])
+        }
+        // Courses depend on CourseType + University + Batch
+        if (adminIds.CourseTypeId && adminIds.UniversityId && adminIds.BatchId) {
+          const crs = await getCoursesByBatch(adminIds.CourseTypeId, adminIds.UniversityId, adminIds.BatchId).catch(() => [])
+          setCourses(crs || [])
+        }
+        // Sections depend on CourseType + University + Batch + Course
+        if (adminIds.CourseTypeId && adminIds.UniversityId && adminIds.BatchId && adminIds.CourseId) {
+          const secs = await getSectionsByCourse(adminIds.CourseTypeId, adminIds.UniversityId, adminIds.BatchId, adminIds.CourseId).catch(() => [])
+          setSections(secs || [])
+        }
+      } catch (e) {
+        console.error('Error preloading administration cascades:', e)
+      }
+    }
+    preload()
+  }, [adminIds])
+
+  // Auto-select first available options if IDs are not present
+  useEffect(() => {
+    if (!adminEditData.organizationName && asArray(organizations).length > 0) {
+      setAdminEditData(prev => ({ ...prev, organizationName: String((organizations[0].organizationid || organizations[0].Id)) }))
+    }
+  }, [organizations])
+  useEffect(() => {
+    if (!adminEditData.collegeName && asArray(colleges).length > 0) {
+      setAdminEditData(prev => ({ ...prev, collegeName: String((colleges[0].CollegeId || colleges[0].Id)) }))
+    }
+  }, [colleges])
+  useEffect(() => {
+    if (!adminEditData.branch && asArray(branches).length > 0) {
+      setAdminEditData(prev => ({ ...prev, branch: String((branches[0].BranchId || branches[0].Id)) }))
+    }
+  }, [branches])
+  useEffect(() => {
+    if (!adminEditData.courseType && asArray(courseTypes).length > 0) {
+      setAdminEditData(prev => ({ ...prev, courseType: String((courseTypes[0].CourseTypeId || courseTypes[0].Id)) }))
+    }
+  }, [courseTypes])
+  useEffect(() => {
+    if (!adminEditData.university && asArray(universities).length > 0) {
+      setAdminEditData(prev => ({ ...prev, university: String((universities[0].UniversityId || universities[0].Id)) }))
+    }
+  }, [universities])
+  useEffect(() => {
+    if (!adminEditData.batch && asArray(batches).length > 0) {
+      setAdminEditData(prev => ({ ...prev, batch: String((batches[0].BatchId || batches[0].Id)) }))
+    }
+  }, [batches])
+  useEffect(() => {
+    if (!adminEditData.course && asArray(courses).length > 0) {
+      setAdminEditData(prev => ({ ...prev, course: String((courses[0].CourseId || courses[0].Id)) }))
+    }
+  }, [courses])
+  useEffect(() => {
+    if (!adminEditData.section && asArray(sections).length > 0) {
+      setAdminEditData(prev => ({ ...prev, section: String((sections[0].SemesterId || sections[0].Id)) }))
+    }
+  }, [sections])
+  useEffect(() => {
+    if (!adminEditData.feeCategory && asArray(feeCategories).length > 0) {
+      setAdminEditData(prev => ({ ...prev, feeCategory: String(feeCategories[0].Id) }))
+    }
+  }, [feeCategories])
+  useEffect(() => {
+    if (!adminEditData.financialYear && asArray(financialYears).length > 0) {
+      setAdminEditData(prev => ({ ...prev, financialYear: String(financialYears[0].Id) }))
+    }
+  }, [financialYears])
+  useEffect(() => {
+    if (!adminEditData.admissionCategory && asArray(admissionCategories).length > 0) {
+      setAdminEditData(prev => ({ ...prev, admissionCategory: String(admissionCategories[0].Id) }))
+    }
+  }, [admissionCategories])
+
+  // Cascading effects when user changes selections in edit form
+  useEffect(() => {
+    if (!adminEditData.organizationName) { setColleges([]); return }
+    getCollegesByOrganization(adminEditData.organizationName)
+      .then(setColleges)
+      .catch(() => setColleges([]))
+  }, [adminEditData.organizationName])
+
+  useEffect(() => {
+    if (!adminEditData.collegeName) { setBranches([]); setCourseTypes([]); return }
+    Promise.all([
+      getBranchesByCollege(adminEditData.collegeName).catch(() => []),
+      getCourseTypesByCollege(adminEditData.collegeName).catch(() => [])
+    ]).then(([brs, cts]) => { setBranches(brs || []); setCourseTypes(cts || []) })
+  }, [adminEditData.collegeName])
+
+  useEffect(() => {
+    if (!adminEditData.courseType) { setUniversities([]); return }
+    getUniversitiesByCourseType(adminEditData.courseType)
+      .then(setUniversities)
+      .catch(() => setUniversities([]))
+  }, [adminEditData.courseType])
+
+  useEffect(() => {
+    if (!adminEditData.courseType || !adminEditData.university) { setBatches([]); return }
+    getBatchesByUniversity(adminEditData.courseType, adminEditData.university)
+      .then(setBatches)
+      .catch(() => setBatches([]))
+  }, [adminEditData.courseType, adminEditData.university])
+
+  useEffect(() => {
+    if (!adminEditData.courseType || !adminEditData.university || !adminEditData.batch) { setCourses([]); return }
+    getCoursesByBatch(adminEditData.courseType, adminEditData.university, adminEditData.batch)
+      .then(setCourses)
+      .catch(() => setCourses([]))
+  }, [adminEditData.courseType, adminEditData.university, adminEditData.batch])
+
+  useEffect(() => {
+    if (!adminEditData.courseType || !adminEditData.university || !adminEditData.batch || !adminEditData.course) { setSections([]); return }
+    getSectionsByCourse(adminEditData.courseType, adminEditData.university, adminEditData.batch, adminEditData.course)
+      .then(setSections)
+      .catch(() => setSections([]))
+  }, [adminEditData.courseType, adminEditData.university, adminEditData.batch, adminEditData.course])
 
   const handleAdminEditChange = (e) => {
     const { name, value } = e.target
@@ -256,57 +427,56 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
   }
 
   const handleAdminEditStart = () => {
-    if (adminDetails) {
+    if (adminIds) {
+      setAdminEditData({
+        dateOfAdmission: adminIds.DateOfAdmission ? String(adminIds.DateOfAdmission).slice(0,10) : '',
+        feeCategory: adminIds.FeeCategoryId?.toString() || '',
+        organizationName: adminIds.OrganizationId?.toString() || '',
+        collegeName: adminIds.CollegeId?.toString() || '',
+        branch: adminIds.BranchId?.toString() || '',
+        courseType: adminIds.CourseTypeId?.toString() || '',
+        university: adminIds.UniversityId?.toString() || '',
+        financialYear: adminIds.FinancialYearId?.toString() || '',
+        course: adminIds.CourseId?.toString() || '',
+        batch: adminIds.BatchId?.toString() || '',
+        section: adminIds.SectionId?.toString() || '',
+        studentName: [adminIds.FirstName, adminIds.MiddleName, adminIds.LastName].filter(Boolean).join(' ').trim(),
+        studentRegistrationNumber: adminIds.StudentUniqueId || '',
+        studentUniversityNumber: adminIds.StudentUniversityNumber || '',
+        mobileNumber1: adminIds.MobileNo1 || adminIds.MobileNo || '',
+        mobileNumber2: adminIds.MobileNo2 || '',
+        mobileNumber3: adminIds.MobileNo3 || '',
+        admissionNo: adminIds.AdmissionNo || ''
+      })
+    } else if (adminDetails) {
       setAdminEditData({
         dateOfAdmission: adminDetails.DateOfAdmission ? String(adminDetails.DateOfAdmission).slice(0,10) : '',
-        feeCategory: adminDetails.FeeCategoryName || '',
-        organizationName: adminDetails.OrganisationName || '',
-        collegeName: adminDetails.CollegeName || '',
-        branch: adminDetails.BranchName || '',
-        courseType: adminDetails.CourseName || '',
-        university: adminDetails.UniversityName || '',
-        financialYear: adminDetails.FinancialYear || '',
-        course: adminDetails.Course || '',
-        batch: adminDetails.BatchNo || '',
-        section: adminDetails.Section || '',
+        feeCategory: '',
+        organizationName: '',
+        collegeName: '',
+        branch: '',
+        courseType: '',
+        university: '',
+        financialYear: '',
+        course: '',
+        batch: '',
+        section: '',
         studentName: adminDetails.StudentName || '',
         studentRegistrationNumber: adminDetails.StudentRegistrationNumber || '',
         studentUniversityNumber: adminDetails.StudentUniversityNumber || '',
         mobileNumber1: adminDetails.MobileNumber1 || '',
         mobileNumber2: adminDetails.MobileNumber2 || '',
         mobileNumber3: adminDetails.MobileNumber3 || '',
-        admissionNo: adminDetails.AdmissionNo || ''
+        admissionNo: adminDetails.AdmissionNo || '',
+        adminFatherName: adminDetails.FatherName || '',
+        adminMotherName: adminDetails.MotherName || '',
+        emailId: adminDetails.CollegeEmail || ''
       })
     }
     setIsEditingAdministration(true)
   }
 
-  const handleAdminEditCancel = () => {
-    // Restore to data from adminDetails
-    if (adminDetails) {
-      setAdminEditData({
-        dateOfAdmission: adminDetails.DateOfAdmission ? String(adminDetails.DateOfAdmission).slice(0,10) : '',
-        feeCategory: adminDetails.FeeCategoryName || '',
-        organizationName: adminDetails.OrganisationName || '',
-        collegeName: adminDetails.CollegeName || '',
-        branch: adminDetails.BranchName || '',
-        courseType: adminDetails.CourseName || '',
-        university: adminDetails.UniversityName || '',
-        financialYear: adminDetails.FinancialYear || '',
-        course: adminDetails.Course || '',
-        batch: adminDetails.BatchNo || '',
-        section: adminDetails.Section || '',
-        studentName: adminDetails.StudentName || '',
-        studentRegistrationNumber: adminDetails.StudentRegistrationNumber || '',
-        studentUniversityNumber: adminDetails.StudentUniversityNumber || '',
-        mobileNumber1: adminDetails.MobileNumber1 || '',
-        mobileNumber2: adminDetails.MobileNumber2 || '',
-        mobileNumber3: adminDetails.MobileNumber3 || '',
-        admissionNo: adminDetails.AdmissionNo || ''
-      })
-    }
-    setIsEditingAdministration(false)
-  }
+  const handleAdminEditCancel = () => {}
 
   const handleAdminEditSave = () => {
     // For now, just console all the data; change API will be wired later
@@ -338,13 +508,49 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
           console.error('Error loading profile data:', err)
         }
 
-        // Fetch administration details
+        // Fetch administration details (names)
         try {
           const adminData = await getAdministrationDetails(studentId)
           console.log('Administration Details:', adminData)
           setAdminDetails(adminData)
         } catch (err) {
           console.error('Error loading administration details:', err)
+        }
+
+        // Fetch administration details (IDs) using new endpoint
+        try {
+          const adminIdsRes = await getAdministrationById(studentId)
+          console.log('Administration IDs:', adminIdsRes)
+          const ids = adminIdsRes?.data || null
+          setAdminIds(ids)
+          if (ids) {
+            setAdminEditData(prev => ({
+              ...prev,
+              dateOfAdmission: ids.DateOfAdmission ? String(ids.DateOfAdmission).slice(0,10) : '',
+              feeCategory: ids.FeeCategoryId?.toString() || '',
+              organizationName: ids.OrganizationId?.toString() || '',
+              collegeName: ids.CollegeId?.toString() || '',
+              branch: ids.BranchId?.toString() || '',
+              courseType: ids.CourseTypeId?.toString() || '',
+              university: ids.UniversityId?.toString() || '',
+              financialYear: ids.FinancialYearId?.toString() || '',
+              course: ids.CourseId?.toString() || '',
+              batch: ids.BatchId?.toString() || '',
+              section: ids.SectionId?.toString() || '',
+              studentName: [ids.FirstName, ids.MiddleName, ids.LastName].filter(Boolean).join(' ').trim(),
+              mobileNumber1: ids.MobileNo1 || ids.MobileNo || '',
+              mobileNumber2: ids.MobileNo2 || '',
+              mobileNumber3: ids.MobileNo3 || '',
+              admissionNo: ids.AdmissionNo || '',
+              adminFatherName: ids.FatherName || '',
+              adminMotherName: ids.MotherName || '',
+              fatherEmail: ids.FatherEmail || '',
+              motherEmail: ids.MotherEmail || '',
+              emailId: ids.CollegeEmail || ''
+            }))
+          }
+        } catch (err) {
+          console.error('Error loading administration IDs:', err)
         }
 
         // Fetch personal/student details
@@ -458,7 +664,7 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
 
         // Fetch dropdowns
         try {
-        const [feeCatsData, desgsData, profsData, incomesData, nationalitiesData, motherTonguesData, categoriesData, religionsData, countriesData, schoolsData, routesData] = await Promise.all([
+        const [feeCatsData, desgsData, profsData, incomesData, nationalitiesData, motherTonguesData, categoriesData, religionsData, countriesData, schoolsData, routesData, orgsData, finYearsData, admCats] = await Promise.all([
           getFeeCategories().catch(err => { console.error('Error loading fee categories:', err); return []; }),
           getDesignations().catch(err => { console.error('Error loading designations:', err); return []; }),
           getProfessions().catch(err => { console.error('Error loading professions:', err); return []; }),
@@ -469,7 +675,10 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
           getReligions().catch(err => { console.error('Error loading religions:', err); return []; }),
           getCountries().catch(err => { console.error('Error loading countries:', err); return []; }),
           getSchoolMasterDropdown().catch(err => { console.error('Error loading schools:', err); return []; }),
-          getTransportRoutes().catch(err => { console.error('Error loading transport routes:', err); return []; })
+          getTransportRoutes().catch(err => { console.error('Error loading transport routes:', err); return []; }),
+          getOrganizations().catch(err => { console.error('Error loading organizations:', err); return []; }),
+          getFinancialYears().catch(err => { console.error('Error loading financial years:', err); return []; }),
+          getAdmissionCategories().catch(err => { console.error('Error loading admission categories:', err); return []; })
         ])
         
         setFeeCategories(feeCatsData || [])
@@ -483,6 +692,9 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
         setCountries(countriesData || [])
         setSchools(schoolsData || [])
         setTransportRoutes(routesData || [])
+        setOrganizations(orgsData || [])
+        setFinancialYears(finYearsData || [])
+        setAdmissionCategories(admCats || [])
         
         // Fetch last school details
         try {
@@ -617,7 +829,6 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
     .then(data => setSubCategories(data || []))
     .catch(err => console.error('Error loading sub-categories:', err));
 };
-``
   // Load Permanent Address cascading dropdowns
   useEffect(() => {
     if (addressFormData.pCountry) {
@@ -1880,65 +2091,159 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
               <CTabPane visible={activeTab === 'administration'}>
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h5 className="text-primary mb-0">🏫 Administration Details</h5>
-                  {!isEditingAdministration && adminDetails && (
-                    <CButton color="primary" size="sm" onClick={handleAdminEditStart}>
-                      <CIcon icon={cilPencil} className="me-1" /> Edit
-                    </CButton>
-                  )}
                 </div>
 
-                {!adminDetails && (
-                  <CAlert color="info">Loading administration details...</CAlert>
-                )}
-
-                {adminDetails && !isEditingAdministration && (
-                  <CRow>
-                    <InfoRow label="Date of Admission" value={formatDate(adminDetails.DateOfAdmission)} />
-                    <InfoRow label="Fee Category" value={adminDetails.FeeCategoryName} />
-                    <InfoRow label="Organisation Name" value={adminDetails.OrganisationName} />
-                    <InfoRow label="College Name" value={adminDetails.CollegeName} />
-                    <InfoRow label="Branch" value={adminDetails.BranchName} />
-                    <InfoRow label="Course Type" value={adminDetails.CourseName} />
-                    <InfoRow label="University" value={adminDetails.UniversityName} />
-                    <InfoRow label="Financial Year" value={adminDetails.FinancialYear} />
-                    <InfoRow label="Course" value={adminDetails.Course} />
-                    <InfoRow label="Batch" value={adminDetails.BatchNo} />
-                    <InfoRow label="Section" value={adminDetails.Section} />
-                    <InfoRow label="Student Name" value={adminDetails.StudentName} />
-                    <InfoRow label="Mobile Number 1" value={adminDetails.MobileNumber1} />
-                    <InfoRow label="Student Registration Number (SRN)" value={adminDetails.StudentRegistrationNumber} />
-                    <InfoRow label="Student University Number" value={adminDetails.StudentUniversityNumber} />
-                    <InfoRow label="Mobile Number 2" value={adminDetails.MobileNumber2} />
-                    <InfoRow label="Mobile Number 3" value={adminDetails.MobileNumber3} />
-                  </CRow>
-                )}
-
-                {adminDetails && isEditingAdministration && (
+                {(
                   <CForm onSubmit={(e) => { e.preventDefault(); handleAdminEditSave() }}>
                     <CRow className="g-3">
-                      <CCol md={4}><CFormLabel>Date of Admission</CFormLabel><CFormInput type="date" name="dateOfAdmission" value={adminEditData.dateOfAdmission} onChange={handleAdminEditChange} /></CCol>
-                      <CCol md={4}><CFormLabel>Fee Category</CFormLabel><CFormSelect name="feeCategory" value={adminEditData.feeCategory} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
-                      <CCol md={4}><CFormLabel>Organisation Name</CFormLabel><CFormSelect name="organizationName" value={adminEditData.organizationName} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
-                      <CCol md={4}><CFormLabel>College Name</CFormLabel><CFormSelect name="collegeName" value={adminEditData.collegeName} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
-                      <CCol md={4}><CFormLabel>Branch</CFormLabel><CFormSelect name="branch" value={adminEditData.branch} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
-                      <CCol md={4}><CFormLabel>Course Type</CFormLabel><CFormSelect name="courseType" value={adminEditData.courseType} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
-                      <CCol md={4}><CFormLabel>University</CFormLabel><CFormSelect name="university" value={adminEditData.university} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
-                      <CCol md={4}><CFormLabel>Financial Year</CFormLabel><CFormSelect name="financialYear" value={adminEditData.financialYear} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
-                      <CCol md={4}><CFormLabel>Course</CFormLabel><CFormSelect name="course" value={adminEditData.course} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
-                      <CCol md={4}><CFormLabel>Batch</CFormLabel><CFormSelect name="batch" value={adminEditData.batch} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
-                      <CCol md={4}><CFormLabel>Section</CFormLabel><CFormSelect name="section" value={adminEditData.section} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Organisation Name <span className="text-danger">*</span></CFormLabel>
+                        <CFormSelect name="organizationName" value={adminEditData.organizationName} onChange={handleAdminEditChange} required>
+                          <option value="">Select Organisation</option>
+                          {asArray(organizations).map(org => (
+                            <option key={(org.OrganisationID ?? org.Id ?? org.organizationid)} value={String(org.OrganisationID ?? org.Id ?? org.organizationid)}>{org.OrganisationName ?? org.OrganizationName ?? org.organizationname}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>College Name <span className="text-danger">*</span></CFormLabel>
+                        <CFormSelect name="collegeName" value={adminEditData.collegeName} onChange={handleAdminEditChange} required disabled={!adminEditData.organizationName}>
+                          <option value="">Select College</option>
+                          {asArray(colleges).map(col => (
+                            <option key={(col.CollegeID ?? col.CollegeId ?? col.Id)} value={String(col.CollegeID ?? col.CollegeId ?? col.Id)}>{col.CollegeName}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Branch <span className="text-danger">*</span></CFormLabel>
+                        <CFormSelect name="branch" value={adminEditData.branch} onChange={handleAdminEditChange} required disabled={!adminEditData.collegeName}>
+                          <option value="">Select Branch</option>
+                          {asArray(branches).map(branch => (
+                            <option key={(branch.Id ?? branch.BranchId)} value={String(branch.Id ?? branch.BranchId)}>{branch.BranchName}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Course Type <span className="text-danger">*</span></CFormLabel>
+                        <CFormSelect name="courseType" value={adminEditData.courseType} onChange={handleAdminEditChange} required disabled={!adminEditData.collegeName}>
+                          <option value="">Select Course Type</option>
+                          {asArray(courseTypes).map(ct => (
+                            <option key={(ct.Id ?? ct.CourseTypeId)} value={String(ct.Id ?? ct.CourseTypeId)}>{ct.CourseName ?? ct.CourseTypeName}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>University <span className="text-danger">*</span></CFormLabel>
+                        <CFormSelect name="university" value={adminEditData.university} onChange={handleAdminEditChange} required disabled={!adminEditData.courseType}>
+                          <option value="">Select University</option>
+                          {asArray(universities).map(uni => (
+                            <option key={(uni.Id ?? uni.UniversityId)} value={String(uni.Id ?? uni.UniversityId)}>{uni.Name ?? uni.UniversityName}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Batch <span className="text-danger">*</span></CFormLabel>
+                        <CFormSelect name="batch" value={adminEditData.batch} onChange={handleAdminEditChange} required disabled={!adminEditData.university}>
+                          <option value="">Select Batch</option>
+                          {asArray(batches).map(batch => (
+                            <option key={(batch.Id ?? batch.BatchId)} value={String(batch.Id ?? batch.BatchId)}>{batch.BatchName ?? batch.BatchNo}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Course <span className="text-danger">*</span></CFormLabel>
+                        <CFormSelect name="course" value={adminEditData.course} onChange={handleAdminEditChange} required disabled={!adminEditData.batch}>
+                          <option value="">Select Course</option>
+                          {asArray(courses).map(course => (
+                            <option key={(course.Id ?? course.CourseId)} value={String(course.Id ?? course.CourseId)}>{course.CourseName}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Section</CFormLabel>
+                        <CFormSelect name="section" value={adminEditData.section} onChange={handleAdminEditChange} disabled={!adminEditData.course}>
+                          <option value="">Select Section</option>
+                          {asArray(sections).map(section => (
+                            <option key={(section.Id ?? section.SemesterId)} value={String(section.Id ?? section.SemesterId)}>{section.Name ?? section.SemesterName ?? section.SectionName}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
 
-                      <CCol md={4}><CFormLabel>Student Name</CFormLabel><CFormInput name="studentName" value={adminEditData.studentName} onChange={handleAdminEditChange} /></CCol>
-                      <CCol md={4}><CFormLabel>SRN</CFormLabel><CFormInput name="studentRegistrationNumber" value={adminEditData.studentRegistrationNumber} onChange={handleAdminEditChange} /></CCol>
-                      <CCol md={4}><CFormLabel>Student University Number</CFormLabel><CFormInput name="studentUniversityNumber" value={adminEditData.studentUniversityNumber} onChange={handleAdminEditChange} /></CCol>
-                      <CCol md={4}><CFormLabel>Mobile Number 1</CFormLabel><CFormInput name="mobileNumber1" value={adminEditData.mobileNumber1} onChange={handleAdminEditChange} /></CCol>
-                      <CCol md={4}><CFormLabel>Mobile Number 2</CFormLabel><CFormInput name="mobileNumber2" value={adminEditData.mobileNumber2} onChange={handleAdminEditChange} /></CCol>
-                      <CCol md={4}><CFormLabel>Mobile Number 3</CFormLabel><CFormInput name="mobileNumber3" value={adminEditData.mobileNumber3} onChange={handleAdminEditChange} /></CCol>
-                      <CCol md={4}><CFormLabel>Admission Number</CFormLabel><CFormInput name="admissionNo" value={adminEditData.admissionNo} onChange={handleAdminEditChange} /></CCol>
-                      <CCol md={4}><CFormLabel>Admission Category</CFormLabel><CFormSelect name="admissionCategory" value={adminEditData.admissionCategory || ''} onChange={handleAdminEditChange}><option value="">Select</option></CFormSelect></CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Financial Year</CFormLabel>
+                        <CFormSelect name="financialYear" value={adminEditData.financialYear} onChange={handleAdminEditChange}>
+                          <option value="">Select</option>
+                          {asArray(financialYears).map(fy => (
+                            <option key={fy.Id} value={String(fy.Id)}>{fy.FinancialYear}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Student Name <span className="text-danger">*</span></CFormLabel>
+                        <CFormInput name="studentName" value={adminEditData.studentName} onChange={handleAdminEditChange} placeholder="Enter full name" required />
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Student Registration Number (SRN) <span className="text-danger">*</span></CFormLabel>
+                        <CFormInput name="studentRegistrationNumber" value={adminEditData.studentRegistrationNumber} readOnly className="bg-light" placeholder="Auto-generated" />
+                        <small className="text-muted">Auto-generated based on selections</small>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel> Mobile Number 1 <span className="text-danger">*</span> </CFormLabel>
+                        <CFormInput name="mobileNumber1" value={adminEditData.mobileNumber1} onChange={handleAdminEditChange} placeholder="Enter 10-digit mobile" required />
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Mobile Number 2</CFormLabel>
+                        <CFormInput name="mobileNumber2" value={adminEditData.mobileNumber2} onChange={handleAdminEditChange} placeholder="Enter 10-digit mobile" />
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Mobile Number 3</CFormLabel>
+                        <CFormInput name="mobileNumber3" value={adminEditData.mobileNumber3} onChange={handleAdminEditChange} placeholder="Enter 10-digit mobile" />
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Student University Number</CFormLabel>
+                        <CFormInput name="studentUniversityNumber" value={adminEditData.studentUniversityNumber} onChange={handleAdminEditChange} placeholder="Enter university number" />
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Admission Number</CFormLabel>
+                        <CFormInput type="number" name="admissionNo" value={adminEditData.admissionNo} onChange={handleAdminEditChange} placeholder="Enter admission number" />
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Father Name</CFormLabel>
+                        <CFormInput name="adminFatherName" value={adminEditData.adminFatherName} onChange={handleAdminEditChange} placeholder="Enter father name" />
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Mother Name</CFormLabel>
+                        <CFormInput name="adminMotherName" value={adminEditData.adminMotherName} onChange={handleAdminEditChange} placeholder="Enter mother name" />
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>College Email <span className="text-danger">*</span></CFormLabel>
+                        <CFormInput type="email" name="emailId" value={adminEditData.emailId} readOnly className="bg-light" placeholder="Auto-generated" />
+                        <small className="text-muted">Format: firstname.srn@atm.edu.in</small>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Date of Admission <span className="text-danger">*</span></CFormLabel>
+                        <CFormInput type="date" name="dateOfAdmission" value={adminEditData.dateOfAdmission} onChange={handleAdminEditChange} required />
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Fee Category <span className="text-danger">*</span></CFormLabel>
+                        <CFormSelect name="feeCategory" value={adminEditData.feeCategory} onChange={handleAdminEditChange} required>
+                          <option value="">Select Fee Category</option>
+                          {asArray(feeCategories).map(category => (
+                            <option key={category.Id} value={String(category.Id)}>{category.FeeCategoryName}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
+                      <CCol md={4}>
+                        <CFormLabel>Admission Category</CFormLabel>
+                        <CFormSelect name="admissionCategory" value={adminEditData.admissionCategory || ''} onChange={handleAdminEditChange}>
+                          <option value="">Select Admission Category</option>
+                          {asArray(admissionCategories).map(cat => (
+                            <option key={cat.Id} value={String(cat.Id)}>{cat.AdmissionCategoryName || cat.Name}</option>
+                          ))}
+                        </CFormSelect>
+                      </CCol>
 
                       <CCol xs={12} className="mt-2 d-flex gap-2">
-                        <CButton type="button" color="secondary" onClick={handleAdminEditCancel}><CIcon icon={cilX} className="me-1"/>Cancel</CButton>
                         <CButton type="submit" color="success">Save (Console)</CButton>
                       </CCol>
                     </CRow>

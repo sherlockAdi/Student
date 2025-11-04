@@ -2,8 +2,8 @@ import axios from 'axios'
 
 const api = axios.create({
   // Leave baseURL blank to allow Vite proxy in development
-  // baseURL: 'http://localhost:62623/',
-  baseURL: 'http://61.246.33.108:8069/',
+  baseURL: 'http://localhost:62623/',
+  // baseURL: 'http://61.246.33.108:8069/',
   timeout: 10000, // 10 second timeout to prevent hanging requests
   headers: {
     'Content-Type': 'application/json',
@@ -173,10 +173,18 @@ export async function getStudentDetailsByStudentId(studentId) {
   return data;
 }
 
-// Get Student Administration Details by Student ID
+// Get Student Administration Details by Student ID (legacy)
 export async function getAdministrationDetails(studentId) {
   const { data } = await api.get(`/studentapi/administrationdetails/${studentId}`);
   return data;
+}
+
+// Get Administration by studentId (new endpoint with IDs)
+export async function getAdministrationById(studentId) {
+  const { data } = await api.get('/studentapi/getAdministrationid', {
+    params: { studentId },
+  });
+  return data; // { success, message, data: { ...ids }}
 }
 
 // Get Student Personal Details by Student ID
@@ -553,6 +561,7 @@ export async function getStatesByCountry(countryId) {
   const { data } = await api.get('/studentapi/state/by-country', {
     params: { conid: countryId }
   });
+  console.log("state data loading",data)
   return data;
 }
 
