@@ -21,15 +21,39 @@ const UpdateStudent = () => {
   const [showDropdown, setShowDropdown] = useState(false)
   const [activeTab, setActiveTab] = useState('profile')
 
-  // Check for studentId in URL params on component mount
+  // Check for studentId or query 'q' in URL params on component mount
   useEffect(() => {
     const studentId = searchParams.get('studentId')
     const tab = searchParams.get('tab')
+    const q = searchParams.get('q')
     
     if (studentId) {
       // If studentId is in URL, load student directly
       loadStudentById(studentId)
       setActiveTab(tab || 'profile')
+    }
+    // If generic query is present, prefill and search
+    if (!studentId && q && q.trim().length >= 2) {
+      const query = q.trim()
+      setSearchText(query)
+      ;(async () => {
+        setSearching(true)
+        setError('')
+        setShowDropdown(false)
+        try {
+          const results = await searchStudentByText(query)
+          setSearchResults(results || [])
+          setShowDropdown(true)
+          pushToast({ title: 'Search Complete', message: `Found ${results?.length || 0} student(s)`, type: 'success' })
+        } catch (err) {
+          console.error('Error searching students:', err)
+          setError('Failed to search students')
+          setSearchResults([])
+          pushToast({ title: 'Error', message: 'Failed to search students', type: 'error' })
+        } finally {
+          setSearching(false)
+        }
+      })()
     }
   }, [searchParams])
 
