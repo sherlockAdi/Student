@@ -1705,7 +1705,7 @@ const RegistrationForm = () => {
                       <small className="text-muted">Must be 10 digits, starting with 6-9</small>
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Mobile Number 2</CFormLabel>
+                      <CFormLabel>Alternate Mobile Number</CFormLabel>
                       <CFormInput
                         name="mobileNumber2"
                         value={formData.mobileNumber2}
@@ -1720,7 +1720,7 @@ const RegistrationForm = () => {
                       )}
                     </CCol>
                     <CCol md={4}>
-                      <CFormLabel>Mobile Number 3</CFormLabel>
+                      <CFormLabel>Father Mobile Number</CFormLabel>
                       <CFormInput
                         name="mobileNumber3"
                         value={formData.mobileNumber3}
@@ -2454,21 +2454,87 @@ const RegistrationForm = () => {
                         </div>
                       </div>
                       {siblingShowDropdown && (
-                        <div className="mt-2 border rounded" style={{ maxHeight: 240, overflowY: 'auto' }}>
+                        <div className="mt-2 border rounded bg-white shadow-sm" style={{ maxHeight: '500px', overflowY: 'auto' }}>
                           {siblingSearchResults.length > 0 ? (
-                            siblingSearchResults.map((stu) => (
+                            siblingSearchResults.map((student) => (
                               <div
-                                key={stu.StudentId}
-                                className="p-2 hover-bg-light"
+                                key={student.StudentId}
+                                className="p-3 border-bottom"
                                 style={{ cursor: 'pointer' }}
-                                onClick={() => handleSelectSibling(stu)}
+                                onClick={() => handleSelectSibling(student)}
                               >
-                                <div><strong>{stu.StudentName}</strong> <span className="badge bg-info ms-2">ID: {stu.StudentId}</span></div>
-                                <div className="text-muted small">📞 {stu.Mobileno1 || 'N/A'} · 🆔 {stu.AdmissionNo || 'N/A'} · 📧 {stu.EmailId || 'N/A'}</div>
+                                <div className="d-flex justify-content-between align-items-start">
+                                  <div className="flex-grow-1">
+                                    <div className="d-flex align-items-center gap-2 mb-1">
+                                      <strong className="h5 mb-0">{student.StudentName || 'N/A'}</strong>
+                                      <span className="badge bg-primary">ID: {student.StudentId || 'N/A'}</span>
+                                      {student.AdmissionNo && (
+                                        <span className="badge bg-info">Adm: {student.AdmissionNo}</span>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Personal Info */}
+                                    <div className="mb-2">
+                                      {student.FatherName && (
+                                        <span className="d-inline-block me-3">
+                                          <CIcon icon={cilUser} className="me-1" />
+                                          {student.FatherName}
+                                        </span>
+                                      )}
+                                      {student.Mobileno1 && (
+                                        <span className="d-inline-block me-3">
+                                          <CIcon icon={cilPhone} className="me-1" />
+                                          {student.Mobileno1}
+                                        </span>
+                                      )}
+                                      {student.EmailId && (
+                                        <span className="d-inline-block">
+                                          <CIcon icon={cilEnvelopeOpen} className="me-1" />
+                                          {student.EmailId}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Academic Info */}
+                                    <div className="d-flex flex-wrap gap-3 text-muted small">
+                                      {student.CollegeName && (
+                                        <span className="d-flex align-items-center">
+                                          <CIcon icon={cilBuilding} className="me-1" />
+                                          {student.CollegeName}
+                                        </span>
+                                      )}
+                                      {student.CourseName && (
+                                        <span className="d-flex align-items-center">
+                                          <CIcon icon={cilBook} className="me-1" />
+                                          {student.CourseName}
+                                        </span>
+                                      )}
+                                      {student.BatchName && (
+                                        <span className="d-flex align-items-center">
+                                          <CIcon icon={cilCalendar} className="me-1" />
+                                          {student.BatchName}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <CButton 
+                                    color="primary" 
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSelectSibling(student);
+                                    }}
+                                  >
+                                    Select
+                                  </CButton>
+                                </div>
                               </div>
                             ))
                           ) : (
-                            <div className="p-2 text-muted">No students found</div>
+                            <div className="p-4 text-center text-muted">
+                              <CIcon icon={cilSearch} className="me-2" />
+                              No students found matching your search
+                            </div>
                           )}
                         </div>
                       )}

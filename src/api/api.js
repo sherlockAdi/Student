@@ -183,8 +183,16 @@ export async function getAdministrationDetails(studentId) {
 export async function getAdministrationById(studentId) {
   const { data } = await api.get('/studentapi/getAdministrationid', {
     params: { studentId },
+    validateStatus: (status) => status < 500 // Don't throw for 4xx errors
   });
-  return data; // { success, message, data: { ...ids }}
+  
+  if (data && data.success && data.data) {
+    return data.data; // Return the data object from the response
+  }
+  
+  // Return null if no data or error
+  console.error('Failed to fetch administration details:', data?.message || 'Unknown error');
+  return null;
 }
 
 // Get Student Personal Details by Student ID
@@ -677,12 +685,36 @@ export async function getReligions() {
   return data;
 }
 export async function searchStudentByText(searchText) {
-  const { data } = await api.get('/studentapi/search', {
-    params: {
-      searchText,
-    },
-  });
-  return data;
+  try {
+    console.log('[API] Searching students with text:', searchText);
+    const response = await api.get('/studentapi/search', {
+      params: { searchText },
+      validateStatus: (status) => status < 500 // Don't throw for 4xx errors
+    });
+    
+    console.log('[API] Search response:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data
+    });
+    
+    if (response.status !== 200) {
+      throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+    }
+    
+    if (!response.data) {
+      throw new Error('Empty response from server');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('[API] Search error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw error;
+  }
 }
 // 💰 Insert Income Range
 export async function insertIncomeRange(incomeData) {

@@ -24,7 +24,9 @@ import {
   getAdministrationById,
   getOrganizations, getCollegesByOrganization, getBranchesByCollege,
   getCourseTypesByCollege, getUniversitiesByCourseType, getBatchesByUniversity,
-  getCoursesByBatch, getSectionsByCourse, getFinancialYears, getAdmissionCategories
+  getCoursesByBatch, getSectionsByCourse, getFinancialYears, getAdmissionCategories,
+  getStudentDetailsByStudentId,
+  searchStudentByText
 } from '../api/api'
 import { useToast } from '../components'
 
@@ -44,6 +46,8 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
   const [lastSchoolDetails, setLastSchoolDetails] = useState(null)
   const [previousSchoolDetails, setPreviousSchoolDetails] = useState([])
   const [siblings, setSiblings] = useState([])
+  const [siblingAdminDetails, setSiblingAdminDetails] = useState({}) // Store admin details for each sibling
+  const [siblingLoading, setSiblingLoading] = useState({}) // Track loading state for each sibling
   const [bestFriends, setBestFriends] = useState([])
   const [medicalDetails, setMedicalDetails] = useState(null)
   const [transportDetails, setTransportDetails] = useState(null)
@@ -97,7 +101,8 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
   const [gStates, setGStates] = useState([])
   const [gDistricts, setGDistricts] = useState([])
   const [gAreas, setGAreas] = useState([])
-  
+  const [domicileStates, setDomicileStates] = useState([])
+
   // Form data for personal details
   const [formData, setFormData] = useState({
     emailId: '',
@@ -113,6 +118,7 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
     bloodGroup: '',
     adharCardNumber: '',
     domicile: '',
+    domicileState: '',
     panNo: ''
   })
   
@@ -221,6 +227,13 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
     siblingStudentId: '',
     relationship: ''
   })
+  // Sibling search/add UI state (mirror Registration)
+  const [siblingSearchText, setSiblingSearchText] = useState('')
+  const [siblingSearchResults, setSiblingSearchResults] = useState([])
+  const [siblingSearching, setSiblingSearching] = useState(false)
+  const [siblingShowDropdown, setSiblingShowDropdown] = useState(false)
+  const [siblingSelectedDetails, setSiblingSelectedDetails] = useState(null)
+  const [newSiblingsList, setNewSiblingsList] = useState([])
   
   // Form data for best friend details
   const [bestFriendFormData, setBestFriendFormData] = useState({
@@ -228,6 +241,13 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
     friendName: '',
     friendMobile: ''
   })
+  
+  // Friend search UI state
+  const [friendSearchText, setFriendSearchText] = useState('')
+  const [friendSearchResults, setFriendSearchResults] = useState([])
+  const [friendSearching, setFriendSearching] = useState(false)
+  const [friendShowDropdown, setFriendShowDropdown] = useState(false)
+  const [friendSelectedDetails, setFriendSelectedDetails] = useState(null)
   
   // Form data for medical details
   const [medicalFormData, setMedicalFormData] = useState({
@@ -891,6 +911,19 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
     }
   }, [addressFormData.cDistrict])
 
+  // Load domicile states (India - country ID 6)
+useEffect(() => {
+  const loadDomicileStates = async () => {
+    try {
+      const states = await getStatesByCountry(6); // India's country ID is 6
+      setDomicileStates(states || []);
+    } catch (err) {
+      console.error('Error loading domicile states:', err);
+    }
+  };
+  
+  loadDomicileStates();
+}, []);
   // Load Guardian Address cascading dropdowns
   useEffect(() => {
     if (addressFormData.gCountry) {
@@ -1600,6 +1633,10 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
       friendName: '',
       friendMobile: ''
     })
+    setFriendSearchText('')
+    setFriendSearchResults([])
+    setFriendShowDropdown(false)
+    setFriendSelectedDetails(null)
     setEditingBestFriendIndex(null)
     setShowAddBestFriendModal(true)
   }
@@ -1854,6 +1891,238 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
       </div>
     </CCol>
   )
+
+  // Friend search handlers (mirror Registration)
+  const handleFriendSearch = async () => {
+    const searchText = friendSearchText.trim()
+    if (searchText.length < 2) {
+      setError('Please enter at least 2 characters to search')
+      setFriendSearchResults([])
+      setFriendShowDropdown(false)
+      return
+    }
+    
+    setFriendSearching(true)
+    setError('')
+    setFriendShowDropdown(false)
+    
+    try {
+      console.log('Searching for friend with text:', searchText)
+      const results = await searchStudentByText(searchText)
+      console.log('Friend search results:', results)
+      
+      if (!results || !Array.isArray(results)) {
+        throw new Error('Invalid response format from server')
+      }
+      
+      setFriendSearchResults(results)
+      setFriendShowDropdown(results.length > 0)
+      
+      if (results.length === 0) {
+        setError('No students found matching your search')
+      }
+    } catch (err) {
+      console.error('Error searching for friends:', err)
+      setError(err.message || 'Failed to search for friends. Please try again.')
+      setFriendSearchResults([])
+    } finally {
+      setFriendSearching(false)
+    }
+  }
+
+  const handleSelectFriend = async (studentId) => {
+    try {
+      setFriendSearching(true)
+      setError('')
+      
+      // Find the selected friend from search results
+      const selected = friendSearchResults.find(s => s.StudentId === studentId)
+      if (!selected) {
+        throw new Error('Selected friend not found in search results')
+      }
+      
+      // Update the form data with friend details
+      setBestFriendFormData({
+        friendId: selected.StudentId,
+        friendName: `${selected.FirstName} ${selected.LastName || ''}`.trim(),
+        friendMobile: selected.MobileNumber || ''
+      })
+      
+      setFriendSelectedDetails(selected)
+      setFriendShowDropdown(false)
+      
+    } catch (err) {
+      console.error('Error selecting friend:', err)
+      setError(err.message || 'Failed to select friend. Please try again.')
+    } finally {
+      setFriendSearching(false)
+    }
+  }
+
+  // Fetch administration details for a specific sibling
+  const fetchSiblingAdminDetails = async (siblingId) => {
+    if (!siblingId) return
+    
+    try {
+      setSiblingLoading(prev => ({ ...prev, [siblingId]: true }))
+      const adminDetails = await getAdministrationById(siblingId)
+      
+      setSiblingAdminDetails(prev => ({
+        ...prev,
+        [siblingId]: adminDetails || null
+      }))
+    } catch (err) {
+      console.error(`Error fetching admin details for sibling ${siblingId}:`, err)
+      setSiblingAdminDetails(prev => ({
+        ...prev,
+        [siblingId]: null
+      }))
+    } finally {
+      setSiblingLoading(prev => ({
+        ...prev,
+        [siblingId]: false
+      }))
+    }
+  }
+
+  // Sibling search handlers (mirror Registration)
+  const handleSiblingSearch = async () => {
+    const searchText = siblingSearchText.trim()
+    if (searchText.length < 2) {
+      setError('Please enter at least 2 characters to search')
+      setSiblingSearchResults([])
+      setSiblingShowDropdown(false)
+      return
+    }
+    
+    setSiblingSearching(true)
+    setError('')
+    setSiblingShowDropdown(false)
+    
+    try {
+      console.log('Searching for student with text:', searchText)
+      const results = await searchStudentByText(searchText)
+      console.log('Search results:', results)
+      
+      if (!results || !Array.isArray(results)) {
+        throw new Error('Invalid response format from server')
+      }
+      
+      setSiblingSearchResults(results)
+      setSiblingShowDropdown(results.length > 0)
+      
+      if (results.length === 0) {
+        setError('No students found matching your search')
+      }
+    } catch (err) {
+      console.error('Error searching for students:', err)
+      setError(err.message || 'Failed to search for students. Please try again.')
+      setSiblingSearchResults([])
+    } finally {
+      setSiblingSearching(false)
+    }
+  }
+
+  const handleSelectSibling = async (student) => {
+    setSiblingFormData(prev => ({ ...prev, siblingStudentId: String(student.StudentId) }))
+    setSiblingSearchText('')
+    setSiblingSearchResults([])
+    setSiblingShowDropdown(false)
+    try {
+      const details = await getStudentDetailsByStudentId(student.StudentId)
+      setSiblingSelectedDetails(details || student)
+    } catch (e) {
+      setSiblingSelectedDetails(student)
+    }
+  }
+
+  const handleAddSiblingToList = async () => {
+    if (!siblingFormData.siblingStudentId || !siblingFormData.relationship) {
+      setError('Please select sibling and relationship')
+      return
+    }
+    const idStr = String(siblingFormData.siblingStudentId)
+    let detail = siblingSelectedDetails
+    if (!detail || String(detail.StudentId) !== idStr) {
+      const inlineSel = siblingSearchResults.find(s => String(s.StudentId) === idStr)
+      if (inlineSel) {
+        try {
+          const full = await getStudentDetailsByStudentId(inlineSel.StudentId)
+          detail = full || inlineSel
+        } catch (e) {
+          detail = inlineSel
+        }
+      } else {
+        try {
+          const full = await getStudentDetailsByStudentId(parseInt(idStr))
+          detail = full || null
+        } catch (e) {
+          detail = null
+        }
+      }
+    }
+    const newItem = {
+      siblingStudentId: idStr,
+      relationship: siblingFormData.relationship,
+      EmailId: detail?.EmailId || '',
+      Mobileno1: detail?.Mobileno1 || '',
+      StudentName: detail?.StudentName || '',
+      AdmissionNo: detail?.AdmissionNo || '',
+      Gender: detail?.Gender || '',
+      DateOfBirth: detail?.DateOfBirth || '',
+      NationalityId: detail?.NationalityId || '',
+      Birthplace: detail?.Birthplace || '',
+      MotherTongueId: detail?.MotherTongueId || '',
+      Category: detail?.Category || '',
+      SubCategory: detail?.SubCategory || '',
+      Minority: detail?.Minority || '',
+      Religion: detail?.Religion || '',
+      BloodGroup: detail?.BloodGroup || '',
+      AadharCardNumber: detail?.AadharCardNumber || '',
+      Domicile: detail?.Domicile || '',
+      PanNo: detail?.PanNo || ''
+    }
+    setNewSiblingsList(prev => [...prev, newItem])
+    setSiblingFormData({ siblingStudentId: '', relationship: '' })
+    setSiblingSelectedDetails(null)
+    setError('')
+    setSuccess('✅ Sibling added to list')
+    setTimeout(() => setSuccess(''), 2000)
+  }
+
+  const handleRemoveNewSibling = (index) => {
+    setNewSiblingsList(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSiblingSubmit = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      setSuccess('')
+      const currentStudentId = studentIdProp
+      if (!currentStudentId || newSiblingsList.length === 0) return
+      for (const s of newSiblingsList) {
+        const payload = {
+          StudentId: parseInt(currentStudentId),
+          SiblingStudentId: parseInt(s.siblingStudentId) || 0,
+          Relationship: s.relationship || ''
+        }
+        await addSibling(payload)
+      }
+      setSuccess(`✅ Saved ${newSiblingsList.length} sibling(s) successfully`)
+      setNewSiblingsList([])
+      try {
+        const fresh = await getSiblings(currentStudentId)
+        setSiblings(fresh || [])
+      } catch {}
+      setTimeout(() => setSuccess(''), 2000)
+    } catch (err) {
+      console.error('Error saving siblings:', err)
+      setError(err.response?.data?.message || err.message || 'Failed to save siblings')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -2414,14 +2683,20 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
                       </CCol>
                       
                       <CCol md={4}>
-                        <CFormLabel>Domicile</CFormLabel>
-                        <CFormInput 
+                        <CFormLabel>Domicile (State)</CFormLabel>
+                        <CFormSelect 
                           name="domicile" 
                           value={formData.domicile} 
-                          onChange={handleChange} 
-                          placeholder="Enter domicile"
+                          onChange={handleChange}
                           disabled={!isEditing}
-                        />
+                        >
+                          <option value="">Select State</option>
+                          {domicileStates.map(state => (
+                            <option key={state.Id} value={state.StateName}>
+                              {state.StateName}
+                            </option>
+                          ))}
+                        </CFormSelect>
                       </CCol>
                       
                       <CCol md={4}>
@@ -3137,13 +3412,148 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
                 )}
               </CTabPane>
 
-              {/* Siblings Tab - Multiple Records */}
+              {/* Siblings Tab - Multiple Records with search/add like Registration */}
               <CTabPane visible={activeTab === 'siblings'}>
-                <div className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
-                  <h5 className="text-primary mb-0">👨‍👩‍👧‍👦 Sibling Information</h5>
-                  <CButton color="success" size="sm" onClick={handleAddSibling}>
-                    ➕ Add Sibling
-                  </CButton>
+                <div className="mb-3">
+                  <h5 className="text-primary mb-2">👨‍👩‍👧‍👦 Add Sibling</h5>
+                  <CRow className="g-3">
+                    <CCol md={6}>
+                      <CFormLabel>Sibling Student ID</CFormLabel>
+                      <CFormInput
+                        type="text"
+                        name="siblingStudentId"
+                        value={siblingFormData.siblingStudentId}
+                        onChange={(e) => setSiblingFormData(prev => ({ ...prev, siblingStudentId: e.target.value }))}
+                        placeholder="Enter or select sibling student ID"
+                      />
+                      <div className="mt-2">
+                        <CFormLabel>Search Student</CFormLabel>
+                        <div className="d-flex gap-2">
+                          <CFormInput
+                            type="text"
+                            value={siblingSearchText}
+                            onChange={(e) => setSiblingSearchText(e.target.value)}
+                            placeholder="Type name, SRN, or mobile"
+                          />
+                          <CButton color="primary" onClick={handleSiblingSearch} disabled={siblingSearching}>
+                            {siblingSearching ? (<><CSpinner size="sm" className="me-1"/>Searching...</>) : 'Search'}
+                          </CButton>
+                        </div>
+                        {siblingShowDropdown && (
+                          <div className="mt-2 border rounded" style={{ maxHeight: 240, overflowY: 'auto' }}>
+                            {siblingSearchResults.length > 0 ? (
+                              siblingSearchResults.map((stu) => (
+                                <div
+                                  key={stu.StudentId}
+                                  className="p-2 hover-bg-light"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => handleSelectSibling(stu)}
+                                >
+                                  <div><strong>{stu.StudentName}</strong> <span className="badge bg-info ms-2">ID: {stu.StudentId}</span></div>
+                                  <div className="text-muted small">📞 {stu.Mobileno1 || 'N/A'} · 🆔 {stu.AdmissionNo || 'N/A'} · 📧 {stu.EmailId || 'N/A'}</div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="p-2 text-muted">No students found</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </CCol>
+                    <CCol md={3}>
+                      <CFormLabel>Relationship</CFormLabel>
+                      <CFormSelect
+                        name="relationship"
+                        value={siblingFormData.relationship}
+                        onChange={(e) => setSiblingFormData(prev => ({ ...prev, relationship: e.target.value }))}
+                      >
+                        <option value="">Select Relationship</option>
+                        <option value="Brother">Brother</option>
+                        <option value="Sister">Sister</option>
+                        <option value="Half-Brother">Half-Brother</option>
+                        <option value="Half-Sister">Half-Sister</option>
+                        <option value="Step-Brother">Step-Brother</option>
+                        <option value="Step-Sister">Step-Sister</option>
+                      </CFormSelect>
+                    </CCol>
+                    <CCol md={3} className="d-flex align-items-end">
+                      <CButton color="primary" onClick={handleAddSiblingToList} disabled={!siblingFormData.siblingStudentId || !siblingFormData.relationship}>
+                        ➕ Add Sibling to List
+                      </CButton>
+                    </CCol>
+                  </CRow>
+                  {newSiblingsList.length > 0 && (
+                    <CRow className="mt-3">
+                      <CCol xs={12}>
+                        <h6 className="text-primary mb-2">📋 New Siblings ({newSiblingsList.length})</h6>
+                        <div className="table-responsive">
+                          <table className="table table-bordered table-hover table-sm">
+                            <thead className="table-light">
+                              <tr>
+                                <th>#</th>
+                                <th>Sibling Student ID</th>
+                                <th>StudentName</th>
+                                <th>Mobileno1</th>
+                                <th>EmailId</th>
+                                <th>AdmissionNo</th>
+                                <th>Gender</th>
+                                <th>DateOfBirth</th>
+                                <th>NationalityId</th>
+                                <th>Birthplace</th>
+                                <th>MotherTongueId</th>
+                                <th>Category</th>
+                                <th>SubCategory</th>
+                                <th>Minority</th>
+                                <th>Religion</th>
+                                <th>BloodGroup</th>
+                                <th>AadharCardNumber</th>
+                                <th>Domicile</th>
+                                <th>PanNo</th>
+                                <th>Relationship</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {newSiblingsList.map((s, idx) => (
+                                <tr key={idx}>
+                                  <td>{idx + 1}</td>
+                                  <td>{s.siblingStudentId}</td>
+                                  <td>{s.StudentName || '—'}</td>
+                                  <td>{s.Mobileno1 || '—'}</td>
+                                  <td>{s.EmailId || '—'}</td>
+                                  <td>{s.AdmissionNo || '—'}</td>
+                                  <td>{s.Gender || '—'}</td>
+                                  <td>{s.DateOfBirth ? String(s.DateOfBirth).slice(0,10) : '—'}</td>
+                                  <td>{s.NationalityId || '—'}</td>
+                                  <td>{s.Birthplace || '—'}</td>
+                                  <td>{s.MotherTongueId || '—'}</td>
+                                  <td>{s.Category || '—'}</td>
+                                  <td>{s.SubCategory || '—'}</td>
+                                  <td>{s.Minority || '—'}</td>
+                                  <td>{s.Religion || '—'}</td>
+                                  <td>{s.BloodGroup || '—'}</td>
+                                  <td>{s.AadharCardNumber || '—'}</td>
+                                  <td>{s.Domicile || '—'}</td>
+                                  <td>{s.PanNo || '—'}</td>
+                                  <td>{s.relationship}</td>
+                                  <td>
+                                    <CButton color="danger" size="sm" onClick={() => handleRemoveNewSibling(idx)}>
+                                      <CIcon icon={cilX} />
+                                    </CButton>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="mt-2">
+                          <CButton color="success" onClick={handleSiblingSubmit} disabled={loading}>
+                            {loading ? (<><CSpinner size="sm" className="me-1"/>Saving...</>) : 'Save All New Siblings'}
+                          </CButton>
+                        </div>
+                      </CCol>
+                    </CRow>
+                  )}
                 </div>
                 
                 {success && activeTab === 'siblings' && (
@@ -3173,6 +3583,27 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
                           <tr key={index}>
                             <td>{index + 1}</td>
                             <td>{sibling.SiblingStudentId || 'N/A'}</td>
+                            <td>
+                              {siblingAdminDetails[sibling.SiblingStudentId] ? (
+                                `${siblingAdminDetails[sibling.SiblingStudentId].FirstName || ''} ${siblingAdminDetails[sibling.SiblingStudentId].LastName || ''}`.trim() || 'N/A'
+                              ) : (
+                                siblingLoading[sibling.SiblingStudentId] ? (
+                                  <CSpinner size="sm" />
+                                ) : (
+                                  'N/A'
+                                )
+                              )}
+                            </td>
+                            <td>
+                              {siblingAdminDetails[sibling.SiblingStudentId]?.AdmissionNo || 'N/A'}
+                            </td>
+                            <td>
+                              {siblingAdminDetails[sibling.SiblingStudentId]?.CourseId ? 
+                                `Class ${siblingAdminDetails[sibling.SiblingStudentId].CourseId}` : 'N/A'}
+                            </td>
+                            <td>
+                              {siblingAdminDetails[sibling.SiblingStudentId]?.MobileNo1 || 'N/A'}
+                            </td>
                             <td>{sibling.Relationship || 'N/A'}</td>
                             <td>
                               <CButton 
@@ -3810,7 +4241,7 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
       </CModal>
 
       {/* Add/Edit Best Friend Modal */}
-      <CModal visible={showAddBestFriendModal} onClose={() => setShowAddBestFriendModal(false)}>
+      <CModal visible={showAddBestFriendModal} onClose={() => setShowAddBestFriendModal(false)} size="lg">
         <CModalHeader>
           <CModalTitle>
             {editingBestFriendIndex !== null ? 'Edit Best Friend' : 'Add Best Friend'}
@@ -3819,13 +4250,66 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
         <CModalBody>
           <CRow className="g-3">
             <CCol md={12}>
+              <CFormLabel>Search Friend <span className="text-danger">*</span></CFormLabel>
+              <div className="position-relative">
+                <div className="input-group">
+                  <CFormInput
+                    type="text"
+                    placeholder="Search by name, ID, or mobile..."
+                    value={friendSearchText}
+                    onChange={(e) => {
+                      setFriendSearchText(e.target.value)
+                      setFriendShowDropdown(false)
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleFriendSearch()}
+                  />
+                  <CButton 
+                    color="primary" 
+                    onClick={handleFriendSearch}
+                    disabled={friendSearching}
+                  >
+                    {friendSearching ? (
+                      <CSpinner size="sm" />
+                    ) : (
+                      'Search'
+                    )}
+                  </CButton>
+                </div>
+                
+                {/* Search Results Dropdown */}
+                {friendShowDropdown && friendSearchResults.length > 0 && (
+                  <div className="position-absolute w-100 bg-white border rounded shadow-lg" style={{ zIndex: 1050, maxHeight: '300px', overflowY: 'auto' }}>
+                    {friendSearchResults.map((student) => (
+                      <div 
+                        key={student.StudentId}
+                        className="p-2 border-bottom cursor-pointer hover-bg-light"
+                        onClick={() => handleSelectFriend(student.StudentId)}
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div>
+                            <strong>{student.FirstName} {student.LastName || ''}</strong>
+                            <div className="text-muted small">ID: {student.StudentId} | Mobile: {student.MobileNumber || 'N/A'}</div>
+                          </div>
+                          <CButton size="sm" color="primary">
+                            Select
+                          </CButton>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CCol>
+
+            <CCol md={12}>
               <CFormLabel>Friend ID <span className="text-danger">*</span></CFormLabel> 
               <CFormInput 
                 type="number"
                 name="friendId" 
                 value={bestFriendFormData.friendId} 
                 onChange={handleBestFriendChange} 
-                placeholder="Enter friend ID"
+                placeholder="Friend ID will be auto-filled"
+                readOnly
                 required
               />
             </CCol>
@@ -3835,7 +4319,8 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
                 name="friendName" 
                 value={bestFriendFormData.friendName} 
                 onChange={handleBestFriendChange} 
-                placeholder="Enter friend name"
+                placeholder="Friend name will be auto-filled"
+                readOnly
                 required
               />
             </CCol>
@@ -3845,7 +4330,8 @@ const UpdateStudentProfile = ({ studentIdProp }) => {
                 name="friendMobile" 
                 value={bestFriendFormData.friendMobile} 
                 onChange={handleBestFriendChange} 
-                placeholder="Enter friend mobile"
+                placeholder="Friend mobile will be auto-filled"
+                readOnly
                 required
               />
             </CCol>
